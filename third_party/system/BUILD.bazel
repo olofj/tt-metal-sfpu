@@ -1,0 +1,11 @@
+cc_library(
+    name = "numa",
+    linkopts = ["-lnuma"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "hwloc",
+    linkopts = ["-lhwloc"],
+    visibility = ["//visibility:public"],
+)

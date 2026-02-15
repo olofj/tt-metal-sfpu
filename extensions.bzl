@@ -1,0 +1,91 @@
+"""Module extensions for dependencies not available on the Bazel Central Registry."""
+
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+def _non_bcr_deps_impl(module_ctx):
+    # Cap'n Proto v1.2.0
+    # Has native Bazel build files in c++/ subdirectory.
+    # The capnproto_capture_this.patch from CMake is only needed for the
+    # [=] -> [=, this] C++20 fix, which the Bazel build handles via compiler flags.
+    http_archive(
+        name = "capnproto",
+        urls = ["https://github.com/capnproto/capnproto/archive/d135c9ca5e15219eaf131dfce1a41afdbaea9aab.tar.gz"],
+        strip_prefix = "capnproto-d135c9ca5e15219eaf131dfce1a41afdbaea9aab/c++",
+        # sha256 should be added after first successful fetch
+    )
+
+    # nanobind v2.10.2 — Python bindings
+    http_archive(
+        name = "nanobind",
+        urls = ["https://github.com/wjakob/nanobind/archive/c5a3a378aa61d104c82ca053cb1e367782cd3618.tar.gz"],
+        strip_prefix = "nanobind-c5a3a378aa61d104c82ca053cb1e367782cd3618",
+        build_file = "//third_party:nanobind.BUILD",
+    )
+
+    # xtl 0.8.0 — header-only support library for xtensor
+    http_archive(
+        name = "xtl",
+        urls = ["https://github.com/xtensor-stack/xtl/archive/refs/tags/0.8.0.tar.gz"],
+        strip_prefix = "xtl-0.8.0",
+        build_file = "//third_party:xtl.BUILD",
+    )
+
+    # xtensor 0.26.0 — header-only tensor library
+    http_archive(
+        name = "xtensor",
+        urls = ["https://github.com/xtensor-stack/xtensor/archive/refs/tags/0.26.0.tar.gz"],
+        strip_prefix = "xtensor-0.26.0",
+        build_file = "//third_party:xtensor.BUILD",
+    )
+
+    # xtensor-blas 0.22.0 — BLAS bindings for xtensor
+    http_archive(
+        name = "xtensor_blas",
+        urls = ["https://github.com/xtensor-stack/xtensor-blas/archive/refs/tags/0.22.0.tar.gz"],
+        strip_prefix = "xtensor-blas-0.22.0",
+        build_file = "//third_party:xtensor_blas.BUILD",
+    )
+
+    # simde v0.8.2 — SIMD Everywhere, header-only
+    http_archive(
+        name = "simde",
+        urls = ["https://github.com/simd-everywhere/simde/archive/refs/tags/v0.8.2.tar.gz"],
+        strip_prefix = "simde-0.8.2",
+        build_file = "//third_party:simde.BUILD",
+    )
+
+    # Taskflow v3.7.0 — header-only task-parallel library
+    http_archive(
+        name = "taskflow",
+        urls = ["https://github.com/taskflow/taskflow/archive/refs/tags/v3.7.0.tar.gz"],
+        strip_prefix = "taskflow-3.7.0",
+        build_file = "//third_party:taskflow.BUILD",
+    )
+
+    # boost-ext reflect v1.2.6 — single-header reflection
+    http_archive(
+        name = "reflect",
+        urls = ["https://github.com/boost-ext/reflect/archive/refs/tags/v1.2.6.tar.gz"],
+        strip_prefix = "reflect-1.2.6",
+        build_file = "//third_party:reflect.BUILD",
+    )
+
+    # enchantum — TT-used fork of magic_enum
+    http_archive(
+        name = "enchantum",
+        urls = ["https://github.com/ZXShady/enchantum/archive/8ca5b0eb7e7ebe0252e5bc6915083f1dd1b8294e.tar.gz"],
+        strip_prefix = "enchantum-8ca5b0eb7e7ebe0252e5bc6915083f1dd1b8294e",
+        build_file = "//third_party:enchantum.BUILD",
+    )
+
+    # tt-logger 1.1.7 — Tenstorrent logging library
+    http_archive(
+        name = "tt_logger",
+        urls = ["https://github.com/tenstorrent/tt-logger/archive/refs/tags/v1.1.7.tar.gz"],
+        strip_prefix = "tt-logger-1.1.7",
+        build_file = "//third_party:tt_logger.BUILD",
+    )
+
+non_bcr_deps = module_extension(
+    implementation = _non_bcr_deps_impl,
+)

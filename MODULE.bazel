@@ -1,0 +1,91 @@
+module(
+    name = "tt-metalium",
+    version = "0.1",
+)
+
+# ===========================================================================
+# Bazel infrastructure
+# ===========================================================================
+
+bazel_dep(name = "bazel_skylib", version = "1.7.1")
+bazel_dep(name = "platforms", version = "0.0.10")
+bazel_dep(name = "rules_cc", version = "0.1.1")
+
+# ===========================================================================
+# Dependencies available on the Bazel Central Registry (BCR)
+# ===========================================================================
+
+# Boost (modularized on BCR — one module per component)
+bazel_dep(name = "boost.algorithm", version = "1.83.0")
+bazel_dep(name = "boost.asio", version = "1.83.0")
+bazel_dep(name = "boost.container", version = "1.83.0")
+bazel_dep(name = "boost.core", version = "1.83.0")
+bazel_dep(name = "boost.interprocess", version = "1.83.0")
+bazel_dep(name = "boost.lockfree", version = "1.83.0")
+bazel_dep(name = "boost.smart_ptr", version = "1.83.0")
+
+# Protocol Buffers — v21.x avoids the abseil dependency.
+# CMake build pins to v21.12; BCR has v21.7. Use single_version_override
+# below if exact v21.12 is needed once it is confirmed on BCR.
+bazel_dep(name = "protobuf", version = "21.7")
+
+# yaml-cpp 0.8.0
+bazel_dep(name = "yaml-cpp", version = "0.8.0")
+
+# Google Test
+bazel_dep(name = "googletest", version = "1.14.0", repo_name = "com_google_googletest")
+
+# Google Benchmark
+bazel_dep(name = "google_benchmark", version = "1.8.5")
+
+# fmt — header-only mode used by spdlog
+bazel_dep(name = "fmt", version = "11.0.2")
+
+# nlohmann/json
+bazel_dep(name = "nlohmann_json", version = "3.11.3")
+
+# range-v3
+bazel_dep(name = "range-v3", version = "0.12.0")
+
+# spdlog — configured to use external fmt (header-only)
+bazel_dep(name = "spdlog", version = "1.14.1")
+
+# FlatBuffers — need both the flatc compiler and the C++ runtime
+bazel_dep(name = "flatbuffers", version = "24.3.25")
+
+# ===========================================================================
+# Dependencies NOT on BCR — fetched via module extensions
+#
+# These libraries either have no BCR entry or are TT-specific forks.
+# They are managed via http_archive in the non_bcr_deps extension below.
+# ===========================================================================
+
+non_bcr_deps = use_extension("//:extensions.bzl", "non_bcr_deps")
+
+# Cap'n Proto — has native Bazel support but is not on BCR.
+# Pinned to the exact commit used in the CMake build (v1.2.0 + patches).
+use_repo(non_bcr_deps, "capnproto")
+
+# nanobind — Python binding library. Not on BCR.
+# Pinned to exact commit matching v2.10.2.
+use_repo(non_bcr_deps, "nanobind")
+
+# xtensor stack — header-only numeric computing libraries. Not on BCR.
+use_repo(non_bcr_deps, "xtl")
+use_repo(non_bcr_deps, "xtensor")
+use_repo(non_bcr_deps, "xtensor_blas")
+
+# simde — SIMD Everywhere, header-only SIMD abstraction. Not on BCR.
+use_repo(non_bcr_deps, "simde")
+
+# Taskflow — header-only parallel task programming. Not on BCR.
+use_repo(non_bcr_deps, "taskflow")
+
+# boost-ext reflect — single-header reflection library. Not on BCR.
+use_repo(non_bcr_deps, "reflect")
+
+# enchantum — TT-used fork of magic_enum. Not on BCR.
+use_repo(non_bcr_deps, "enchantum")
+
+# tt-logger — Tenstorrent logging library. Not on BCR.
+use_repo(non_bcr_deps, "tt_logger")

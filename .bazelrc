@@ -1,0 +1,6 @@
+# Common build flags
+build --cxxopt=-std=c++20
+build --host_cxxopt=-std=c++20
+
+# Use C++20 for all targets
+build --action_env=BAZEL_CXXOPTS=-std=c++20

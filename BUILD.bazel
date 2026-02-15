@@ -1,0 +1,2 @@
+# Root BUILD file for tt-metalium Bazel build.
+# Required to make the repository root a valid Bazel package.

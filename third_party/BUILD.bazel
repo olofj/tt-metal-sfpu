@@ -1,0 +1,40 @@
+# Smoke test that compiles and links against every declared dependency.
+# Verifies that MODULE.bazel + extensions.bzl correctly resolve all externals.
+#
+# Build: bazel build //third_party:dep_smoke_test
+# Query: bazel query 'deps(//third_party:dep_smoke_test)' --output=label | sort
+
+cc_binary(
+    name = "dep_smoke_test",
+    srcs = ["dep_smoke_test.cpp"],
+    deps = [
+        # BCR dependencies
+        "@boost.core",
+        "@boost.container",
+        "@boost.smart_ptr",
+        "@boost.lockfree",
+        "@yaml-cpp",
+        "@fmt",
+        "@nlohmann_json",
+        "@range-v3",
+        "@spdlog",
+        "@flatbuffers",
+        "@protobuf//:protobuf",
+        "@google_benchmark//:benchmark",
+        "@com_google_googletest//:gtest",
+
+        # Non-BCR dependencies
+        "@capnproto//src/capnp",
+        "@simde//:simde",
+        "@taskflow//:taskflow",
+        "@reflect//:reflect",
+        "@enchantum//:enchantum",
+        "@tt_logger//:tt_logger",
+        "@xtl//:xtl",
+        "@xtensor//:xtensor",
+
+        # System libraries
+        "//third_party/system:numa",
+        "//third_party/system:hwloc",
+    ],
+)
