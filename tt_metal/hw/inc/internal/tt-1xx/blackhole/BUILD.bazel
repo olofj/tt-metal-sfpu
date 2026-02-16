@@ -3,8 +3,17 @@ exports_files(
     visibility = ["//tt_metal/hw/toolchain:__pkg__"],
 )
 
+headers = glob(["**/*.h", "**/*.hpp"])
+
 filegroup(
     name = "all_headers",
-    srcs = glob(["**/*.h", "**/*.hpp"]),
+    srcs = headers,
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "rv-bh-hdrs",
+    hdrs = headers,
+    includes = ["."],
     visibility = ["//visibility:public"],
 )

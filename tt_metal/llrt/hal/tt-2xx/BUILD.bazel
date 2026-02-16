@@ -1,0 +1,59 @@
+# HAL 2xx — Hardware Abstraction Layer for Quasar chips.
+# Mirrors CMake targets: qa_hal (OBJECT), hal_2xx (STATIC, alias HAL::2xx)
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+package(default_visibility = ["//tt_metal:__subpackages__"])
+
+_HAL_DEPS = [
+    "//tt_metal/llrt:llrt_hdrs",
+    "//tt_metal/llrt/hal:hal_generated_hdrs",
+    "//tt_metal/hw",
+    "//tt_metal/third_party/umd/device",
+    "//tt_stl",
+    "//tt_metal/third_party:tracy",
+    "//tt_metal/impl:impl_hdrs",
+    "//tt_metal/api:common_api_hdrs",
+    "//tt_metal/api:llrt_api_hdrs",
+    "@fmt",
+    "@tt_logger//:tt_logger",
+    "@enchantum//:enchantum",
+]
+
+cc_library(
+    name = "qa_hal",
+    srcs = [
+        "quasar/qa_hal.cpp",
+        "quasar/qa_hal_tensix.cpp",
+        "quasar/qa_hal_active_eth.cpp",
+        "quasar/qa_hal_idle_eth.cpp",
+    ],
+    hdrs = glob(["quasar/*.hpp"]) + [
+        "hal_2xx_common.hpp",
+    ],
+    copts = [
+        "-isystem tt_metal/hw/inc/internal/tt-2xx/quasar",
+    ],
+    includes = ["."],
+    deps = _HAL_DEPS + [
+        "//tt_metal/hw/inc/internal/tt-2xx/quasar:rv-qa-hdrs",
+    ],
+)
+
+cc_library(
+    name = "hal_2xx",
+    srcs = ["hal_2xx_common.cpp"],
+    includes = ["."],
+    deps = [
+        ":qa_hal",
+        "//tt_metal/hw",
+        "//tt_metal/third_party/umd/device",
+        "//tt_stl",
+        "//tt_metal/impl:impl_hdrs",
+        "//tt_metal/api:common_api_hdrs",
+        "//tt_metal/api:llrt_api_hdrs",
+        "//tt_metal/llrt:llrt_hdrs",
+        "@fmt",
+        "@tt_logger//:tt_logger",
+    ],
+)

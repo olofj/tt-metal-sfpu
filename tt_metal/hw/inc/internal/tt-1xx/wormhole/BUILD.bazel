@@ -21,7 +21,7 @@ config_setting(
 )
 
 headers = glob(["**/*.h", "**/*.hpp", "**/*.h"]) + ["cmds.def"]
-sources = glob(["**/*.cc", "**/*.cpp"])
+sources = glob(["**/*.cc", "**/*.cpp"], allow_empty = True)
 
 cc_library(
     name = "rv-wh",

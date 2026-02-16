@@ -1,5 +1,11 @@
-# Exports for tt_elffile — used by the firmware weakening host tool.
-# The full llrt library will be added here as the Bazel migration continues.
+# llrt — Low-Level Runtime for TT-Metalium.
+# Mirrors the CMake OBJECT library: Metalium::Metal::LLRT
+#
+# Provides device cluster management, HAL initialization, TLB configuration,
+# ELF loading, core descriptors, and runtime options. The HAL sub-libraries
+# (Wormhole, Blackhole, Quasar) are in hal/tt-1xx/ and hal/tt-2xx/.
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -19,6 +25,78 @@ cc_library(
         "-DELF_STANDALONE",
         "-DELF_STANDALONE_NO_MAIN",
     ],
-    strip_include_prefix = "",
     include_prefix = "tt_metal/llrt",
+    strip_include_prefix = "",
+)
+
+# Header-only target for llrt — breaks the circular dependency with impl/.
+#
+# In CMake, llrt and impl are OBJECT libraries merged into one .so.
+# Source files in impl/ and HAL #include llrt headers (e.g., "llrt/hal.hpp",
+# "llrt/rtoptions.hpp") without linking against llrt's .cpp files.
+# This target exports just the headers so that impl_hdrs and HAL targets
+# can compile without creating a dependency cycle.
+cc_library(
+    name = "llrt_hdrs",
+    hdrs = glob([
+        "*.hpp",
+        "*.h",
+        "llrt_common/*.hpp",
+    ]),
+    # includes = ["."] makes "hal.hpp" and "rtoptions.hpp" resolve.
+    # includes = [".."] makes "llrt/hal.hpp" resolve (needed by downstream).
+    includes = [
+        ".",
+        "..",
+    ],
+    deps = [
+        "//tt_metal/api:common_api_hdrs",
+        "//tt_metal/api:llrt_api_hdrs",
+        "//tt_metal/hostdevcommon",
+        "//tt_metal/hw",
+        "//tt_metal/llrt/hal:hal_generated_hdrs",
+        "//tt_metal/third_party/umd/device",
+        "//tt_stl",
+        "@enchantum//:enchantum",
+        "@fmt",
+        "@yaml-cpp",
+    ],
+)
+
+# Full llrt library — compiles all 11 source files.
+cc_library(
+    name = "llrt",
+    srcs = [
+        "core_descriptor.cpp",
+        "firmware_capability.cpp",
+        "hal.cpp",
+        "llrt.cpp",
+        "metal_soc_descriptor.cpp",
+        "rtoptions.cpp",
+        "tlb_config.cpp",
+        "tt_cluster.cpp",
+        "tt_elffile.cpp",
+        "tt_memory.cpp",
+        "tunnels_from_mmio_device.cpp",
+    ],
+    copts = [
+        "-Wno-int-to-pointer-cast",
+        '-DTT_METAL_INSTALL_ROOT=\\"/usr/libexec/tt-metalium\\"',
+    ],
+    deps = [
+        ":llrt_hdrs",
+        # HAL sub-libraries (PRIVATE in CMake)
+        "//tt_metal/llrt/hal/tt-1xx:hal_1xx",
+        "//tt_metal/llrt/hal/tt-2xx:hal_2xx",
+        # Internal
+        "//tt_metal/common",
+        "//tt_metal/impl:impl_hdrs",
+        "//tt_metal/third_party:tracy",
+        # External
+        "@enchantum//:enchantum",
+        "@nlohmann_json//:json",
+        "@reflect//:reflect_lib",
+        "@tt_logger//:tt_logger",
+        "@yaml-cpp",
+    ],
 )

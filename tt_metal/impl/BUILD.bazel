@@ -1,0 +1,38 @@
+# impl — header-only subset for breaking the llrt ↔ impl circular dependency.
+#
+# In CMake, llrt and impl are both OBJECT libraries merged into a single
+# monolithic tt_metal.so. Source files in llrt/ #include headers from impl/
+# (e.g., impl/context/metal_context.hpp, impl/dispatch/dispatch_settings.hpp)
+# but do not link against impl's .cpp files at this stage.
+#
+# This header-only target exports the impl/ headers that llrt and HAL need
+# for compilation, deferring the actual linking to the monolithic tt_metal
+# target that will consume both //tt_metal/llrt and //tt_metal/impl.
+#
+# The full impl cc_library (with all ~108 .cpp files) will be added in
+# issue tt-metal-xzb (Convert tt_metal/impl to Bazel BUILD targets).
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+package(default_visibility = ["//tt_metal:__subpackages__"])
+
+cc_library(
+    name = "impl_hdrs",
+    hdrs = [
+        "allocator/allocator_types.hpp",
+        "context/metal_context.hpp",
+        "dispatch/dispatch_core_common.hpp",
+        "dispatch/dispatch_settings.hpp",
+    ],
+    # includes = [".."] puts tt_metal/ on the include path, allowing
+    # #include "impl/context/metal_context.hpp" to resolve.
+    includes = [".."],
+    deps = [
+        "//tt_metal/api:common_api_hdrs",
+        "//tt_metal/api:llrt_api_hdrs",
+        "//tt_metal/hostdevcommon",
+        "//tt_metal/llrt:llrt_hdrs",
+        "//tt_metal/third_party/umd/device",
+        "//tt_stl",
+    ],
+)

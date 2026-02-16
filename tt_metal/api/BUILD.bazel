@@ -57,6 +57,36 @@ fbs_library(
     ],
 )
 
+# API headers for types used by llrt, HAL, and impl.
+# Includes: hal_types, dispatch_core_common, data_types, cluster,
+# distributed_context, fabric types, and circular_buffer_constants.
+cc_library(
+    name = "llrt_api_hdrs",
+    hdrs = [
+        "tt-metalium/circular_buffer_constants.h",
+        "tt-metalium/cluster.hpp",
+        "tt-metalium/data_types.hpp",
+        "tt-metalium/dispatch_core_common.hpp",
+        "tt-metalium/distributed_context.hpp",
+        "tt-metalium/experimental/fabric/control_plane.hpp",
+        "tt-metalium/experimental/fabric/fabric_types.hpp",
+        "tt-metalium/experimental/fabric/mesh_graph.hpp",
+        "tt-metalium/experimental/fabric/mesh_graph_descriptor.hpp",
+        "tt-metalium/experimental/fabric/routing_table_generator.hpp",
+        "tt-metalium/hal_types.hpp",
+        "tt-metalium/tt_align.hpp",
+    ],
+    includes = [
+        ".",
+        "tt-metalium",
+    ],
+    deps = [
+        ":common_api_hdrs",
+        "//tt_stl",
+        "//tt_metal/third_party/umd/device",
+    ],
+)
+
 cc_fbs_library(
     name = "mesh_coordinate_cc_fbs",
     srcs = ["tt-metalium/serialized_descriptors/mesh_coordinate.fbs"],

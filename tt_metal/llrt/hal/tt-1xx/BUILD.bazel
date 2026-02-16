@@ -1,0 +1,82 @@
+# HAL 1xx — Hardware Abstraction Layer for Wormhole and Blackhole chips.
+# Mirrors CMake targets: wh_hal (OBJECT), bh_hal (OBJECT), hal_1xx (STATIC, alias HAL::1xx)
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+package(default_visibility = ["//tt_metal:__subpackages__"])
+
+_HAL_DEPS = [
+    "//tt_metal/llrt:llrt_hdrs",
+    "//tt_metal/llrt/hal:hal_generated_hdrs",
+    "//tt_metal/hw",
+    "//tt_metal/third_party/umd/device",
+    "//tt_stl",
+    "//tt_metal/third_party:tracy",
+    "//tt_metal/impl:impl_hdrs",
+    "//tt_metal/api:common_api_hdrs",
+    "//tt_metal/api:llrt_api_hdrs",
+    "@fmt",
+    "@tt_logger//:tt_logger",
+    "@enchantum//:enchantum",
+]
+
+cc_library(
+    name = "wh_hal",
+    srcs = [
+        "wormhole/wh_hal.cpp",
+        "wormhole/wh_hal_tensix.cpp",
+        "wormhole/wh_hal_active_eth.cpp",
+        "wormhole/wh_hal_idle_eth.cpp",
+    ],
+    hdrs = glob(["wormhole/*.hpp"]) + [
+        # Shared across wh_hal, bh_hal, and hal_1xx.
+        "hal_1xx_common.hpp",
+    ],
+    copts = [
+        "-isystem tt_metal/hw/inc/internal/tt-1xx/wormhole",
+        "-isystem tt_metal/hw/inc/internal/tt-1xx/wormhole/wormhole_b0_defines",
+    ],
+    includes = ["."],
+    deps = _HAL_DEPS + [
+        "//tt_metal/hw/inc/internal/tt-1xx/wormhole:rv-wh-hdrs",
+    ],
+)
+
+cc_library(
+    name = "bh_hal",
+    srcs = [
+        "blackhole/bh_hal.cpp",
+        "blackhole/bh_hal_tensix.cpp",
+        "blackhole/bh_hal_active_eth.cpp",
+        "blackhole/bh_hal_idle_eth.cpp",
+    ],
+    hdrs = glob(["blackhole/*.hpp"]) + [
+        "hal_1xx_common.hpp",
+    ],
+    copts = [
+        "-isystem tt_metal/hw/inc/internal/tt-1xx/blackhole",
+    ],
+    includes = ["."],
+    deps = _HAL_DEPS + [
+        "//tt_metal/hw/inc/internal/tt-1xx/blackhole:rv-bh-hdrs",
+    ],
+)
+
+cc_library(
+    name = "hal_1xx",
+    srcs = ["hal_1xx_common.cpp"],
+    includes = ["."],
+    deps = [
+        ":wh_hal",
+        ":bh_hal",
+        "//tt_metal/hw",
+        "//tt_metal/third_party/umd/device",
+        "//tt_stl",
+        "//tt_metal/impl:impl_hdrs",
+        "//tt_metal/api:common_api_hdrs",
+        "//tt_metal/api:llrt_api_hdrs",
+        "//tt_metal/llrt:llrt_hdrs",
+        "@fmt",
+        "@tt_logger//:tt_logger",
+    ],
+)

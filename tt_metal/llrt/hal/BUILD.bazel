@@ -1,0 +1,51 @@
+# HAL codegen — generates architecture-agnostic struct accessors from
+# host↔device message headers (dev_msgs.h, fabric_telemetry_msgs.h).
+#
+# The codegen.sh script invokes codegen.py to parse C struct definitions
+# and emit StructView-based accessor headers that HAL uses to provide
+# architecture-independent access to per-core mailbox structures.
+#
+# Mirrors the CMake custom target: hal_generate_dev_msgs_header
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+package(default_visibility = ["//tt_metal:__subpackages__"])
+
+genrule(
+    name = "hal_dev_msgs_gen",
+    srcs = [
+        "codegen/codegen.py",
+        "codegen/codegen.sh",
+        "//tt_metal/hw:inc/hostdev/dev_msgs.h",
+        "//tt_metal/hw:inc/hostdev/fabric_telemetry_msgs.h",
+    ],
+    outs = [
+        "generated/dev_msgs.hpp",
+        "generated/dev_msgs_impl.hpp",
+        "generated/fabric_telemetry.hpp",
+        "generated/fabric_telemetry_impl.hpp",
+    ],
+    cmd = " ".join([
+        # Derive SRC_ROOT from the location of dev_msgs.h
+        # (strip tt_metal/hw/inc/hostdev/dev_msgs.h to get workspace root).
+        "SRC_ROOT=$$(dirname $(location //tt_metal/hw:inc/hostdev/dev_msgs.h))/../../../..;",
+        "OUT_DIR=$$(dirname $(location generated/dev_msgs.hpp));",
+        "bash $(location codegen/codegen.sh) \"$$SRC_ROOT\" \"$$OUT_DIR\"",
+    ]),
+)
+
+# Header-only library wrapping the generated HAL struct accessor headers.
+# Consumers get the generated dev_msgs.hpp and fabric_telemetry.hpp headers
+# which provide StructView-based accessors for host↔device message structs.
+#
+# Include path: "hal/generated/dev_msgs.hpp" resolves when the consumer
+# has tt_metal/llrt/ on its include path (via the llrt target's includes).
+cc_library(
+    name = "hal_generated_hdrs",
+    hdrs = [":hal_dev_msgs_gen"],
+    # No includes needed here — consumers access these via "hal/generated/..."
+    # relative to the llrt include root (tt_metal/llrt/).
+    deps = [
+        "//tt_metal/hostdevcommon",
+    ],
+)

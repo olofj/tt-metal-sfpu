@@ -177,9 +177,16 @@ cc_library(
         [
             "inc/hostdev/**/*.h",
             "inc/hostdev/**/*.hpp",
+            # Common internal headers shared across architectures (e.g., risc_attribs.h).
+            # Included by arch-specific headers via "internal/risc_attribs.h".
+            "inc/internal/*.h",
+            "inc/internal/*.hpp",
         ],
         allow_empty = True,
     ),
+    # Matches CMake: target_include_directories(hw INTERFACE ${PROJECT_SOURCE_DIR}/tt_metal/hw/inc)
+    # Allows consumers to #include "hostdev/dev_msgs.h" and "internal/risc_attribs.h".
+    includes = ["inc"],
 )
 
 filegroup(
