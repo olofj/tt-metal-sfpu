@@ -129,6 +129,7 @@ cc_toolchain_config(
         "/usr/include/x86_64-linux-gnu/c++/12",
         "/usr/lib/gcc/x86_64-linux-gnu/12/include",
         "/usr/include",
+        "/usr/lib/linux/uapi/x86",
     ],
 )
 
@@ -174,6 +175,7 @@ cc_toolchain_config(
         "/usr/include/x86_64-linux-gnu/c++/14",
         "/usr/lib/gcc/x86_64-linux-gnu/14/include",
         "/usr/include",
+        "/usr/lib/linux/uapi/x86",
     ],
 )
 

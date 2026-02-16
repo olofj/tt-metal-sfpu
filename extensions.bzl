@@ -87,6 +87,31 @@ def _non_bcr_deps_impl(module_ctx):
         build_file = "//third_party:tt_logger.BUILD",
     )
 
+    # FlatBuffers 24.3.25 — C++ headers only.
+    # The BCR module depends on rules_swift which conflicts with Bazel 9.
+    http_archive(
+        name = "flatbuffers",
+        urls = ["https://github.com/google/flatbuffers/archive/refs/tags/v24.3.25.tar.gz"],
+        strip_prefix = "flatbuffers-24.3.25",
+        build_file = "//third_party:flatbuffers.BUILD",
+    )
+
+    # picosha2 v1.0.1 — header-only SHA256 library (used by UMD)
+    http_archive(
+        name = "picosha2",
+        urls = ["https://github.com/okdshin/PicoSHA2/archive/refs/tags/v1.0.1.tar.gz"],
+        strip_prefix = "PicoSHA2-1.0.1",
+        build_file = "//third_party:picosha2.BUILD",
+    )
+
+    # Standalone ASIO asio-1-30-2 — header-only async I/O (used by UMD)
+    http_archive(
+        name = "asio",
+        urls = ["https://github.com/chriskohlhoff/asio/archive/refs/tags/asio-1-30-2.tar.gz"],
+        strip_prefix = "asio-asio-1-30-2",
+        build_file = "//third_party:asio.BUILD",
+    )
+
 non_bcr_deps = module_extension(
     implementation = _non_bcr_deps_impl,
 )
