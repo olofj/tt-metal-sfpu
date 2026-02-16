@@ -1,0 +1,625 @@
+# tt_metal C++ unit tests — gtest-based test targets.
+#
+# Mirrors the CMake test executables from tests/tt_metal/tt_metal/CMakeLists.txt
+# and all subdirectory CMakeLists.txt files. Each test suite gets its own cc_test
+# target for fine-grained affected-target analysis.
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
+package(default_visibility = ["//tests:__subpackages__"])
+
+# Shared test fixture and utility headers for tt_metal tests.
+# These are used by almost all tt_metal test subdirectories.
+cc_library(
+    name = "test_fixtures",
+    testonly = True,
+    hdrs = glob([
+        "common/*.hpp",
+    ]),
+    deps = [
+        "//tests:test_metal_common_libs",
+    ],
+)
+
+# Test kernel files used at runtime via JIT compilation.
+# Declared as data dependencies for tests that reference them.
+filegroup(
+    name = "test_kernels",
+    srcs = glob(["test_kernels/**"]),
+)
+
+# Test utilities are in //tests/tt_metal:test_utils (parent package).
+
+# --------------------------------------------------------------------------
+# Legacy tests (monolithic executable in CMake, individual targets in Bazel)
+# --------------------------------------------------------------------------
+
+[cc_test(
+    name = src.replace(".cpp", ""),
+    srcs = [src],
+    data = [":test_kernels"],
+    deps = [
+        ":test_fixtures",
+        "//tests/tt_metal:test_utils",
+        "//tests:test_metal_common_libs",
+    ],
+    tags = ["unit", "tt_metal", "legacy"],
+) for src in [
+    "test_add_two_ints.cpp",
+    "test_bcast.cpp",
+    "test_bfp8_conversion.cpp",
+    "test_bmm.cpp",
+    "test_compile_program.cpp",
+    "test_compile_sets_kernel_binaries.cpp",
+    "test_core_range_set.cpp",
+    "test_datacopy.cpp",
+    "test_datacopy_bfp8b.cpp",
+    "test_datacopy_output_in_l1.cpp",
+    "test_dm_loopback.cpp",
+    "test_dram_copy_sticks_multi_core.cpp",
+    "test_dram_loopback_single_core.cpp",
+    "test_eltwise_binary.cpp",
+    "test_generic_binary_reader_matmul_large_block.cpp",
+    "test_interleaved_l1_buffer.cpp",
+    "test_interleaved_layouts.cpp",
+    "test_matmul_single_tile_bfp8b.cpp",
+    "test_matmul_single_tile_output_in_l1.cpp",
+    "test_multi_core_kernel.cpp",
+    "test_multi_dm_add_two_ints.cpp",
+    "test_multiple_programs.cpp",
+    "test_quasar_basic_trisc.cpp",
+    "test_sdpa_reduce_c.cpp",
+    "test_single_dm_l1_write.cpp",
+    "test_stress_noc_mcast.cpp",
+    "test_transpose_hc.cpp",
+    "test_untilize_eltwise_binary.cpp",
+    "test_unaligned_read_write_core.cpp",
+]]
+
+# --------------------------------------------------------------------------
+# Standalone non-gtest executable
+# --------------------------------------------------------------------------
+
+cc_test(
+    name = "test_clean_init",
+    srcs = ["test_clean_init.cpp"],
+    data = [":test_kernels"],
+    deps = [
+        ":test_fixtures",
+        "//tests/tt_metal:test_utils",
+        "//tt_metal:tt_metal",
+    ],
+    tags = ["unit", "tt_metal"],
+)
+
+# --------------------------------------------------------------------------
+# API tests
+# --------------------------------------------------------------------------
+
+[cc_test(
+    name = "api_" + src.replace("/", "_").replace(".cpp", ""),
+    srcs = ["api/" + src],
+    data = [":test_kernels"],
+    deps = [
+        ":test_fixtures",
+        "//tests/tt_metal:test_utils",
+        "//tests:test_metal_common_libs",
+        "@boost.smart_ptr",
+    ],
+    tags = ["unit", "tt_metal", "api"],
+) for src in [
+    "allocator/test_free_list_opt_allocator.cpp",
+    "allocator/test_l1_banking_allocator.cpp",
+    "allocator/test_overlapped_bank_manager.cpp",
+    "circular_buffer/test_CircularBuffer_allocation.cpp",
+    "circular_buffer/test_CircularBuffer_creation.cpp",
+    "circular_buffer/test_CircularBuffer_non_blocking.cpp",
+    "circular_buffer/test_CircularBuffer_wrapping.cpp",
+    "core_coord/test_CoreRange_adjacent.cpp",
+    "core_coord/test_CoreRange_contains.cpp",
+    "core_coord/test_CoreRange_intersects.cpp",
+    "core_coord/test_CoreRange_iterator.cpp",
+    "core_coord/test_CoreRange_merge.cpp",
+    "core_coord/test_CoreRangeSet_construct.cpp",
+    "core_coord/test_CoreRangeSet_contains.cpp",
+    "core_coord/test_CoreRangeSet_intersects.cpp",
+    "core_coord/test_CoreRangeSet_merge.cpp",
+    "dataflow_buffer/test_dataflow_buffer.cpp",
+    "dataflow_buffer/test_dataflow_buffer_configs.cpp",
+    "distribution_spec/test_buffer_distribution_spec.cpp",
+    "tensor/test_tensor_sharding.cpp",
+    "test_banked.cpp",
+    "test_bit_utils.cpp",
+    "test_buffer_region.cpp",
+    "test_compile_time_args.cpp",
+    "test_compile_defines.cpp",
+    "test_direct.cpp",
+    "test_dram_to_l1_multicast.cpp",
+    "test_dram.cpp",
+    "test_global_circular_buffers.cpp",
+    "test_global_semaphores.cpp",
+    "test_host_buffer.cpp",
+    "test_kernel_compile_cache.cpp",
+    "test_kernel_creation.cpp",
+    "test_memory_pin.cpp",
+    "test_noc.cpp",
+    "test_runtime_args.cpp",
+    "test_semaphores.cpp",
+    "test_shape_base.cpp",
+    "test_sharded_l1_buffer.cpp",
+    "test_simple_dram_buffer.cpp",
+    "test_simple_l1_buffer.cpp",
+    "test_soc_descriptor.cpp",
+    "test_stream_scratch_register.cpp",
+    "test_tilize_untilize.cpp",
+    "test_worker_config_buffer.cpp",
+    "test_blockfloat_common.cpp",
+    "test_duplicate_kernel.cpp",
+    "test_core_local_mem_api.cpp",
+]]
+
+# --------------------------------------------------------------------------
+# Dispatch tests (smoke / basic / slow tiers)
+# --------------------------------------------------------------------------
+
+[cc_test(
+    name = "dispatch_" + src.replace("/", "_").replace(".cpp", ""),
+    srcs = ["dispatch/" + src],
+    data = [":test_kernels"],
+    deps = [
+        ":test_fixtures",
+        "//tests/tt_metal:test_utils",
+        "//tests:test_metal_common_libs",
+    ],
+    tags = ["smoke", "tt_metal", "dispatch"],
+) for src in [
+    "dispatch_device/test_enqueue_read_write_core.cpp",
+    "dispatch_event/test_EnqueueWaitForEvent.cpp",
+    "dispatch_event/test_events.cpp",
+    "dispatch_program/test_dispatch_stress.cpp",
+    "dispatch_program/test_sub_device.cpp",
+    "dispatch_program/test_kernel_config_buffer.cpp",
+    "dispatch_util/test_device_command.cpp",
+    "dispatch_util/test_dispatch_settings.cpp",
+]]
+
+[cc_test(
+    name = "dispatch_" + src.replace("/", "_").replace(".cpp", ""),
+    srcs = ["dispatch/" + src],
+    data = [":test_kernels"],
+    deps = [
+        ":test_fixtures",
+        "//tests/tt_metal:test_utils",
+        "//tests:test_metal_common_libs",
+    ],
+    tags = ["basic", "tt_metal", "dispatch"],
+) for src in [
+    "dispatch_buffer/test_sub_device.cpp",
+    "dispatch_buffer/test_BufferCorePageMapping_Iterator.cpp",
+    "dispatch_program/test_dispatch.cpp",
+    "dispatch_program/test_dataflow_cb.cpp",
+    "dispatch_program/test_global_circular_buffers.cpp",
+    "dispatch_trace/test_sub_device.cpp",
+    "dispatch_util/test_ringbuffer_cache.cpp",
+]]
+
+[cc_test(
+    name = "dispatch_" + src.replace("/", "_").replace(".cpp", ""),
+    srcs = ["dispatch/" + src],
+    data = [":test_kernels"],
+    deps = [
+        ":test_fixtures",
+        "//tests/tt_metal:test_utils",
+        "//tests:test_metal_common_libs",
+    ],
+    size = "large",
+    tags = ["slow", "tt_metal", "dispatch"],
+) for src in [
+    "dispatch_buffer/test_EnqueueWriteBuffer_and_EnqueueReadBuffer.cpp",
+    "dispatch_buffer/test_large_mesh_buffer.cpp",
+    "dispatch_program/test_EnqueueProgram.cpp",
+    "dispatch_trace/test_EnqueueTrace.cpp",
+]]
+
+# --------------------------------------------------------------------------
+# Device tests
+# --------------------------------------------------------------------------
+
+[cc_test(
+    name = "device_" + src.replace(".cpp", ""),
+    srcs = ["device/" + src],
+    data = [":test_kernels"],
+    deps = [
+        ":test_fixtures",
+        "//tests/tt_metal:test_utils",
+        "//tests:test_metal_common_libs",
+    ],
+    tags = ["smoke", "tt_metal", "device"],
+) for src in [
+    "test_device_init_and_teardown.cpp",
+    "test_device_cluster_api.cpp",
+    "test_device_pool.cpp",
+    "test_device.cpp",
+    "test_simulator_device.cpp",
+    "test_galaxy_cluster_api.cpp",
+    "test_mock_device_api.cpp",
+    "test_release_ownership.cpp",
+]]
+
+# --------------------------------------------------------------------------
+# Data movement tests
+# --------------------------------------------------------------------------
+
+cc_library(
+    name = "dm_common",
+    testonly = True,
+    srcs = ["data_movement/dm_common.cpp"],
+    hdrs = ["data_movement/dm_common.hpp"],
+    deps = [
+        ":test_fixtures",
+        "//tests/tt_metal:test_utils",
+        "//tests:test_metal_common_libs",
+    ],
+)
+
+[cc_test(
+    name = "data_movement_" + src.replace("/", "_").replace(".cpp", ""),
+    srcs = ["data_movement/" + src],
+    data = [":test_kernels"],
+    deps = [
+        ":dm_common",
+        ":test_fixtures",
+        "//tests/tt_metal:test_utils",
+        "//tests:test_metal_common_libs",
+    ],
+    tags = ["unit", "tt_metal", "data_movement"],
+) for src in [
+    "dram_unary/test_unary_dram.cpp",
+    "one_to_all/test_one_to_all.cpp",
+    "one_to_all/test_multicast_schemes.cpp",
+    "loopback/test_loopback.cpp",
+    "reshard_hardcoded/test_reshard_hardcoded.cpp",
+    "deinterleave_hardcoded/test_deinterleave_hardcoded.cpp",
+    "conv_hardcoded/test_conv_hardcoded.cpp",
+    "one_to_one/test_one_to_one.cpp",
+    "one_from_one/test_one_from_one.cpp",
+    "core_bidirectional/test_core_bidirectional.cpp",
+    "one_from_all/test_one_from_all.cpp",
+    "all_to_all/test_all_to_all.cpp",
+    "all_from_all/test_all_from_all.cpp",
+    "interleaved/test_interleaved.cpp",
+    "one_packet/test_one_packet.cpp",
+    "interleaved_to_sharded_hardcoded/test_interleaved_to_sharded_hardcoded.cpp",
+    "multi_interleaved/test_multi_interleaved.cpp",
+    "dram_sharded/test_dram_sharded.cpp",
+    "transaction_id/test_transaction_id.cpp",
+    "direct_write/test_direct_write.cpp",
+    "pcie_read_bw/test_pcie_read_bw.cpp",
+    "atomics/test_atomic_semaphore_bandwidth.cpp",
+    "multicast_atomics/test_multicast_atomic_semaphore.cpp",
+    "noc_api_latency/test_noc_api_latency.cpp",
+]]
+
+# --------------------------------------------------------------------------
+# Debug tools tests
+# --------------------------------------------------------------------------
+
+[cc_test(
+    name = "debug_tools_" + src.replace("/", "_").replace(".cpp", ""),
+    srcs = ["debug_tools/" + src],
+    data = [":test_kernels"],
+    deps = [
+        ":test_fixtures",
+        "//tests/tt_metal:test_utils",
+        "//tests:test_metal_common_libs",
+    ],
+    tags = ["unit", "tt_metal", "debug_tools"],
+) for src in [
+    "dprint/test_eth_cores.cpp",
+    "dprint/test_invalid_print_core.cpp",
+    "dprint/test_mute_device.cpp",
+    "dprint/test_mute_print_server.cpp",
+    "dprint/test_print_buffering.cpp",
+    "dprint/test_print_all_harts.cpp",
+    "dprint/test_print_before_finish.cpp",
+    "dprint/test_print_prepend_device_core_risc.cpp",
+    "dprint/test_print_tensix_dest.cpp",
+    "dprint/test_print_tile.cpp",
+    "dprint/test_print_tiles_multiple.cpp",
+    "dprint/test_print_config_register.cpp",
+    "watcher/test_assert.cpp",
+    "watcher/test_link_training.cpp",
+    "watcher/test_noc_sanitize_delays.cpp",
+    "watcher/test_sanitize.cpp",
+    "watcher/test_pause.cpp",
+    "watcher/test_ringbuf.cpp",
+    "watcher/test_stack_usage.cpp",
+    "watcher/test_waypoint.cpp",
+    "watcher/test_runtime_args_known_garbage.cpp",
+]]
+
+# Inspector RPC test — requires //tt_metal/impl visibility to be opened to //tests.
+# Also depends on capnp-rpc and numa. Disabled until impl visibility is updated.
+# TODO: Add //tests to //tt_metal/impl visibility and re-enable.
+# cc_test(
+#     name = "debug_tools_inspector_test_rpc_startup",
+#     srcs = ["debug_tools/inspector/test_rpc_startup.cpp"],
+#     copts = ["-DKJ_NO_EXCEPTIONS=0"],
+#     data = [":test_kernels"],
+#     deps = [
+#         ":test_fixtures",
+#         "//tests/tt_metal:test_utils",
+#         "//tests:test_metal_common_libs",
+#         "//tt_metal/impl",
+#         "@capnproto//src/capnp",
+#         "@capnproto//src/capnp:capnp-rpc",
+#         "//third_party/system:numa",
+#     ],
+#     tags = ["unit", "tt_metal", "debug_tools", "inspector"],
+# )
+
+# --------------------------------------------------------------------------
+# Ethernet tests
+# --------------------------------------------------------------------------
+
+[cc_test(
+    name = "eth_" + src.replace(".cpp", ""),
+    srcs = ["eth/" + src],
+    data = [":test_kernels"],
+    deps = [
+        ":test_fixtures",
+        "//tests/tt_metal:test_utils",
+        "//tests:test_metal_common_libs",
+    ],
+    tags = ["unit", "tt_metal", "ethernet", "requires_multi_device"],
+) for src in [
+    "test_basic_eth.cpp",
+    "test_buffer_movement_kernels.cpp",
+    "test_erisc_app_direct_send.cpp",
+    "test_eth_multi_txq_rxq.cpp",
+    "test_ring_gather_kernels.cpp",
+]]
+
+# --------------------------------------------------------------------------
+# Integration tests
+# --------------------------------------------------------------------------
+
+[cc_test(
+    name = "integration_" + src.replace("/", "_").replace(".cpp", ""),
+    srcs = ["integration/" + src],
+    data = [":test_kernels"],
+    deps = [
+        ":test_fixtures",
+        "//tests/tt_metal:test_utils",
+        "//tests:test_metal_common_libs",
+    ],
+    tags = ["unit", "tt_metal", "integration"],
+) for src in [
+    "test_basic_pipeline.cpp",
+    "test_flatten.cpp",
+    "test_sfpu_compute.cpp",
+    "matmul/test_matmul_large_block.cpp",
+    "matmul/test_matmul_multi_core_multi_dram_in0_mcast_in1_mcast.cpp",
+    "matmul/test_matmul_multi_core_multi_dram_inX_mcast.cpp",
+    "matmul/test_matmul_multi_core_X_dram.cpp",
+    "matmul/test_matmul_single_core.cpp",
+    "matmul/test_matmul_X_tile.cpp",
+    "vecadd/test_vecadd_multi_core.cpp",
+]]
+
+# --------------------------------------------------------------------------
+# LLK tests
+# --------------------------------------------------------------------------
+
+[cc_test(
+    name = "llk_" + src.replace(".cpp", ""),
+    srcs = ["llk/" + src],
+    data = [":test_kernels"],
+    deps = [
+        ":test_fixtures",
+        "//tests/tt_metal:test_utils",
+        "//tests:test_metal_common_libs",
+    ],
+    tags = ["unit", "tt_metal", "llk"],
+) for src in [
+    "test_broadcast.cpp",
+    "test_compute_kernel_sentinel.cpp",
+    "test_copy_block_matmul_partials.cpp",
+    "test_cumsum.cpp",
+    "test_dropout_sfpu_compute.cpp",
+    "test_golden_impls.cpp",
+    "test_mul_reduce_scalar.cpp",
+    "test_pack_rows.cpp",
+    "test_reconfig.cpp",
+    "test_reduce.cpp",
+    "test_sfpu_compute.cpp",
+    "test_single_core_binary_compute.cpp",
+    "test_single_core_matmul_compute.cpp",
+    "test_stochastic_rounding.cpp",
+    "test_single_core_matmul_int8.cpp",
+    "test_transpose.cpp",
+    "test_unary_broadcast.cpp",
+    "test_untilize_tilize.cpp",
+]]
+
+# --------------------------------------------------------------------------
+# NOC tests
+# --------------------------------------------------------------------------
+
+cc_test(
+    name = "noc_test_dynamic_noc",
+    srcs = ["noc/test_dynamic_noc.cpp"],
+    data = [":test_kernels"],
+    deps = [
+        ":test_fixtures",
+        "//tests/tt_metal:test_utils",
+        "//tests:test_metal_common_libs",
+    ],
+    tags = ["unit", "tt_metal", "noc"],
+)
+
+# --------------------------------------------------------------------------
+# NOC debugging tests
+# --------------------------------------------------------------------------
+
+cc_test(
+    name = "noc_debugging_test_reads_writes",
+    srcs = ["noc_debugging/test_reads_writes.cpp"],
+    data = [":test_kernels"],
+    deps = [
+        ":test_fixtures",
+        "//tests/tt_metal:test_utils",
+        "//tests:test_metal_common_libs",
+    ],
+    tags = ["unit", "tt_metal", "noc_debugging"],
+)
+
+# --------------------------------------------------------------------------
+# Light metal tests
+# --------------------------------------------------------------------------
+
+cc_test(
+    name = "lightmetal_test_lightmetal",
+    srcs = ["lightmetal/test_lightmetal.cpp"],
+    data = [":test_kernels"],
+    deps = [
+        ":test_fixtures",
+        "//tests/tt_metal:test_utils",
+        "//tests:test_metal_common_libs",
+        "@flatbuffers//:flatbuffers",
+    ],
+    tags = ["unit", "tt_metal", "lightmetal"],
+)
+
+# --------------------------------------------------------------------------
+# SFPI tests
+# --------------------------------------------------------------------------
+
+cc_test(
+    name = "sfpi_test_sfpi",
+    srcs = ["sfpi/test_sfpi.cpp"],
+    data = [":test_kernels"],
+    deps = [
+        ":test_fixtures",
+        "//tests/tt_metal:test_utils",
+        "//tests:test_metal_common_libs",
+    ],
+    tags = ["unit", "tt_metal", "sfpi"],
+)
+
+# --------------------------------------------------------------------------
+# Misc tests
+# --------------------------------------------------------------------------
+
+cc_test(
+    name = "misc_test_tilize_untilize",
+    srcs = ["misc/test_tilize_untilize.cpp"],
+    data = [":test_kernels"],
+    deps = [
+        ":test_fixtures",
+        "//tests/tt_metal:test_utils",
+        "//tests:test_metal_common_libs",
+        "@boost.smart_ptr",
+    ],
+    tags = ["unit", "tt_metal", "misc"],
+)
+
+# --------------------------------------------------------------------------
+# JIT build tests
+# --------------------------------------------------------------------------
+
+cc_test(
+    name = "jit_build_test_depend",
+    srcs = ["jit_build/test_depend.cpp"],
+    data = [":test_kernels"],
+    deps = [
+        ":test_fixtures",
+        "//tests/tt_metal:test_utils",
+        "//tests:test_metal_common_libs",
+    ],
+    tags = ["unit", "tt_metal", "jit_build"],
+)
+
+# --------------------------------------------------------------------------
+# HAL codegen tests
+#
+# NOTE: This test requires a code generation step (codegen.py on test_msgs.h)
+# that is not yet converted to Bazel genrule. The CMake build runs:
+#   codegen.py --driver_ns tt::tt_metal::hal_structs ... test_msgs.h intf.h impl.h
+# TODO: Add genrule for codegen step and enable this test.
+# --------------------------------------------------------------------------
+
+# cc_test(
+#     name = "hal_codegen_test",
+#     srcs = ["hal_codegen/codegen_test.cpp"],
+#     deps = [
+#         "//tests:test_common_libs",
+#         "@enchantum//:enchantum",
+#     ],
+#     tags = ["unit", "tt_metal", "hal_codegen"],
+# )
+
+# --------------------------------------------------------------------------
+# Test suites for backward compatibility with CMake test groupings
+# --------------------------------------------------------------------------
+
+test_suite(
+    name = "unit_tests_legacy",
+    tags = ["legacy", "tt_metal"],
+)
+
+test_suite(
+    name = "unit_tests_api",
+    tags = ["api", "tt_metal"],
+)
+
+test_suite(
+    name = "unit_tests_dispatch",
+    tags = ["dispatch", "tt_metal"],
+)
+
+test_suite(
+    name = "unit_tests_device",
+    tags = ["device", "tt_metal"],
+)
+
+test_suite(
+    name = "unit_tests_data_movement",
+    tags = ["data_movement", "tt_metal"],
+)
+
+test_suite(
+    name = "unit_tests_debug_tools",
+    tags = ["debug_tools", "tt_metal"],
+)
+
+test_suite(
+    name = "unit_tests_eth",
+    tags = ["ethernet", "tt_metal"],
+)
+
+test_suite(
+    name = "unit_tests_integration",
+    tags = ["integration", "tt_metal"],
+)
+
+test_suite(
+    name = "unit_tests_llk",
+    tags = ["llk", "tt_metal"],
+)
+
+test_suite(
+    name = "metal_tests",
+    tests = [
+        ":unit_tests_legacy",
+        ":unit_tests_api",
+        ":unit_tests_dispatch",
+        ":unit_tests_device",
+        ":unit_tests_data_movement",
+        ":unit_tests_debug_tools",
+        ":unit_tests_eth",
+        ":unit_tests_integration",
+        ":unit_tests_llk",
+    ],
+)

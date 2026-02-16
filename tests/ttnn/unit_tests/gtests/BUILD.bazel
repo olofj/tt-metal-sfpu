@@ -1,0 +1,266 @@
+# TTNN C++ unit tests — gtest-based test targets.
+#
+# Mirrors the CMake test executables from tests/ttnn/unit_tests/gtests/CMakeLists.txt.
+# Each test source file gets its own cc_test target for fine-grained affected-target
+# analysis (bazel query rdeps).
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
+package(default_visibility = ["//tests:__subpackages__"])
+
+# Shared test utility library (PCC correlation, dispatch ops).
+# Mirrors CMake's test_common_utils STATIC library.
+cc_library(
+    name = "test_common_utils",
+    testonly = True,
+    srcs = ["common_test_utils.cpp"],
+    hdrs = [
+        "common_test_utils.hpp",
+        "ttnn_test_fixtures.hpp",
+    ],
+    deps = [
+        "//tests:test_common_libs",
+        "//ttnn:ttnn_core",
+    ],
+)
+
+# --------------------------------------------------------------------------
+# Smoke tests (fast validation)
+# --------------------------------------------------------------------------
+
+[cc_test(
+    name = src.replace(".cpp", ""),
+    srcs = [src],
+    deps = [
+        ":test_common_utils",
+        "//tests:test_common_libs",
+        "//ttnn:ttnn_core",
+    ],
+    tags = ["smoke", "ttnn"],
+) for src in [
+    "test_reflect.cpp",
+    "test_to_and_from_json.cpp",
+    "test_sliding_window_infra.cpp",
+    "test_async_runtime.cpp",
+    "test_conv2d.cpp",
+    "test_multi_cq_multi_dev.cpp",
+    "test_multiprod_queue.cpp",
+]]
+
+# --------------------------------------------------------------------------
+# Basic tests
+# --------------------------------------------------------------------------
+
+[cc_test(
+    name = src.replace(".cpp", ""),
+    srcs = [src],
+    deps = [
+        "//tests:test_common_libs",
+        "//ttnn:ttnn_core",
+    ],
+    tags = ["basic", "ttnn"],
+) for src in [
+    "test_add.cpp",
+    "test_add_int.cpp",
+    "test_broadcast_to.cpp",
+    "test_convert_to_hwc_gather.cpp",
+    "test_generic_op.cpp",
+    "test_graph_add.cpp",
+    "test_graph_basic.cpp",
+    "test_levelized_graph.cpp",
+    "test_graph_capture_arguments_morehdot.cpp",
+    "test_graph_capture_arguments_transpose.cpp",
+    "test_graph_query_op_constraints.cpp",
+    "test_graph_query_op_runtime.cpp",
+    "test_launch_operation.cpp",
+    "test_relational_int.cpp",
+    "test_rsub_int.cpp",
+    "test_sub_int.cpp",
+]]
+
+# --------------------------------------------------------------------------
+# CCL tests (require multi-device hardware)
+# --------------------------------------------------------------------------
+
+[cc_test(
+    name = src.replace("/", "_").replace(".cpp", ""),
+    srcs = [src],
+    deps = [
+        "//tests:test_common_libs",
+        "//ttnn:ttnn_core",
+    ],
+    tags = ["unit", "ttnn", "ccl", "requires_multi_device"],
+) for src in [
+    "ccl/test_ccl_commands.cpp",
+    "ccl/test_ccl_helpers.cpp",
+    "ccl/test_ccl_reduce_scatter_host_helpers.cpp",
+    "ccl/test_ccl_tensor_slicers.cpp",
+    "ccl/test_erisc_data_mover_with_workers.cpp",
+    "ccl/test_fabric_erisc_data_mover_loopback_with_workers.cpp",
+    "ccl/test_sharded_address_generators.cpp",
+    "ccl/test_sharded_address_generators_new.cpp",
+]]
+
+# --------------------------------------------------------------------------
+# CCL ops tests
+# --------------------------------------------------------------------------
+
+[cc_test(
+    name = src.replace("/", "_").replace(".cpp", ""),
+    srcs = [src],
+    deps = [
+        "//tests:test_common_libs",
+        "//ttnn:ttnn_core",
+    ],
+    tags = ["unit", "ttnn", "ccl", "requires_multi_device"],
+) for src in [
+    "ccl/test_persistent_fabric_ccl_ops.cpp",
+    "ccl/test_send_recv_ops.cpp",
+]]
+
+# --------------------------------------------------------------------------
+# CCL multi-tensor test
+# --------------------------------------------------------------------------
+
+cc_test(
+    name = "test_multi_tensor_ccl",
+    srcs = ["ccl/test_multi_tensor_ccl.cpp"],
+    deps = [
+        "//tests:test_common_libs",
+        "//ttnn:ttnn_core",
+    ],
+    tags = ["unit", "ttnn", "ccl", "requires_multi_device"],
+)
+
+# --------------------------------------------------------------------------
+# Accessor tests
+# --------------------------------------------------------------------------
+
+cc_library(
+    name = "accessor_common",
+    testonly = True,
+    srcs = ["accessor/common.cpp"],
+    hdrs = ["accessor/common.hpp"],
+    deps = [
+        "//tests:test_common_libs",
+        "//ttnn:ttnn_core",
+        "//tt_metal/hw",
+    ],
+)
+
+[cc_test(
+    name = src.replace("/", "_").replace(".cpp", ""),
+    srcs = [src],
+    deps = [
+        ":accessor_common",
+        "//tests:test_common_libs",
+        "//ttnn:ttnn_core",
+        "//tt_metal/hw",
+    ],
+    tags = ["unit", "ttnn", "accessor"],
+) for src in [
+    "accessor/test_accessor_benchmarks.cpp",
+    "accessor/test_tensor_accessor.cpp",
+    "accessor/test_tensor_accessor_on_device.cpp",
+]]
+
+# --------------------------------------------------------------------------
+# Tensor tests
+# --------------------------------------------------------------------------
+
+cc_library(
+    name = "tensor_test_utils",
+    testonly = True,
+    srcs = ["tensor/common_tensor_test_utils.cpp"],
+    hdrs = ["tensor/common_tensor_test_utils.hpp"],
+    deps = [
+        "//tests:test_common_libs",
+        "//ttnn:ttnn_core",
+        "@xtensor//:xtensor",
+    ],
+)
+
+[cc_test(
+    name = src.replace("/", "_").replace(".cpp", ""),
+    srcs = ["tensor/" + src],
+    deps = [
+        ":tensor_test_utils",
+        "//tests:test_common_libs",
+        "//ttnn:ttnn_core",
+        "@xtensor//:xtensor",
+    ],
+    tags = ["unit", "ttnn", "tensor"],
+) for src in [
+    "test_create_tensor.cpp",
+    "test_create_tensor_multi_device.cpp",
+    "test_create_tensor_with_layout.cpp",
+    "test_distributed_tensor.cpp",
+    "test_tensor_topology.cpp",
+    "test_mesh_tensor.cpp",
+    "test_partition.cpp",
+    "test_tensor_layout.cpp",
+    "test_tensor_nd_sharding.cpp",
+    "test_tensor_serialization.cpp",
+    "test_unit_mesh_utils.cpp",
+    "test_vector_conversion.cpp",
+    "test_xtensor_adapter.cpp",
+    "test_xtensor_conversion.cpp",
+]]
+
+# --------------------------------------------------------------------------
+# Multi-CQ multi-device test
+#
+# NOTE: Disabled because @boost.asio has an unresolved @openssl dependency
+# in the current Bazel workspace. Re-enable when openssl is added to MODULE.bazel.
+# --------------------------------------------------------------------------
+
+# cc_test(
+#     name = "test_ccl_multi_cq_multi_device",
+#     srcs = ["multi_thread/test_ccl_multi_cq_multi_device.cpp"],
+#     deps = [
+#         ":test_common_utils",
+#         "//tests:test_common_libs",
+#         "//ttnn:ttnn_core",
+#         "@boost.asio",
+#     ],
+#     tags = ["unit", "ttnn", "ccl", "requires_multi_device"],
+# )
+
+# --------------------------------------------------------------------------
+# EmitC test
+# --------------------------------------------------------------------------
+
+cc_test(
+    name = "test_emitc_sanity",
+    srcs = ["emitc/test_sanity.cpp"],
+    deps = [
+        "//tests:test_common_libs",
+        "//ttnn:ttnn_core",
+    ],
+    tags = ["unit", "ttnn", "emitc"],
+)
+
+# --------------------------------------------------------------------------
+# Test suites for backward compatibility
+# --------------------------------------------------------------------------
+
+test_suite(
+    name = "smoke",
+    tags = ["smoke", "ttnn"],
+)
+
+test_suite(
+    name = "basic",
+    tags = ["basic", "ttnn"],
+)
+
+test_suite(
+    name = "ccl",
+    tags = ["ccl", "ttnn"],
+)
+
+test_suite(
+    name = "tensor",
+    tags = ["tensor", "ttnn"],
+)

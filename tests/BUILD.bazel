@@ -1,0 +1,36 @@
+# Test infrastructure — common libraries for all tt-metal and TTNN tests.
+#
+# Mirrors the CMake targets:
+#   - test_common_libs (INTERFACE library: gmock, json, fmt, boost, metalium)
+#   - test_metal_common_libs (extends test_common_libs with Metalium::Metal)
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+package(default_visibility = ["//tests:__subpackages__"])
+
+cc_library(
+    name = "test_common_libs",
+    testonly = True,
+    copts = [
+        "-Wno-c++11-narrowing",
+        "-Wno-narrowing",
+    ],
+    deps = [
+        "//tt_metal:tt_metal",
+        "@boost.algorithm",
+        "@com_google_googletest//:gtest_main",
+        "@enchantum//:enchantum",
+        "@fmt",
+        "@nlohmann_json//:json",
+        "@taskflow//:taskflow",
+    ],
+)
+
+cc_library(
+    name = "test_metal_common_libs",
+    testonly = True,
+    deps = [
+        ":test_common_libs",
+        "//tt_metal:tt_metal",
+    ],
+)

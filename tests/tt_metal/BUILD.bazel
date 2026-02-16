@@ -1,0 +1,23 @@
+# tt_metal test utilities — shared headers for all tt_metal tests.
+#
+# Mirrors the header-only utilities in tests/tt_metal/test_utils/.
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+package(default_visibility = ["//tests:__subpackages__"])
+
+cc_library(
+    name = "test_utils",
+    testonly = True,
+    hdrs = glob(
+        [
+            "test_utils/**/*.hpp",
+            "test_utils/**/*.h",
+        ],
+        allow_empty = True,
+    ),
+    includes = ["test_utils"],
+    deps = [
+        "//tests:test_metal_common_libs",
+    ],
+)
