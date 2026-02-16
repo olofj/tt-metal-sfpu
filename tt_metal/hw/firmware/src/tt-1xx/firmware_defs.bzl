@@ -4,16 +4,13 @@ Each firmware binary links a single .cc source file with pre-compiled
 support objects (crt0, noc, substitutes) and a preprocessed linker script
 to produce a bare-metal RISC-V ELF.
 
-Each firmware ELF is also "weakened" to produce a companion binary that can
-serve as a link library for JIT user kernels — this mirrors the runtime
-JitBuildState::weaken() call in tt_metal/jit_build/build.cpp (lines 583-597).
+This mirrors the JIT build flow in tt_metal/jit_build/build.cpp and the
+HAL query interfaces in tt_metal/llrt/hal/tt-1xx/.
 
 Build with:
     bazel build --config=sfpi-wormhole //tt_metal/hw/firmware/src/tt-1xx:all
     bazel build --config=sfpi-blackhole //tt_metal/hw/firmware/src/tt-1xx:all
 """
-
-load("//tt_metal/hw/toolchain:weaken_firmware.bzl", "weaken_firmware")
 
 # ===================================================================
 # Include paths matching tt_metal/hw/CMakeLists.txt (lines 353-380)
@@ -82,11 +79,7 @@ def firmware_binary(
         extra_linkopts = [],
         use_tmu_crt0 = True,
         **kwargs):
-    """Create a firmware cc_binary target and its weakened companion.
-
-    Produces two targets:
-      - {name}: The firmware ELF binary.
-      - {name}_weakened: The weakened ELF for use as a JIT link library.
+    """Create a firmware cc_binary target for a specific processor.
 
     Args:
         name: Target name (e.g., "brisc_wormhole").
@@ -122,14 +115,6 @@ def firmware_binary(
         ] + extra_linkopts,
         deps = deps,
         **kwargs
-    )
-
-    # Weakened companion — used by the JIT linker as a library for user kernels.
-    # Mirrors JitBuildState::weaken() in build.cpp (lines 583-597).
-    weaken_firmware(
-        name = name + "_weakened",
-        firmware = ":" + name,
-        out_name = name + "_weakened.elf",
     )
 
 def tensix_firmware(arch):
