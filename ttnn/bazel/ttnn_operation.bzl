@@ -41,6 +41,7 @@ def ttnn_operation(
         srcs,
         hdrs = [],
         kernel_hdrs = None,
+        extra_wheel_data = [],
         extra_deps = [],
         extra_hdrs_deps = [],
         extra_copts = [],
@@ -61,6 +62,9 @@ def ttnn_operation(
         kernel_hdrs: Device kernel files. If None, globs device/kernels/**.
             These are HEADERS in CMake (FILE_SET kernels) — they are shipped
             to the device for JIT compilation, not compiled by the host compiler.
+        extra_wheel_data: Additional files to include in the wheel's JIT data
+            beyond kernel_hdrs. Use this when JIT kernels reference headers
+            from outside the kernel directories (e.g., shared type definitions).
         extra_deps: Additional dependencies beyond TTNN::Core + TT::Metalium
             for the full library target. Use this for cross-operation deps
             needed by .cpp files.
@@ -121,6 +125,22 @@ def ttnn_operation(
         name = "nanobind_srcs",
         srcs = native.glob(
             ["**/*_nanobind.cpp"],
+            allow_empty = True,
+        ),
+        visibility = _visibility,
+    )
+
+    # Kernel data files for wheel packaging. Exports device kernel sources
+    # and any other data files that get bundled in the ttnn wheel for JIT
+    # compilation at runtime. Matches setup.py ttnn_cpp_patterns.
+    # Uses kernel_hdrs (which already covers device/kernels/**, kernels/**,
+    # etc. depending on the operation) plus kernels_ng/** for new-style kernels.
+    # extra_wheel_data adds headers that kernels reference outside kernel dirs
+    # (e.g., ccl/shared_with_host/, normalization/kernel_util/).
+    native.filegroup(
+        name = "wheel_kernel_data",
+        srcs = kernel_hdrs + extra_wheel_data + native.glob(
+            ["kernels_ng/**"],
             allow_empty = True,
         ),
         visibility = _visibility,

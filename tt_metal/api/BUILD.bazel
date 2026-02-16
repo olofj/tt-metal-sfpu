@@ -119,3 +119,17 @@ cc_library(
         "@nlohmann_json//:json",
     ],
 )
+
+# Headers bundled in the ttnn wheel for JIT compilation.
+# Matches setup.py tt_metal_patterns entries under api/tt-metalium/.
+filegroup(
+    name = "wheel_data",
+    srcs = [
+        "tt-metalium/buffer_types.hpp",
+        "tt-metalium/circular_buffer_constants.h",
+        "tt-metalium/constants.hpp",
+        "tt-metalium/experimental/fabric/edm_fabric_counters.hpp",
+        "tt-metalium/experimental/fabric/fabric_edm_types.hpp",
+    ],
+    visibility = ["//visibility:public"],
+)

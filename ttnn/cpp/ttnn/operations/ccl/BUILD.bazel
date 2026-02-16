@@ -54,6 +54,10 @@ ttnn_operation(
         exclude = ["**/*.hpp", "**/*.h"],
         allow_empty = True,
     ),
+    # JIT kernels include headers from outside kernel dirs (shared_with_host/,
+    # kernel_common/, common/types/, etc.). Ship all .hpp/.h headers so the
+    # JIT compiler can resolve these includes at runtime.
+    extra_wheel_data = glob(["**/*.hpp", "**/*.h"], allow_empty = True),
     extra_hdrs_deps = [
         "//ttnn/cpp/ttnn/operations/data_movement:data_movement_hdrs",
         "//ttnn/cpp/ttnn/operations/experimental/ccl:ccl_hdrs",

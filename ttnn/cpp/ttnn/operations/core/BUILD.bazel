@@ -1,5 +1,15 @@
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
+# Kernel headers/sources bundled in the ttnn wheel for JIT compilation.
+filegroup(
+    name = "wheel_kernel_data",
+    srcs = glob(
+        ["kernels/**", "kernels_ng/**"],
+        allow_empty = True,
+    ),
+    visibility = ["//ttnn:__subpackages__"],
+)
+
 # Header-only target: no deps to avoid circular dependency with ttnn_core.
 # The core operation's headers are included by ttnn_core files.
 cc_library(

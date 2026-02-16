@@ -202,3 +202,16 @@ filegroup(
         "//tt_metal/hw/toolchain:linker_script_sources",
     ],
 )
+
+# Source-only files for wheel packaging. Excludes generated linker scripts
+# (preprocessed .ld files) to avoid conflicts with source .ld files that
+# share the same basename.
+filegroup(
+    name = "wheel_data",
+    srcs = [
+        ":jit_ckernel_headers",
+        ":jit_firmware_sources",
+        ":jit_headers",
+        "//tt_metal/hw/toolchain:linker_script_sources",
+    ],
+)

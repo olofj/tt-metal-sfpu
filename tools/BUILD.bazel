@@ -1,0 +1,21 @@
+# Python packages from tools/ for wheel packaging.
+#
+# The py_wheel strips "tools/" so:
+#   tools/tracy/__init__.py  → tracy/__init__.py
+#   tools/triage/triage.py   → triage/triage.py
+
+load("@rules_python//python:py_library.bzl", "py_library")
+
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "tracy",
+    srcs = glob(["tracy/**/*.py"]),
+    imports = ["."],
+)
+
+py_library(
+    name = "triage",
+    srcs = glob(["triage/**/*.py"]),
+    imports = ["."],
+)

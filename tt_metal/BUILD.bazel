@@ -65,3 +65,36 @@ cc_library(
         "//third_party/system:numa",
     ],
 )
+
+# ===========================================================================
+# Wheel data — files bundled in the ttnn wheel for JIT compilation and
+# device configuration. Aggregates filegroups from subpackages.
+# ===========================================================================
+
+# Source files from the tt_metal/ package (not in subpackages).
+filegroup(
+    name = "wheel_data_local",
+    srcs = glob(
+        [
+            "core_descriptors/*.yaml",
+            "kernels/**/*",
+            "soc_descriptors/*.yaml",
+        ],
+        allow_empty = True,
+    ),
+)
+
+# Aggregate of all tt_metal data files for the wheel.
+filegroup(
+    name = "wheel_data",
+    srcs = [
+        ":wheel_data_local",
+        "//tt_metal/api:wheel_data",
+        "//tt_metal/fabric:wheel_data",
+        "//tt_metal/hostdevcommon:wheel_data",
+        "//tt_metal/hw:wheel_data",
+        "//tt_metal/impl:wheel_data",
+        "//tt_metal/third_party:wheel_data",
+        "//tt_metal/tools:wheel_data",
+    ],
+)

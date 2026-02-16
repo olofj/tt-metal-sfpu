@@ -19,3 +19,13 @@ cc_library(
     ),
     includes = [".."],
 )
+
+# Profiler data bundled in the ttnn wheel.
+filegroup(
+    name = "wheel_data",
+    srcs = glob(
+        ["profiler/**/*"],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:public"],
+)

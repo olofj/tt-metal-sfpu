@@ -58,6 +58,9 @@ ttnn_operation(
         exclude = ["**/*.hpp", "**/*.h"],
         allow_empty = True,
     ),
+    # kernel_util/*.h headers are excluded from kernel_hdrs but needed by JIT
+    # kernels at runtime. Include them as extra wheel data.
+    extra_wheel_data = glob(["kernel_util/**/*.h"], allow_empty = True),
     extra_hdrs_deps = [
         "//ttnn/cpp/ttnn/operations/core:core_hdrs",
     ],

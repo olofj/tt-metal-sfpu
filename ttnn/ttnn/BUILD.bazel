@@ -1,0 +1,14 @@
+# ttnn Python package sources for wheel packaging.
+#
+# Used by the py_wheel target in the root BUILD.bazel.
+# The py_wheel strips "ttnn/" so ttnn/ttnn/*.py → ttnn/*.py in the wheel.
+
+load("@rules_python//python:py_library.bzl", "py_library")
+
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "ttnn_py",
+    srcs = glob(["**/*.py"]),
+    imports = [".."],
+)

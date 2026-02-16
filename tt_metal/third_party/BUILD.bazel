@@ -21,3 +21,16 @@ cc_library(
     includes = ["tracy/public"],
     visibility = ["//visibility:public"],
 )
+
+# TT LLK (Low-Level Kernel) headers bundled in the ttnn wheel.
+# Exclude dotfiles: Python's glob.glob() (used by setup.py) skips dotfiles
+# by default, so Bazel must explicitly exclude them to match.
+filegroup(
+    name = "wheel_data",
+    srcs = glob(
+        ["tt_llk*/**/*"],
+        exclude = ["tt_llk*/**/.*", "tt_llk*/.github/**"],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:public"],
+)

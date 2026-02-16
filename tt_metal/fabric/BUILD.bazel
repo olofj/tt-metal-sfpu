@@ -154,3 +154,22 @@ cc_library(
         "@yaml-cpp",
     ],
 )
+
+# Data files bundled in the ttnn wheel. Matches setup.py tt_metal_patterns
+# entries under fabric/.
+filegroup(
+    name = "wheel_data",
+    srcs = [
+        "fabric_edm_packet_header.hpp",
+        "impl/kernels/edm_fabric/fabric_erisc_router.cpp",
+        "impl/kernels/tt_fabric_mux.cpp",
+    ] + glob(
+        [
+            "hw/**/*",
+            "mesh_graph_descriptors/*.yaml",
+            "mesh_graph_descriptors/*.textproto",
+        ],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:public"],
+)

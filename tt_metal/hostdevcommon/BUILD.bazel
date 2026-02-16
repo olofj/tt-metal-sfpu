@@ -20,3 +20,13 @@ cc_library(
         "@fmt",
     ],
 )
+
+# Data files bundled in the ttnn wheel.
+filegroup(
+    name = "wheel_data",
+    srcs = glob([
+        "api/hostdevcommon/**/*.h",
+        "api/hostdevcommon/**/*.hpp",
+    ]),
+    visibility = ["//visibility:public"],
+)

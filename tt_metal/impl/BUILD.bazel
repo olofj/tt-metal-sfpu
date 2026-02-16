@@ -245,3 +245,13 @@ cc_library(
         "@tt_logger//:tt_logger",
     ],
 )
+
+# Dispatch kernel sources bundled in the ttnn wheel for JIT compilation.
+filegroup(
+    name = "wheel_data",
+    srcs = glob(
+        ["dispatch/kernels/**/*"],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:public"],
+)

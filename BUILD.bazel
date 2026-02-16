@@ -1,2 +1,165 @@
 # Root BUILD file for tt-metalium Bazel build.
 # Required to make the repository root a valid Bazel package.
+#
+# Also defines the ttnn_wheel target for building the ttnn Python wheel.
+
+load("@rules_python//python:packaging.bzl", "py_wheel")
+load("//bazel:stamp_version.bzl", "stamp_version")
+load("//bazel:wheel_data.bzl", "wheel_remap")
+
+# ===========================================================================
+# ttnn wheel — Python distribution package
+#
+# Replaces the setuptools/CMake-based wheel build (setup.py + pyproject.toml)
+# with a Bazel-native py_wheel target. The wheel includes:
+#   1. Python source packages: ttnn, tt_lib, tracy, triage
+#   2. Native extension: _ttnn.so (nanobind Python bindings)
+#   3. Runtime assets: firmware binaries (runtime/hw/)
+#   4. JIT headers: kernel sources for runtime compilation on device
+#   5. tt_metal data: soc/core descriptors, dispatch kernels, LLK headers
+#
+# Usage:
+#   bazel build //:ttnn_wheel                    # dev build (version 0.0.0.dev0)
+#   bazel build //:ttnn_wheel --stamp            # release build (git tag version)
+#   bazel build //:ttnn_wheel --config=release   # release config (enables --stamp)
+# ===========================================================================
+
+# --- Version stamping ---
+# Extracts the version string from bazel/stamp_version.sh output.
+# With --stamp: real git-derived version (e.g., "0.65.2.dev1521")
+# With --nostamp (default): uses fallback "0.0.0.dev0"
+stamp_version(
+    name = "wheel_version",
+    key = "STABLE_VERSION",
+)
+
+# --- Data file staging ---
+# Files that need a different wheel-internal path than their workspace path
+# are remapped via symlinks (wheel_remap). The py_wheel strips the "_whl/"
+# prefix to produce the final wheel-internal path.
+# See bazel/wheel_data.bzl for details.
+#
+# Path mapping summary:
+#   py sources:  ttnn/ttnn/*.py    → strip "ttnn/"  → ttnn/*.py
+#   py sources:  ttnn/tt_lib/*.py  → strip "ttnn/"  → tt_lib/*.py
+#   py sources:  tools/tracy/*.py  → strip "tools/" → tracy/*.py
+#   py sources:  tools/triage/*.py → strip "tools/" → triage/*.py
+#   extension:   _whl/ttnn/_ttnn.so        → strip "_whl/" → ttnn/_ttnn.so
+#   runtime:     _whl/ttnn/runtime/hw/*    → strip "_whl/" → ttnn/runtime/hw/*
+#   jit headers: _whl/ttnn/ttnn/cpp/*      → strip "_whl/" → ttnn/ttnn/cpp/*
+#   tt_metal:    _whl/ttnn/tt_metal/*      → strip "_whl/" → ttnn/tt_metal/*
+
+# Stage the _ttnn.so extension module under ttnn/ in the wheel.
+# Without staging, strip_path_prefixes=["ttnn/"] would place it at the
+# wheel root instead of under the ttnn package directory.
+wheel_remap(
+    name = "wheel_extension",
+    srcs = ["//ttnn:_ttnn.so"],
+    prefix = "ttnn",
+    strip_prefix = "ttnn/",
+)
+
+# Stage runtime firmware assets under ttnn/runtime/ in the wheel.
+# Matches setup.py runtime_patterns (line 303-305): hw/**/*
+wheel_remap(
+    name = "wheel_runtime",
+    srcs = [":runtime_hw_files"],
+    prefix = "ttnn/runtime",
+    strip_prefix = "runtime/",
+)
+
+# Stage TTNN JIT compilation headers under ttnn/ttnn/cpp/ in the wheel.
+# Matches setup.py ttnn_cpp_patterns (lines 334-344).
+wheel_remap(
+    name = "wheel_ttnn_jit",
+    srcs = ["//ttnn:jit_headers"],
+    prefix = "ttnn/ttnn",
+    strip_prefix = "ttnn/",
+)
+
+# Stage all tt_metal data files under ttnn/tt_metal/ in the wheel.
+# Uses the aggregate filegroup from //tt_metal:wheel_data which collects
+# files from all tt_metal subpackages (api, fabric, hw, impl, etc.).
+wheel_remap(
+    name = "wheel_tt_metal_data",
+    srcs = ["//tt_metal:wheel_data"],
+    prefix = "ttnn/tt_metal",
+    strip_prefix = "tt_metal/",
+)
+
+# --- Source filegroups ---
+
+# Runtime firmware binaries (runtime/hw/**)
+filegroup(
+    name = "runtime_hw_files",
+    srcs = glob(
+        ["runtime/hw/**"],
+        allow_empty = True,
+    ),
+)
+
+# --- The wheel target ---
+
+py_wheel(
+    name = "ttnn_wheel",
+    distribution = "ttnn",
+    version = "{STABLE_VERSION}",
+    stamp = -1,
+    python_tag = "cp310",
+    abi = "abi3",
+    platform = "manylinux_2_35_x86_64",
+    # Strip prefixes to map workspace paths to wheel-internal paths.
+    # Checked in order — first match wins.
+    strip_path_prefixes = [
+        "_whl/",     # staged data files (extension, runtime, JIT headers)
+        "ttnn/",     # Python sources: ttnn/ttnn/*.py → ttnn/*.py
+        "tools/",    # Python sources: tools/tracy/*.py → tracy/*.py
+    ],
+    deps = [
+        # Python packages
+        "//ttnn/ttnn:ttnn_py",
+        "//ttnn:tt_lib_py",
+        "//tools:tracy",
+        "//tools:triage",
+        # Native extension (staged under ttnn/)
+        ":wheel_extension",
+        # Runtime firmware assets (staged under ttnn/runtime/)
+        ":wheel_runtime",
+        # JIT headers (staged under ttnn/ttnn/cpp/)
+        ":wheel_ttnn_jit",
+        # tt_metal data (staged under ttnn/tt_metal/)
+        ":wheel_tt_metal_data",
+    ],
+    requires = [
+        "numpy>=1.24.4,<2",
+        "loguru>=0.6.0",
+        "networkx>=3.1",
+        "graphviz>=0.20.3",
+        "pyyaml>=5.4",
+        "click>=8.1.7",
+        "pandas>=2.0.3",
+        "seaborn>=0.13.2",
+    ],
+    python_requires = ">=3.10",
+    author = "Tenstorrent",
+    author_email = "info@tenstorrent.com",
+    homepage = "https://docs.tenstorrent.com/tt-metal/latest/ttnn",
+    license = "Apache-2.0",
+    summary = "General compute framework for Tenstorrent devices",
+    description_file = ":README.md",
+    description_content_type = "text/markdown",
+    entry_points = {
+        "console_scripts": [
+            "tt-run = ttnn.distributed.ttrun:main",
+            "tt-triage = triage.triage:main",
+        ],
+    },
+    extra_distinfo_files = {
+        "//:LICENSE": "LICENSE",
+    },
+    project_urls = {
+        "Documentation": "https://docs.tenstorrent.com/tt-metal/latest/ttnn",
+        "Repository": "https://github.com/tenstorrent/tt-metal",
+        "Issues": "https://github.com/tenstorrent/tt-metal/issues",
+    },
+)
