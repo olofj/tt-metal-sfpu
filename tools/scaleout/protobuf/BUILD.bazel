@@ -1,0 +1,19 @@
+# scaleout protobuf schemas — generates C++ code from .proto files.
+#
+# Proto sources live under different scaleout subdirectories but are compiled
+# here so the generated .pb.h files reside at tools/scaleout/protobuf/*.pb.h,
+# matching the CMake include convention ("protobuf/factory_system_descriptor.pb.h").
+
+load("//bazel:cc_proto.bzl", "cc_proto_library")
+
+cc_proto_library(
+    name = "scaleout_cc_proto",
+    srcs = [
+        "//tools/scaleout:cabling_descriptor/schemas/cluster_config.proto",
+        "//tools/scaleout:cabling_descriptor/schemas/node_config.proto",
+        "//tools/scaleout:deployment_descriptor/schemas/deployment.proto",
+        "//tools/scaleout:factory_system_descriptor/schemas/factory_system_descriptor.proto",
+        "//tools/scaleout:validation/schemas/ethernet_link_metrics.proto",
+    ],
+    visibility = ["//tools/scaleout:__pkg__"],
+)

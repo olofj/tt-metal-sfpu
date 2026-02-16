@@ -9,23 +9,27 @@ load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
 def _proto_gen_impl(ctx):
     """Generate C++ sources from .proto files using protoc."""
+    all_srcs = ctx.files.srcs
     outputs = []
-    for src in ctx.files.srcs:
+    for src in all_srcs:
         stem = src.basename[:-len(".proto")]
         cc = ctx.actions.declare_file(stem + ".pb.cc")
         h = ctx.actions.declare_file(stem + ".pb.h")
         outputs.extend([cc, h])
 
+        # Collect all unique proto directories so cross-file imports resolve.
+        proto_dirs = {s.dirname: True for s in all_srcs}
         args = ctx.actions.args()
         args.add("--experimental_allow_proto3_optional")
         args.add("--cpp_out", cc.dirname)
-        args.add("-I", src.dirname)
+        for d in proto_dirs:
+            args.add("-I", d)
         args.add(src)
 
         ctx.actions.run(
             executable = ctx.executable._protoc,
             arguments = [args],
-            inputs = [src],
+            inputs = all_srcs,
             outputs = [cc, h],
             mnemonic = "ProtoCompile",
             progress_message = "Generating C++ from %{input}",

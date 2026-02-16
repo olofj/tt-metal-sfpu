@@ -1,13 +1,17 @@
-# fabric — header-only target for fabric subsystem headers.
+# fabric — TT-Metalium fabric subsystem for multi-chip communication.
 #
-# In CMake, fabric/ is part of the monolithic tt_metal target.
-# This header-only target makes the headers available to other Bazel
-# targets (impl, etc.) that include them. The actual .cpp files will
-# be added in issue tt-metal-67q (Convert tt_metal/fabric to Bazel).
+# Mirrors the CMake OBJECT library: TT::Metalium::Fabric
+# Contains control plane, routing, mesh topology, serialization, and
+# builder infrastructure for Tenstorrent's chip-to-chip fabric.
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
 package(default_visibility = ["//tt_metal:__subpackages__"])
+
+# ---------------------------------------------------------------------------
+# Header-only subset — used by impl, llrt, and other libraries that need
+# to include fabric headers without linking against the full .cpp library.
+# ---------------------------------------------------------------------------
 
 cc_library(
     name = "fabric_hdrs",
@@ -15,6 +19,7 @@ cc_library(
         [
             "**/*.hpp",
             "**/*.h",
+            "**/*.tpp",
         ],
         # Exclude protobuf/ sub-package (has its own BUILD.bazel).
         exclude = ["protobuf/**"],
@@ -31,5 +36,121 @@ cc_library(
         "//tt_metal/hostdevcommon",
         "//tt_metal/third_party/umd/device",
         "//tt_stl",
+    ],
+)
+
+# ---------------------------------------------------------------------------
+# JIT API headers — device-side headers installed for runtime JIT compilation.
+# These are RISC-V headers (hw/inc/) not compiled on the host.
+# ---------------------------------------------------------------------------
+
+filegroup(
+    name = "fabric_jit_api",
+    srcs = [
+        "fabric_edm_packet_header.hpp",
+        "hw/inc/edm_fabric/edm_fabric_flow_control_helpers.hpp",
+        "hw/inc/edm_fabric/edm_fabric_utils.hpp",
+        "hw/inc/edm_fabric/edm_fabric_worker_adapters.hpp",
+        "hw/inc/edm_fabric/edm_handshake.hpp",
+        "hw/inc/edm_fabric/fabric_connection_manager.hpp",
+        "hw/inc/edm_fabric/fabric_edm_packet_header_validate.hpp",
+        "hw/inc/edm_fabric/fabric_edm_packet_transmission.hpp",
+        "hw/inc/edm_fabric/fabric_erisc_datamover_channels.hpp",
+        "hw/inc/edm_fabric/fabric_txq_setup.h",
+        "hw/inc/fabric_direction_table_interface.h",
+        "hw/inc/fabric_routing_mode.h",
+        "hw/inc/tt_fabric_api.h",
+        "hw/inc/tt_fabric_mux.hpp",
+        "hw/inc/tt_fabric_mux_interface.hpp",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# ---------------------------------------------------------------------------
+# Full fabric library — all 44 source files.
+# ---------------------------------------------------------------------------
+
+cc_library(
+    name = "fabric",
+    srcs = [
+        # Root sources
+        "channel_trimming_export.cpp",
+        "channel_trimming_import.cpp",
+        "channel_trimming_io.cpp",
+        "channel_trimming_report.cpp",
+        "compressed_direction_table.cpp",
+        "compressed_routing_path.cpp",
+        "compute_mesh_router_builder.cpp",
+        "control_plane.cpp",
+        "erisc_datamover_builder.cpp",
+        "fabric.cpp",
+        "fabric_builder.cpp",
+        "fabric_builder_context.cpp",
+        "fabric_context.cpp",
+        "fabric_host_utils.cpp",
+        "fabric_init.cpp",
+        "fabric_mux_config.cpp",
+        "fabric_router_builder.cpp",
+        "fabric_router_channel_mapping.cpp",
+        "fabric_switch_manager.cpp",
+        "fabric_telemetry_reader.cpp",
+        "fabric_tensix_builder.cpp",
+        "fabric_tensix_builder_impl.cpp",
+        "fabric_types.cpp",
+        "mesh_graph.cpp",
+        "mesh_graph_descriptor.cpp",
+        "physical_system_descriptor.cpp",
+        "routing_table_generator.cpp",
+        "topology_mapper.cpp",
+        "topology_mapper_utils.cpp",
+        "topology_solver.cpp",
+        # builder/
+        "builder/channel_to_pool_mapping.cpp",
+        "builder/connection_registry.cpp",
+        "builder/fabric_builder_config.cpp",
+        "builder/fabric_builder_helpers.cpp",
+        "builder/fabric_channel_allocator.cpp",
+        "builder/fabric_core_placement.cpp",
+        "builder/fabric_remote_channels_allocator.cpp",
+        "builder/fabric_router_recipe.cpp",
+        "builder/fabric_static_sized_channels_allocator.cpp",
+        "builder/multi_pool_channel_allocator.cpp",
+        "builder/router_connection_mapping.cpp",
+        "builder/static_sized_channel_connection_writer_adapter.cpp",
+        # serialization/
+        "serialization/intermesh_connections_serialization.cpp",
+        "serialization/physical_system_descriptor_serialization.cpp",
+        "serialization/port_descriptor_serialization.cpp",
+        "serialization/router_port_directions.cpp",
+        # ccl/
+        "ccl/ccl_common.cpp",
+    ],
+    copts = [
+        "-Wno-int-to-pointer-cast",
+        # Some fabric sources use workspace-root-relative angled includes like
+        # <tt_metal/fabric/erisc_datamover_builder.hpp>.
+        "-isystem",
+        ".",
+        # Generated protobuf headers are at $(GENDIR)/tt_metal/fabric/protobuf/*.pb.h.
+        # Source files include them as "protobuf/mesh_graph_descriptor.pb.h".
+        "-isystem",
+        "$(GENDIR)/tt_metal/fabric",
+        "-isystem",
+        "$(GENDIR)",
+    ],
+    deps = [
+        ":fabric_hdrs",
+        "//tools/scaleout:scaleout_tools",
+        "//tt_metal/common",
+        "//tt_metal/distributed:distributed_hdrs",
+        "//tt_metal/fabric/protobuf:fabric_cc_proto",
+        "//tt_metal/impl:impl_hdrs",
+        "//tt_metal/llrt:llrt_hdrs",
+        "//tt_metal/third_party/umd/device",
+        "@enchantum//:enchantum",
+        "@fmt",
+        "@protobuf//:protobuf",
+        "@tt_logger//:tt_logger",
+        "@yaml-cpp",
     ],
 )
