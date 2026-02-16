@@ -11,12 +11,14 @@ cc_binary(
     srcs = ["dep_smoke_test.cpp"],
     deps = [
         # BCR dependencies
-        "@boost.core",
+        "@boost.algorithm",
         "@boost.container",
+        "@boost.core",
+        "@boost.interprocess",
         "@boost.smart_ptr",
         "@yaml-cpp",
         "@fmt",
-        "@nlohmann_json",
+        "@nlohmann_json//:json",
         "@range-v3",
         "@spdlog",
         "@flatbuffers//:flatbuffers",
@@ -25,14 +27,18 @@ cc_binary(
         "@com_google_googletest//:gtest",
 
         # Non-BCR dependencies
-        "@capnproto//src/capnp",
+        "@asio//:asio",
+        # capnproto requires repo_mapping for @capnp-cpp (tracked by Phase 2 codegen issues)
+        # "@capnproto//src/capnp",
+        "@enchantum//:enchantum",
+        "@picosha2//:picosha2",
+        "@reflect//:reflect_lib",
         "@simde//:simde",
         "@taskflow//:taskflow",
-        "@reflect//:reflect",
-        "@enchantum//:enchantum",
         "@tt_logger//:tt_logger",
-        "@xtl//:xtl",
         "@xtensor//:xtensor",
+        "@xtensor_blas//:xtensor_blas",
+        "@xtl//:xtl",
 
         # System libraries
         "//third_party/system:numa",

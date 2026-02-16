@@ -4,6 +4,17 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("//toolchain/sfpi:repo.bzl", "sfpi_toolchain_repo")
 
 def _non_bcr_deps_impl(module_ctx):
+    # Protocol Buffers v21.12 — NOT using BCR because transitive deps
+    # (google_benchmark → googletest) pull protobuf to v29+ which drags
+    # in abseil/zlib. CMake build pins to v21.12 via CPM.
+    # Custom build_file because upstream BUILD.bazel uses WORKSPACE-only deps.
+    http_archive(
+        name = "protobuf",
+        urls = ["https://github.com/protocolbuffers/protobuf/archive/refs/tags/v21.12.tar.gz"],
+        strip_prefix = "protobuf-21.12",
+        build_file = "//third_party:protobuf.BUILD",
+    )
+
     # Cap'n Proto v1.2.0
     # Has native Bazel build files in c++/ subdirectory.
     # The capnproto_capture_this.patch from CMake is only needed for the

@@ -4,6 +4,8 @@ cc_library(
     name = "xtensor_blas",
     hdrs = glob([
         "include/xflens/**/*.h",
+        "include/xflens/**/*.cxx",
+        "include/xflens/**/*.tcc",
         "include/xtensor-blas/**/*.hpp",
     ]),
     includes = ["include"],

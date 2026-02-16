@@ -2,8 +2,11 @@
 // This file includes at least one header from each declared dependency.
 
 // BCR dependencies
-#include <boost/core/lightweight_test.hpp>
+#include <boost/algorithm/string/trim.hpp>
 #include <boost/container/vector.hpp>
+#include <boost/core/lightweight_test.hpp>
+#include <boost/interprocess/shared_memory_object.hpp>
+#include <boost/smart_ptr/make_shared.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <yaml-cpp/yaml.h>
 #include <fmt/core.h>
@@ -16,17 +19,23 @@
 #include <gtest/gtest.h>
 
 // Non-BCR dependencies
-#include <capnp/common.h>
+// capnp requires repo_mapping for @capnp-cpp (tracked by Phase 2 codegen issues)
+// #include <capnp/common.h>
 #include <simde/x86/sse2.h>
 #include <taskflow/taskflow.hpp>
 #include <reflect>
 #include <enchantum/enchantum.hpp>
+#include <tt-logger/tt-logger.hpp>
 #include <xtl/xbasic_fixed_string.hpp>
 #include <xtensor/core/xlayout.hpp>
+#include <xtensor-blas/xblas_config.hpp>
+#include <picosha2.h>
+#include <asio/version.hpp>
 
 // System libraries are link-only (no headers to include from our wrapper)
 
 #include <cstdio>
+#include <string>
 
 int main() {
     // Touch each dependency to prevent dead-code elimination
@@ -35,10 +44,15 @@ int main() {
     (void)bv;
     (void)sp;
 
+    std::string s = "  hello  ";
+    boost::algorithm::trim(s);
+    (void)s;
+
     YAML::Node node;
     node["key"] = "value";
 
     auto msg = fmt::format("fmt works: {}", 42);
+    (void)msg;
 
     nlohmann::json j;
     j["smoke"] = "test";
@@ -51,10 +65,13 @@ int main() {
     flatbuffers::FlatBufferBuilder fbb;
     (void)fbb;
 
-    (void)capnp::CAPNP_VERSION_MAJOR;
-
     tf::Taskflow taskflow;
     (void)taskflow;
+
+    auto sha_hash = picosha2::hash256_hex_string(std::string("test"));
+    (void)sha_hash;
+
+    (void)ASIO_VERSION;
 
     std::printf("All dependencies resolved successfully.\n");
     return 0;

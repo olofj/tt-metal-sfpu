@@ -1,0 +1,3 @@
+# Directories containing BUILD files from other build systems that conflict with Bazel.
+.cpmcache
+build
