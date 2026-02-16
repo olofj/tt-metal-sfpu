@@ -80,9 +80,11 @@ def preprocess_main_ld(name, arch, proc, type, includes, **kwargs):
         includes: List of labels for include headers.
         **kwargs: Passed through to preprocess_ld.
     """
-    # CMake strips '=' from proc name for the output filename
+    # CMake strips '=' from proc name for the output filename.
+    # Include arch in filename to avoid Bazel action conflicts when
+    # multiple architectures produce scripts for the same processor.
     proc_file = proc.replace("=", "")
-    out_name = "%s_%s.ld" % (type.lower(), proc_file.lower())
+    out_name = "%s_%s_%s.ld" % (arch.lower(), type.lower(), proc_file.lower())
 
     preprocess_ld(
         name = name,
