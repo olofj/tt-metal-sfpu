@@ -1,9 +1,120 @@
-# Common build flags
+# ===========================================================================
+# Common build flags (always applied)
+#
+# Mirrors CMakeLists.txt lines 65-192: C++20, arch-specific codegen, warnings.
+# ===========================================================================
+
 build --cxxopt=-std=c++20
 build --host_cxxopt=-std=c++20
-
-# Use C++20 for all targets
 build --action_env=BAZEL_CXXOPTS=-std=c++20
+
+# Architecture-specific codegen (x86-64-v3 = AVX2 + BMI2 + FMA baseline)
+build --copt=-march=x86-64-v3
+build --copt=-fPIC
+build --copt=-pipe
+build --copt=-fvisibility-inlines-hidden
+
+# Warnings (matches CMakeLists.txt add_compile_options)
+build --copt=-Wall
+build --copt=-Werror
+build --copt=-Wno-deprecated-declarations
+
+# Compressed debug sections (matches linking.cmake zlib compression)
+build --copt=-gz
+build --linkopt=-Wl,--compress-debug-sections=zlib
+
+# ===========================================================================
+# Build type configurations
+#
+# Usage: bazel build --config=<type> //<target>
+#
+# Mirrors CMakeLists.txt lines 40-41 and cmake/sanitizers.cmake.
+# Default CMake build type is RelWithDebInfo.
+# ===========================================================================
+
+# Debug (CMake: CMAKE_CXX_FLAGS_DEBUG)
+build:debug --copt=-O0
+build:debug --copt=-g3
+build:debug --copt=-ggnu-pubnames
+build:debug --copt=-DDEBUG
+build:debug --copt=-fno-omit-frame-pointer
+build:debug --linkopt=-Wl,--gdb-index
+
+# RelWithDebInfo (CMake default: CMAKE_CXX_FLAGS_RELWITHDEBINFO)
+build:relwithdebinfo --copt=-O3
+build:relwithdebinfo --copt=-g
+build:relwithdebinfo --copt=-ggnu-pubnames
+build:relwithdebinfo --copt=-DDEBUG
+build:relwithdebinfo --copt=-fno-omit-frame-pointer
+build:relwithdebinfo --linkopt=-Wl,--gdb-index
+
+# Release (CMake: standard Release flags, no debug symbols/defines)
+build:release --copt=-O3
+
+# ===========================================================================
+# Sanitizer configurations
+#
+# Mirrors cmake/sanitizers.cmake. Each sanitizer builds on RelWithDebInfo
+# flags, so they inherit optimized+debuggable output.
+# ===========================================================================
+
+# ASan + LSan + UBSan (cmake/sanitizers.cmake: asan_flags)
+build:asan --config=relwithdebinfo
+build:asan --copt=-fsanitize=address,leak,undefined
+build:asan --linkopt=-fsanitize=address,leak,undefined
+
+# TSan (cmake/sanitizers.cmake: tsan_flags, overrides -O3 with -O1)
+build:tsan --config=relwithdebinfo
+build:tsan --copt=-O1
+build:tsan --copt=-fsanitize=thread
+build:tsan --linkopt=-fsanitize=thread
+
+# Code coverage (LLVM source-based coverage, no sanitizers)
+build:coverage --config=relwithdebinfo
+build:coverage --copt=-fprofile-instr-generate
+build:coverage --copt=-fcoverage-mapping
+build:coverage --linkopt=-fprofile-instr-generate
+
+# ASan + code coverage combined
+build:asan-coverage --config=asan
+build:asan-coverage --copt=-fprofile-instr-generate
+build:asan-coverage --copt=-fcoverage-mapping
+build:asan-coverage --linkopt=-fprofile-instr-generate
+
+# ===========================================================================
+# Feature flags
+#
+# Mirrors cmake/project_options.cmake options.
+# Use --config=<feature> to opt in/out.
+# ===========================================================================
+
+# Tracy profiler (cmake: ENABLE_TRACY, default ON in CMake)
+build:tracy --copt=-DTRACY_ENABLE
+
+# Code timers (cmake: ENABLE_CODE_TIMERS, default OFF)
+build:code-timers --copt=-DTT_ENABLE_CODE_TIMERS
+
+# Light Metal Trace (cmake: TT_ENABLE_LIGHT_METAL_TRACE, default ON)
+build:light-metal-trace --copt=-DTT_ENABLE_LIGHT_METAL_TRACE=1
+
+# Logging (cmake: TT_METAL_ENABLE_LOGGING, default ON for non-Release)
+build:logging --copt=-DSPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE
+
+# Build time trace (Clang only, cmake: ENABLE_BUILD_TIME_TRACE)
+build:time-trace --copt=-ftime-trace
+
+# ===========================================================================
+# LTO configuration
+#
+# Mirrors cmake/linking.cmake LTO section. Uses thin LTO by default
+# since the project primarily targets Clang.
+# ===========================================================================
+
+build:lto --copt=-flto=thin
+build:lto --linkopt=-flto=thin
+build:lto --copt=-ffunction-sections
+build:lto --copt=-fdata-sections
+build:lto --linkopt=-Wl,--gc-sections
 
 # ===========================================================================
 # C++ toolchain configurations
@@ -17,7 +128,7 @@ build --action_env=BAZEL_CXXOPTS=-std=c++20
 # Enable custom toolchain resolution (required for registered toolchains)
 build --incompatible_enable_cc_toolchain_resolution
 
-# Clang 20 + libc++ (default for the project, matches cmake/x86_64-linux-clang-20-libcpp-toolchain.cmake)
+# Clang 20 + libc++ (matches cmake/x86_64-linux-clang-20-libcpp-toolchain.cmake)
 build:clang20-libcpp --extra_toolchains=//toolchain:clang20_libcpp
 
 # Clang 20 + libstdc++ (matches cmake/x86_64-linux-clang-20-libstdcpp-toolchain.cmake)
