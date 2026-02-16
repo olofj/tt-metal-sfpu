@@ -1,0 +1,23 @@
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//bazel:cc_proto.bzl", "cc_proto_library")
+
+cc_proto_library(
+    name = "fabric_cc_proto",
+    srcs = [
+        "intermesh_connection_table.proto",
+        "mesh_graph_descriptor.proto",
+        "physical_system_descriptor.proto",
+        "port_descriptor_table.proto",
+        "router_port_directions.proto",
+    ],
+    visibility = ["//tt_metal/fabric:__pkg__"],
+)
+
+cc_test(
+    name = "proto_compile_test",
+    srcs = ["proto_compile_test.cpp"],
+    deps = [
+        ":fabric_cc_proto",
+        "@com_google_googletest//:gtest_main",
+    ],
+)

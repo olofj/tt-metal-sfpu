@@ -1,9 +1,11 @@
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
 # Minimal protobuf v21.12 BUILD file for Bzlmod.
 # The upstream BUILD.bazel uses WORKSPACE-only deps (rules_pkg, rules_proto,
 # rules_java, etc.) that aren't available in Bzlmod without additional setup.
-# This file builds only the C++ runtime libraries needed by tt-metalium.
+# This file builds the C++ runtime libraries and the protoc compiler needed
+# by tt-metalium.
 
 _COPTS = [
     "-Woverloaded-virtual",
@@ -122,4 +124,110 @@ cc_library(
     linkopts = _LINK_OPTS,
     visibility = ["//visibility:public"],
     deps = [":protobuf_lite"],
+)
+
+################################################################################
+# Protocol Buffer Compiler
+################################################################################
+
+cc_library(
+    name = "protoc_lib",
+    srcs = [
+        "src/google/protobuf/compiler/code_generator.cc",
+        "src/google/protobuf/compiler/command_line_interface.cc",
+        "src/google/protobuf/compiler/cpp/enum.cc",
+        "src/google/protobuf/compiler/cpp/enum_field.cc",
+        "src/google/protobuf/compiler/cpp/extension.cc",
+        "src/google/protobuf/compiler/cpp/field.cc",
+        "src/google/protobuf/compiler/cpp/file.cc",
+        "src/google/protobuf/compiler/cpp/generator.cc",
+        "src/google/protobuf/compiler/cpp/helpers.cc",
+        "src/google/protobuf/compiler/cpp/map_field.cc",
+        "src/google/protobuf/compiler/cpp/message.cc",
+        "src/google/protobuf/compiler/cpp/message_field.cc",
+        "src/google/protobuf/compiler/cpp/padding_optimizer.cc",
+        "src/google/protobuf/compiler/cpp/parse_function_generator.cc",
+        "src/google/protobuf/compiler/cpp/primitive_field.cc",
+        "src/google/protobuf/compiler/cpp/service.cc",
+        "src/google/protobuf/compiler/cpp/string_field.cc",
+        "src/google/protobuf/compiler/csharp/csharp_doc_comment.cc",
+        "src/google/protobuf/compiler/csharp/csharp_enum.cc",
+        "src/google/protobuf/compiler/csharp/csharp_enum_field.cc",
+        "src/google/protobuf/compiler/csharp/csharp_field_base.cc",
+        "src/google/protobuf/compiler/csharp/csharp_generator.cc",
+        "src/google/protobuf/compiler/csharp/csharp_helpers.cc",
+        "src/google/protobuf/compiler/csharp/csharp_map_field.cc",
+        "src/google/protobuf/compiler/csharp/csharp_message.cc",
+        "src/google/protobuf/compiler/csharp/csharp_message_field.cc",
+        "src/google/protobuf/compiler/csharp/csharp_primitive_field.cc",
+        "src/google/protobuf/compiler/csharp/csharp_reflection_class.cc",
+        "src/google/protobuf/compiler/csharp/csharp_repeated_enum_field.cc",
+        "src/google/protobuf/compiler/csharp/csharp_repeated_message_field.cc",
+        "src/google/protobuf/compiler/csharp/csharp_repeated_primitive_field.cc",
+        "src/google/protobuf/compiler/csharp/csharp_source_generator_base.cc",
+        "src/google/protobuf/compiler/csharp/csharp_wrapper_field.cc",
+        "src/google/protobuf/compiler/java/context.cc",
+        "src/google/protobuf/compiler/java/doc_comment.cc",
+        "src/google/protobuf/compiler/java/enum.cc",
+        "src/google/protobuf/compiler/java/enum_field.cc",
+        "src/google/protobuf/compiler/java/enum_field_lite.cc",
+        "src/google/protobuf/compiler/java/enum_lite.cc",
+        "src/google/protobuf/compiler/java/extension.cc",
+        "src/google/protobuf/compiler/java/extension_lite.cc",
+        "src/google/protobuf/compiler/java/field.cc",
+        "src/google/protobuf/compiler/java/file.cc",
+        "src/google/protobuf/compiler/java/generator.cc",
+        "src/google/protobuf/compiler/java/generator_factory.cc",
+        "src/google/protobuf/compiler/java/helpers.cc",
+        "src/google/protobuf/compiler/java/kotlin_generator.cc",
+        "src/google/protobuf/compiler/java/map_field.cc",
+        "src/google/protobuf/compiler/java/map_field_lite.cc",
+        "src/google/protobuf/compiler/java/message.cc",
+        "src/google/protobuf/compiler/java/message_builder.cc",
+        "src/google/protobuf/compiler/java/message_builder_lite.cc",
+        "src/google/protobuf/compiler/java/message_field.cc",
+        "src/google/protobuf/compiler/java/message_field_lite.cc",
+        "src/google/protobuf/compiler/java/message_lite.cc",
+        "src/google/protobuf/compiler/java/name_resolver.cc",
+        "src/google/protobuf/compiler/java/primitive_field.cc",
+        "src/google/protobuf/compiler/java/primitive_field_lite.cc",
+        "src/google/protobuf/compiler/java/service.cc",
+        "src/google/protobuf/compiler/java/shared_code_generator.cc",
+        "src/google/protobuf/compiler/java/string_field.cc",
+        "src/google/protobuf/compiler/java/string_field_lite.cc",
+        "src/google/protobuf/compiler/objectivec/objectivec_enum.cc",
+        "src/google/protobuf/compiler/objectivec/objectivec_enum_field.cc",
+        "src/google/protobuf/compiler/objectivec/objectivec_extension.cc",
+        "src/google/protobuf/compiler/objectivec/objectivec_field.cc",
+        "src/google/protobuf/compiler/objectivec/objectivec_file.cc",
+        "src/google/protobuf/compiler/objectivec/objectivec_generator.cc",
+        "src/google/protobuf/compiler/objectivec/objectivec_helpers.cc",
+        "src/google/protobuf/compiler/objectivec/objectivec_map_field.cc",
+        "src/google/protobuf/compiler/objectivec/objectivec_message.cc",
+        "src/google/protobuf/compiler/objectivec/objectivec_message_field.cc",
+        "src/google/protobuf/compiler/objectivec/objectivec_oneof.cc",
+        "src/google/protobuf/compiler/objectivec/objectivec_primitive_field.cc",
+        "src/google/protobuf/compiler/php/php_generator.cc",
+        "src/google/protobuf/compiler/plugin.cc",
+        "src/google/protobuf/compiler/plugin.pb.cc",
+        "src/google/protobuf/compiler/python/generator.cc",
+        "src/google/protobuf/compiler/python/helpers.cc",
+        "src/google/protobuf/compiler/python/pyi_generator.cc",
+        "src/google/protobuf/compiler/ruby/ruby_generator.cc",
+        "src/google/protobuf/compiler/subprocess.cc",
+        "src/google/protobuf/compiler/zip_writer.cc",
+    ],
+    copts = _COPTS,
+    includes = ["src/"],
+    linkopts = _LINK_OPTS,
+    visibility = ["//visibility:public"],
+    deps = [":protobuf"],
+)
+
+cc_binary(
+    name = "protoc",
+    srcs = ["src/google/protobuf/compiler/main.cc"],
+    linkopts = _LINK_OPTS,
+    visibility = ["//visibility:public"],
+    deps = [":protoc_lib"],
 )
