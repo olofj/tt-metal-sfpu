@@ -1,4 +1,9 @@
 # ===========================================================================
+# User overrides (not checked in — create .bazelrc.user for local settings)
+# ===========================================================================
+try-import %workspace%/.bazelrc.user
+
+# ===========================================================================
 # Common build flags (always applied)
 #
 # Mirrors CMakeLists.txt lines 65-192: C++20, arch-specific codegen, warnings.
@@ -164,3 +169,31 @@ build:sfpi-quasar32 --platforms=//toolchain/sfpi:riscv_quasar32
 # Quasar 64-bit (-mcpu=tt-qsr64, for DM cores)
 build:sfpi-quasar64 --extra_toolchains=//toolchain/sfpi:sfpi_quasar64
 build:sfpi-quasar64 --platforms=//toolchain/sfpi:riscv_quasar64
+
+# ===========================================================================
+# Remote cache (CI)
+#
+# Usage: bazel build --config=ci //<target>
+#
+# Connects to a BuildBuddy remote cache for cross-build artifact sharing.
+# The API key is NOT stored here — CI must pass it on the command line:
+#
+#   bazel build --config=ci \
+#     --remote_header=x-buildbuddy-api-key="$BUILDBUDDY_API_KEY" \
+#     //<target>
+#
+# For self-hosted alternatives (bazel-remote), override in .bazelrc.user:
+#   build --remote_cache=grpc://your-cache-host:9092
+# ===========================================================================
+
+build:ci --remote_cache=grpcs://remote.buildbuddy.io
+build:ci --remote_upload_local_results=true
+build:ci --remote_instance_name=tt-metal
+build:ci --remote_timeout=3600
+
+# Read-only variant for untrusted builds (forks, external PRs).
+# Prevents cache poisoning while still benefiting from cache hits.
+build:ci-readonly --remote_cache=grpcs://remote.buildbuddy.io
+build:ci-readonly --remote_upload_local_results=false
+build:ci-readonly --remote_instance_name=tt-metal
+build:ci-readonly --remote_timeout=3600
