@@ -211,3 +211,15 @@ cc_library(
         "-Itt_metal/hw/inc/internal/tt-1xx/wormhole",
     ],
 )
+
+# ===================================================================
+# Linker script template sources
+#
+# The unpreprocessed .ld templates — installed as part of the JIT
+# package (CMake FILE_SET jit_api in tt_metal/hw/CMakeLists.txt).
+# ===================================================================
+
+filegroup(
+    name = "linker_script_sources",
+    srcs = glob(["*.ld"]),
+)

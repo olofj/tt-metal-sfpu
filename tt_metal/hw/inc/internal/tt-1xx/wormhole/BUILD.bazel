@@ -48,3 +48,9 @@ filegroup(
     srcs = headers,
     visibility = ["//visibility:public"],
 )
+
+filegroup(
+    name = "all_headers",
+    srcs = headers,
+    visibility = ["//visibility:public"],
+)

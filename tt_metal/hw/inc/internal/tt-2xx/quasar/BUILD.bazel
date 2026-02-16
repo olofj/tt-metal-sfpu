@@ -2,3 +2,9 @@ exports_files(
     ["dev_mem_map.h"],
     visibility = ["//tt_metal/hw/toolchain:__pkg__"],
 )
+
+filegroup(
+    name = "all_headers",
+    srcs = glob(["**/*.h", "**/*.hpp"]),
+    visibility = ["//visibility:public"],
+)
