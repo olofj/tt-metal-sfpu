@@ -1,0 +1,35 @@
+# fabric — header-only target for fabric subsystem headers.
+#
+# In CMake, fabric/ is part of the monolithic tt_metal target.
+# This header-only target makes the headers available to other Bazel
+# targets (impl, etc.) that include them. The actual .cpp files will
+# be added in issue tt-metal-67q (Convert tt_metal/fabric to Bazel).
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+package(default_visibility = ["//tt_metal:__subpackages__"])
+
+cc_library(
+    name = "fabric_hdrs",
+    hdrs = glob(
+        [
+            "**/*.hpp",
+            "**/*.h",
+        ],
+        # Exclude protobuf/ sub-package (has its own BUILD.bazel).
+        exclude = ["protobuf/**"],
+        allow_empty = True,
+    ),
+    # ".." adds tt_metal/ to the path (for "fabric/foo.hpp" includes).
+    # "." adds tt_metal/fabric/ to the path (for "builder/foo.hpp" includes).
+    includes = [
+        ".",
+        "..",
+    ],
+    deps = [
+        "//tt_metal/api:impl_api_hdrs",
+        "//tt_metal/hostdevcommon",
+        "//tt_metal/third_party/umd/device",
+        "//tt_stl",
+    ],
+)

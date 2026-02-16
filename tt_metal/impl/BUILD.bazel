@@ -1,38 +1,247 @@
-# impl — header-only subset for breaking the llrt ↔ impl circular dependency.
+# impl — core TT-Metalium implementation library.
 #
-# In CMake, llrt and impl are both OBJECT libraries merged into a single
-# monolithic tt_metal.so. Source files in llrt/ #include headers from impl/
-# (e.g., impl/context/metal_context.hpp, impl/dispatch/dispatch_settings.hpp)
-# but do not link against impl's .cpp files at this stage.
+# Mirrors the CMake OBJECT library: Metalium::Metal::Impl
+# Contains ~102 .cpp files covering device management, dispatch, buffers,
+# profiling, debug tools, flatbuffer serialization, and more.
 #
-# This header-only target exports the impl/ headers that llrt and HAL need
-# for compilation, deferring the actual linking to the monolithic tt_metal
-# target that will consume both //tt_metal/llrt and //tt_metal/impl.
-#
-# The full impl cc_library (with all ~108 .cpp files) will be added in
-# issue tt-metal-xzb (Convert tt_metal/impl to Bazel BUILD targets).
+# Code generation:
+#   - FlatBuffers: 5 .fbs schemas (in flatbuffer/ sub-package)
+#   - Cap'n Proto: rpc.capnp for inspector RPC interface
+#   - Python codegen: generate_rpc_server.py for callback-based RPC server
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:cc_capnp.bzl", "cc_capnp_library")
 
 package(default_visibility = ["//tt_metal:__subpackages__"])
 
+# ---------------------------------------------------------------------------
+# Header-only subset — breaks the llrt <-> impl circular dependency.
+#
+# In CMake, llrt and impl are both OBJECT libraries merged into a single
+# monolithic tt_metal.so. Source files in llrt/ #include headers from impl/
+# but do not link against impl's .cpp files at that stage.
+#
+# This target exports ALL impl/ headers so that llrt, distributed, and
+# other internal libraries can compile against them.
+# ---------------------------------------------------------------------------
+
 cc_library(
     name = "impl_hdrs",
-    hdrs = [
-        "allocator/allocator_types.hpp",
-        "context/metal_context.hpp",
-        "dispatch/dispatch_core_common.hpp",
-        "dispatch/dispatch_settings.hpp",
+    hdrs = glob(
+        [
+            "**/*.hpp",
+            "**/*.h",
+        ],
+        allow_empty = True,
+    ),
+    includes = [
+        "..",
+        ".",
+        "debug",
+        "profiler",
     ],
-    # includes = [".."] puts tt_metal/ on the include path, allowing
-    # #include "impl/context/metal_context.hpp" to resolve.
-    includes = [".."],
     deps = [
-        "//tt_metal/api:common_api_hdrs",
-        "//tt_metal/api:llrt_api_hdrs",
+        "//tt_metal/api:impl_api_hdrs",
+        "//tt_metal/distributed:distributed_hdrs",
+        "//tt_metal/fabric:fabric_hdrs",
         "//tt_metal/hostdevcommon",
+        "//tt_metal/hw",
+        "//tt_metal/impl/flatbuffer:flatbuffer_hdrs",
+        "//tt_metal/jit_build:jit_build_hdrs",
         "//tt_metal/llrt:llrt_hdrs",
         "//tt_metal/third_party/umd/device",
+        "//tt_metal/tools:profiler_hdrs",
         "//tt_stl",
+        "@enchantum//:enchantum",
+        "@fmt",
+        "@nlohmann_json//:json",
+        "@range-v3",
+        "@yaml-cpp",
+    ],
+)
+
+# ---------------------------------------------------------------------------
+# Cap'n Proto code generation for Inspector RPC interface.
+# ---------------------------------------------------------------------------
+
+cc_capnp_library(
+    name = "inspector_rpc_capnp",
+    srcs = ["debug/inspector/rpc.capnp"],
+)
+
+# Python-based RPC server codegen — generates callback-based server
+# implementation from the Cap'n Proto schema.
+genrule(
+    name = "inspector_rpc_server_gen",
+    srcs = [
+        "debug/inspector/rpc.capnp",
+        "debug/inspector/generate_rpc_server.py",
+    ],
+    outs = [
+        "debug/inspector/rpc_server_generated.hpp",
+        "debug/inspector/rpc_server_generated.cpp",
+    ],
+    cmd = "$(execpath //tt_metal/impl:debug/inspector/generate_rpc_server.py) " +
+          "$(execpath //tt_metal/impl:debug/inspector/rpc.capnp) " +
+          "$(location debug/inspector/rpc_server_generated.hpp) " +
+          "$(location debug/inspector/rpc_server_generated.cpp)",
+)
+
+# ---------------------------------------------------------------------------
+# Full impl library — all 102 source files.
+# ---------------------------------------------------------------------------
+
+cc_library(
+    name = "impl",
+    srcs = [
+        # sub_device
+        "sub_device/sub_device.cpp",
+        "sub_device/sub_device_manager_tracker.cpp",
+        "sub_device/sub_device_manager.cpp",
+        # context
+        "context/metal_context.cpp",
+        # device
+        "device/experimental/device.cpp",
+        "device/device.cpp",
+        "device/mock_device.cpp",
+        "device/device_manager.cpp",
+        "device/dispatch.cpp",
+        "device/firmware/command_queue_initializer.cpp",
+        "device/firmware/dispatch_kernel_initializer.cpp",
+        "device/firmware/fabric_firmware_initializer.cpp",
+        "device/firmware/firmware_initializer.cpp",
+        "device/firmware/profiler_initializer.cpp",
+        # buffers
+        "buffers/buffer.cpp",
+        "buffers/buffer_distribution_spec.cpp",
+        "buffers/buffer_page_mapping.cpp",
+        "buffers/tensor_accessor_args.cpp",
+        "buffers/dispatch.cpp",
+        "buffers/circular_buffer.cpp",
+        "buffers/circular_buffer_config.cpp",
+        "buffers/global_circular_buffer.cpp",
+        "buffers/global_semaphore.cpp",
+        "buffers/semaphore.cpp",
+        # data_format
+        "data_format/blockfloat_common.cpp",
+        "data_format/bfloat4.cpp",
+        "data_format/bfloat8.cpp",
+        "data_format/bfloat16.cpp",
+        "data_format/bfloat16_utils.cpp",
+        "data_format/tile.cpp",
+        "data_format/tilize_utils.cpp",
+        # dataflow_buffer
+        "dataflow_buffer/dataflow_buffer.cpp",
+        # kernels
+        "kernels/kernel.cpp",
+        "kernels/kernel_types.cpp",
+        # allocator
+        "allocator/algorithms/free_list_opt.cpp",
+        "allocator/allocator.cpp",
+        "allocator/allocator_state.cpp",
+        "allocator/bank_manager.cpp",
+        "allocator/l1_banking_allocator.cpp",
+        # program
+        "program/program.cpp",
+        "program/dispatch.cpp",
+        "program/program_descriptors.cpp",
+        "program/program_device_map.cpp",
+        # profiler
+        "profiler/profiler.cpp",
+        "profiler/tt_metal_profiler.cpp",
+        "profiler/profiler_analysis.cpp",
+        "profiler/profiler_state_manager.cpp",
+        # dispatch
+        "dispatch/cq_shared_state.cpp",
+        "dispatch/debug_tools.cpp",
+        "dispatch/device_command.cpp",
+        "dispatch/host_runtime_commands.cpp",
+        "dispatch/device_command_calculator.cpp",
+        "dispatch/dispatch_query_manager.cpp",
+        "dispatch/dispatch_core_common.cpp",
+        "dispatch/dispatch_core_manager.cpp",
+        "dispatch/command_queue_common.cpp",
+        "dispatch/dispatch_mem_map.cpp",
+        "dispatch/system_memory_cq_interface.cpp",
+        "dispatch/system_memory_manager.cpp",
+        "dispatch/hardware_command_queue.cpp",
+        "dispatch/launch_message_ring_buffer_state.cpp",
+        "dispatch/worker_config_buffer.cpp",
+        "dispatch/data_collection.cpp",
+        "dispatch/data_collector.cpp",
+        "dispatch/ringbuffer_cache.cpp",
+        "dispatch/topology.cpp",
+        "dispatch/kernel_config/fd_kernel.cpp",
+        "dispatch/kernel_config/prefetch.cpp",
+        "dispatch/kernel_config/dispatch.cpp",
+        "dispatch/kernel_config/dispatch_s.cpp",
+        "dispatch/kernel_config/relay_mux.cpp",
+        "dispatch/util/dispatch_settings.cpp",
+        # debug
+        "debug/dprint_server.cpp",
+        "debug/dprint_parser.cpp",
+        "debug/inspector/data.cpp",
+        "debug/inspector/inspector.cpp",
+        "debug/inspector/logger.cpp",
+        "debug/inspector/rpc_server_controller.cpp",
+        "debug/noc_logging.cpp",
+        "debug/noc_debugging.cpp",
+        "debug/watcher_server.cpp",
+        "debug/watcher_device_reader.cpp",
+        # trace
+        "trace/trace_buffer.cpp",
+        "trace/dispatch.cpp",
+        # event
+        "event/event.cpp",
+        "event/dispatch.cpp",
+        # flatbuffer serialization (in sub-package, exported via exports_files)
+        "//tt_metal/impl/flatbuffer:base_types_from_flatbuffer.cpp",
+        "//tt_metal/impl/flatbuffer:base_types_to_flatbuffer.cpp",
+        "//tt_metal/impl/flatbuffer:buffer_types_from_flatbuffer.cpp",
+        "//tt_metal/impl/flatbuffer:buffer_types_to_flatbuffer.cpp",
+        "//tt_metal/impl/flatbuffer:program_types_from_flatbuffer.cpp",
+        "//tt_metal/impl/flatbuffer:program_types_to_flatbuffer.cpp",
+        # lightmetal
+        "lightmetal/lightmetal_replay.cpp",
+        "lightmetal/lightmetal_replay_impl.cpp",
+        "lightmetal/lightmetal_capture.cpp",
+        "lightmetal/lightmetal_capture_utils.cpp",
+        "lightmetal/host_api_capture_helpers.cpp",
+        # tensor
+        "tensor/tensor_types.cpp",
+        "tensor/spec/tensor_spec.cpp",
+        "tensor/spec/layout/alignment.cpp",
+        "tensor/spec/layout/layout.cpp",
+        "tensor/spec/layout/page_config.cpp",
+        "tensor/spec/layout/tensor_layout.cpp",
+        "tensor/spec/memory_config/memory_config.cpp",
+        "tensor/topology/distributed_tensor_configs.cpp",
+        "tensor/topology/tensor_topology.cpp",
+        # Generated Cap'n Proto RPC server
+        ":inspector_rpc_server_gen",
+    ],
+    copts = [
+        "-Wno-int-to-pointer-cast",
+        "-DKJ_NO_EXCEPTIONS=0",
+        # Some impl sources use workspace-root-relative includes like
+        # <tt_stl/tt_stl/reflection.hpp>. Bazel doesn't add the workspace
+        # root to system include paths by default.
+        "-isystem",
+        ".",
+        "-isystem",
+        "$(GENDIR)",
+    ],
+    deps = [
+        ":impl_hdrs",
+        ":inspector_rpc_capnp",
+        "//tt_metal/common",
+        "//tt_metal/detail:detail_hdrs",
+        "//tt_metal/impl/flatbuffer:flatbuffer_schemas",
+        "//tt_metal/llrt",
+        "//tt_metal/third_party:tracy",
+        "@capnproto//src/capnp",
+        "@capnproto//src/capnp:capnp-rpc",
+        "@range-v3",
+        "@tt_logger//:tt_logger",
     ],
 )

@@ -1,0 +1,21 @@
+# tools — header-only target for profiler tool headers.
+#
+# In CMake, tools/profiler headers are accessible via the monolithic
+# tt_metal include path. This header-only target makes them available
+# to Bazel targets (impl/profiler) that include them.
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+package(default_visibility = ["//tt_metal:__subpackages__"])
+
+cc_library(
+    name = "profiler_hdrs",
+    hdrs = glob(
+        [
+            "profiler/**/*.hpp",
+            "profiler/**/*.h",
+        ],
+        allow_empty = True,
+    ),
+    includes = [".."],
+)

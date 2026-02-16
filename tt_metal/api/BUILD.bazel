@@ -95,3 +95,26 @@ cc_fbs_library(
         "//ttnn:__subpackages__",
     ],
 )
+
+# Broad API headers target for impl and other internal consumers.
+# Exports all tt-metalium headers so that internal libraries can include
+# any public API header without needing to declare individual subsets.
+cc_library(
+    name = "impl_api_hdrs",
+    hdrs = glob([
+        "tt-metalium/**/*.hpp",
+        "tt-metalium/**/*.h",
+    ]),
+    includes = [
+        ".",
+        "tt-metalium",
+    ],
+    deps = [
+        "//tt_stl",
+        "//tt_metal/hostdevcommon",
+        "//tt_metal/third_party/umd/device",
+        "@enchantum//:enchantum",
+        "@fmt",
+        "@nlohmann_json//:json",
+    ],
+)

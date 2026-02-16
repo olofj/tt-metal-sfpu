@@ -48,8 +48,14 @@ _LIBSTDCPP_COMPILE_FLAGS = [
 ]
 
 _LIBCPP_LINK_FLAGS = [
+    # Statically link libc++ and libc++abi so exec-config binaries
+    # (capnpc, flatc, protoc) can run without needing libc++.so in
+    # LD_LIBRARY_PATH. The hermetic toolchain bundles both static
+    # and shared libraries; static linking is more portable for tools.
+    "-Wl,-Bstatic",
     "-lc++",
     "-lc++abi",
+    "-Wl,-Bdynamic",
     "-lm",
     "-ldl",
     "-lpthread",

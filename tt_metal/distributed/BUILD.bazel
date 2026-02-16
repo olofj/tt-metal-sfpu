@@ -1,0 +1,29 @@
+# distributed — header-only target for mesh device/workload headers.
+#
+# In CMake, distributed/ is part of the monolithic tt_metal target.
+# This header-only target makes the headers available to other Bazel
+# targets (impl, fabric, etc.) that include them. The actual .cpp files
+# will be added when distributed/ gets its own full cc_library target
+# (Phase 4: core tt_metal library).
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+package(default_visibility = ["//tt_metal:__subpackages__"])
+
+cc_library(
+    name = "distributed_hdrs",
+    hdrs = glob(
+        [
+            "*.hpp",
+            "*.h",
+        ],
+        allow_empty = True,
+    ),
+    includes = [".."],
+    deps = [
+        "//tt_metal/api:impl_api_hdrs",
+        "//tt_metal/hostdevcommon",
+        "//tt_metal/third_party/umd/device",
+        "//tt_stl",
+    ],
+)

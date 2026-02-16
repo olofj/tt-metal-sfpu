@@ -24,6 +24,13 @@ build --copt=-Wall
 build --copt=-Werror
 build --copt=-Wno-deprecated-declarations
 
+# Disable -Werror for third-party code that we don't control.
+# Cap'n Proto triggers -Wconditional-uninitialized and -Wnontrivial-memcall
+# with Clang 20. External deps should not block the build on new warnings.
+# Both target and exec configs need this (exec builds compiler tools like capnpc).
+build --per_file_copt=external/.*@-Wno-error
+build --host_per_file_copt=external/.*@-Wno-error
+
 # Compressed debug sections (matches linking.cmake zlib compression)
 build --copt=-gz
 build --linkopt=-Wl,--compress-debug-sections=zlib

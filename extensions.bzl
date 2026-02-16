@@ -25,6 +25,19 @@ def _non_bcr_deps_impl(module_ctx):
         urls = ["https://github.com/capnproto/capnproto/archive/d135c9ca5e15219eaf131dfce1a41afdbaea9aab.tar.gz"],
         strip_prefix = "capnproto-d135c9ca5e15219eaf131dfce1a41afdbaea9aab/c++",
         # sha256 should be added after first successful fetch
+        # Cap'n Proto's BUILD files reference themselves as @capnp-cpp (their
+        # module name). Rewrite to @capnproto to match our repo name.
+        patch_cmds = [
+            # Fix self-references: upstream uses @capnp-cpp as its module name.
+            "sed -i 's|@capnp-cpp|@capnproto|g' src/capnp/BUILD.bazel src/capnp/cc_capnp_library.bzl src/capnp/compat/BUILD.bazel",
+            # Replace include_prefix with includes — capnp headers use relative
+            # includes like #include "message.h" which break with Bazel's virtual
+            # includes mechanism. Using includes = [".."] instead makes
+            # #include <capnp/...> and relative includes both work.
+            "sed -i 's|include_prefix = \"capnp\"|includes = [\"..\"]|g' src/capnp/BUILD.bazel",
+            "sed -i 's|include_prefix = \"kj\"|includes = [\"..\"]|g' src/kj/BUILD.bazel",
+            "sed -i 's|include_prefix = \"kj\"|includes = [\"..\"]|g' src/kj/compat/BUILD.bazel",
+        ],
     )
 
     # nanobind v2.10.2 — Python bindings

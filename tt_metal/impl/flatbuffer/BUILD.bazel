@@ -21,6 +21,37 @@ cc_fbs_library(
     visibility = ["//tt_metal:__subpackages__"],
 )
 
+# C++ serialization/deserialization headers for impl/.
+# These are NOT generated — they are hand-written wrappers that include
+# the generated FlatBuffer headers and provide typed conversion functions.
+# Separated from impl_hdrs because this directory is a Bazel sub-package.
+cc_library(
+    name = "flatbuffer_hdrs",
+    hdrs = glob(["*.hpp"]),
+    # includes = [".."] puts impl/ on the include path so that
+    # #include "flatbuffer/base_types_to_flatbuffer.hpp" resolves.
+    includes = [".."],
+    visibility = ["//tt_metal:__subpackages__"],
+    deps = [
+        ":flatbuffer_schemas",
+    ],
+)
+
+# Source files for FlatBuffer serialization — consumed by //tt_metal/impl.
+# These .cpp files are in this sub-package but compiled as part of the
+# parent impl cc_library.
+exports_files(
+    [
+        "base_types_from_flatbuffer.cpp",
+        "base_types_to_flatbuffer.cpp",
+        "buffer_types_from_flatbuffer.cpp",
+        "buffer_types_to_flatbuffer.cpp",
+        "program_types_from_flatbuffer.cpp",
+        "program_types_to_flatbuffer.cpp",
+    ],
+    visibility = ["//tt_metal/impl:__pkg__"],
+)
+
 cc_test(
     name = "fbs_compile_test",
     srcs = ["fbs_compile_test.cpp"],
