@@ -1,0 +1,203 @@
+"""Host C++ toolchain definitions matching CMake toolchain files.
+
+Toolchain variants:
+  clang20-libcpp     — cmake/x86_64-linux-clang-20-libcpp-toolchain.cmake
+  clang20-libstdcpp  — cmake/x86_64-linux-clang-20-libstdcpp-toolchain.cmake
+  gcc12              — cmake/x86_64-linux-gcc-12-toolchain.cmake
+  gcc14              — cmake/x86_64-linux-gcc-14-toolchain.cmake
+
+Linker selection mirrors cmake/linking.cmake: prefer mold, then LLD, then ld.
+Use --config=<name> in .bazelrc to select a toolchain.
+"""
+
+load(":cc_toolchain_config.bzl", "cc_toolchain_config")
+
+package(default_visibility = ["//visibility:public"])
+
+# ===================================================================
+# Filegroups (Bazel requires these for cc_toolchain)
+# ===================================================================
+
+filegroup(
+    name = "empty",
+    srcs = [],
+)
+
+# ===================================================================
+# Clang 20 + libc++
+# ===================================================================
+
+cc_toolchain_config(
+    name = "clang20_libcpp_config",
+    compiler = "clang",
+    compiler_version = "20",
+    stdlib = "libc++",
+    cc_path = "/usr/bin/clang-20",
+    cxx_path = "/usr/bin/clang++-20",
+    linker_path = "/usr/bin/ld.mold",
+    cxx_builtin_include_directories = [
+        "/usr/lib/llvm-20/include/c++/v1",
+        "/usr/lib/llvm-20/lib/clang/20/include",
+        "/usr/include",
+    ],
+)
+
+cc_toolchain(
+    name = "clang20_libcpp_toolchain",
+    all_files = ":empty",
+    compiler_files = ":empty",
+    dwp_files = ":empty",
+    linker_files = ":empty",
+    objcopy_files = ":empty",
+    strip_files = ":empty",
+    toolchain_config = ":clang20_libcpp_config",
+)
+
+toolchain(
+    name = "clang20_libcpp",
+    exec_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+    target_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+    toolchain = ":clang20_libcpp_toolchain",
+    toolchain_type = "@rules_cc//cc:toolchain_type",
+)
+
+# ===================================================================
+# Clang 20 + libstdc++
+# ===================================================================
+
+cc_toolchain_config(
+    name = "clang20_libstdcpp_config",
+    compiler = "clang",
+    compiler_version = "20",
+    stdlib = "libstdc++",
+    cc_path = "/usr/bin/clang-20",
+    cxx_path = "/usr/bin/clang++-20",
+    linker_path = "/usr/bin/ld.mold",
+    cxx_builtin_include_directories = [
+        "/usr/include/c++/14",
+        "/usr/include/x86_64-linux-gnu/c++/14",
+        "/usr/lib/llvm-20/lib/clang/20/include",
+        "/usr/include",
+    ],
+)
+
+cc_toolchain(
+    name = "clang20_libstdcpp_toolchain",
+    all_files = ":empty",
+    compiler_files = ":empty",
+    dwp_files = ":empty",
+    linker_files = ":empty",
+    objcopy_files = ":empty",
+    strip_files = ":empty",
+    toolchain_config = ":clang20_libstdcpp_config",
+)
+
+toolchain(
+    name = "clang20_libstdcpp",
+    exec_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+    target_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+    toolchain = ":clang20_libstdcpp_toolchain",
+    toolchain_type = "@rules_cc//cc:toolchain_type",
+)
+
+# ===================================================================
+# GCC 12
+# ===================================================================
+
+cc_toolchain_config(
+    name = "gcc12_config",
+    compiler = "gcc",
+    compiler_version = "12",
+    stdlib = "libstdc++",
+    cc_path = "/usr/bin/gcc-12",
+    cxx_path = "/usr/bin/g++-12",
+    linker_path = "/usr/bin/ld",
+    cxx_builtin_include_directories = [
+        "/usr/include/c++/12",
+        "/usr/include/x86_64-linux-gnu/c++/12",
+        "/usr/lib/gcc/x86_64-linux-gnu/12/include",
+        "/usr/include",
+    ],
+)
+
+cc_toolchain(
+    name = "gcc12_toolchain",
+    all_files = ":empty",
+    compiler_files = ":empty",
+    dwp_files = ":empty",
+    linker_files = ":empty",
+    objcopy_files = ":empty",
+    strip_files = ":empty",
+    toolchain_config = ":gcc12_config",
+)
+
+toolchain(
+    name = "gcc12",
+    exec_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+    target_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+    toolchain = ":gcc12_toolchain",
+    toolchain_type = "@rules_cc//cc:toolchain_type",
+)
+
+# ===================================================================
+# GCC 14
+# ===================================================================
+
+cc_toolchain_config(
+    name = "gcc14_config",
+    compiler = "gcc",
+    compiler_version = "14",
+    stdlib = "libstdc++",
+    cc_path = "/usr/bin/gcc-14",
+    cxx_path = "/usr/bin/g++-14",
+    linker_path = "/usr/bin/ld",
+    cxx_builtin_include_directories = [
+        "/usr/include/c++/14",
+        "/usr/include/x86_64-linux-gnu/c++/14",
+        "/usr/lib/gcc/x86_64-linux-gnu/14/include",
+        "/usr/include",
+    ],
+)
+
+cc_toolchain(
+    name = "gcc14_toolchain",
+    all_files = ":empty",
+    compiler_files = ":empty",
+    dwp_files = ":empty",
+    linker_files = ":empty",
+    objcopy_files = ":empty",
+    strip_files = ":empty",
+    toolchain_config = ":gcc14_config",
+)
+
+toolchain(
+    name = "gcc14",
+    exec_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+    target_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+    toolchain = ":gcc14_toolchain",
+    toolchain_type = "@rules_cc//cc:toolchain_type",
+)

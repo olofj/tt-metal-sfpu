@@ -4,3 +4,27 @@ build --host_cxxopt=-std=c++20
 
 # Use C++20 for all targets
 build --action_env=BAZEL_CXXOPTS=-std=c++20
+
+# ===========================================================================
+# C++ toolchain configurations
+#
+# Usage: bazel build --config=<name> //<target>
+#
+# These mirror the CMake toolchain files in cmake/*.cmake.
+# Linker selection (mold > LLD > ld) is baked into each toolchain config.
+# ===========================================================================
+
+# Enable custom toolchain resolution (required for registered toolchains)
+build --incompatible_enable_cc_toolchain_resolution
+
+# Clang 20 + libc++ (default for the project, matches cmake/x86_64-linux-clang-20-libcpp-toolchain.cmake)
+build:clang20-libcpp --extra_toolchains=//toolchain:clang20_libcpp
+
+# Clang 20 + libstdc++ (matches cmake/x86_64-linux-clang-20-libstdcpp-toolchain.cmake)
+build:clang20-libstdcpp --extra_toolchains=//toolchain:clang20_libstdcpp
+
+# GCC 12 (matches cmake/x86_64-linux-gcc-12-toolchain.cmake)
+build:gcc12 --extra_toolchains=//toolchain:gcc12
+
+# GCC 14 (matches cmake/x86_64-linux-gcc-14-toolchain.cmake)
+build:gcc14 --extra_toolchains=//toolchain:gcc14

@@ -89,3 +89,14 @@ use_repo(non_bcr_deps, "enchantum")
 
 # tt-logger — Tenstorrent logging library. Not on BCR.
 use_repo(non_bcr_deps, "tt_logger")
+
+# ===========================================================================
+# C++ toolchains — mirrors cmake/*-toolchain.cmake + cmake/linking.cmake
+# ===========================================================================
+
+register_toolchains(
+    "//toolchain:clang20_libcpp",
+    "//toolchain:clang20_libstdcpp",
+    "//toolchain:gcc12",
+    "//toolchain:gcc14",
+)
