@@ -1,10 +1,13 @@
-# jit_build — header-only target for JIT build system headers.
+# jit_build — JIT kernel compilation engine for TT-Metalium.
 #
-# In CMake, jit_build/ is part of the monolithic tt_metal target.
-# This header-only target makes the headers available to other Bazel
-# targets (impl, etc.) that include them. The actual .cpp files will
-# be added when jit_build/ gets its own full cc_library target
-# (Phase 4: core tt_metal library).
+# Mirrors the CMake OBJECT library: jit_build
+# Contains 9 source files for runtime compilation of device kernels,
+# dependency tracking, generated file creation, and build caching.
+#
+# In CMake, jit_build is an OBJECT library merged into the monolithic
+# tt_metal.so. The header-only target (jit_build_hdrs) breaks the
+# circular dependency: impl depends on jit_build headers, and jit_build
+# depends on impl headers.
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
@@ -25,5 +28,46 @@ cc_library(
         "//tt_metal/hostdevcommon",
         "//tt_metal/third_party/umd/device",
         "//tt_stl",
+    ],
+)
+
+# ---------------------------------------------------------------------------
+# Full jit_build library — all 9 source files.
+# ---------------------------------------------------------------------------
+
+cc_library(
+    name = "jit_build",
+    srcs = [
+        "build.cpp",
+        "build_env_manager.cpp",
+        "data_format.cpp",
+        "depend.cpp",
+        "genfiles.cpp",
+        "jit_build_cache.cpp",
+        "jit_build_options.cpp",
+        "jit_build_utils.cpp",
+        "kernel_args.cpp",
+    ],
+    copts = [
+        # check_built_dir() is only used when GIT_COMMIT_HASH is defined.
+        # Without it (no --stamp), the function is unused.
+        "-Wno-unused-function",
+        # Some jit_build sources use workspace-root-relative includes like
+        # <tt_stl/tt_stl/reflection.hpp> and <impl/dispatch/...>.
+        "-isystem",
+        ".",
+        "-isystem",
+        "$(GENDIR)",
+    ],
+    deps = [
+        ":jit_build_hdrs",
+        "//tt_metal/common",
+        "//tt_metal/impl:impl_hdrs",
+        "//tt_metal/llrt:llrt_hdrs",
+        "//tt_metal/third_party:tracy",
+        "@enchantum//:enchantum",
+        "@fmt",
+        "@taskflow//:taskflow",
+        "@tt_logger//:tt_logger",
     ],
 )
