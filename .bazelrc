@@ -35,6 +35,12 @@ build --host_per_file_copt=external/.*@-Wno-error
 build --copt=-gz
 build --linkopt=-Wl,--compress-debug-sections=zlib
 
+# Version stamping via git tags (replicates setuptools_scm "guess-next-dev").
+# Off by default for dev builds (faster, no cache invalidation on git changes).
+# CI configs below enable --stamp for packaging/release builds.
+build --workspace_status_command=bazel/stamp_version.sh
+build --nostamp
+
 # ===========================================================================
 # Build type configurations
 #
@@ -62,6 +68,7 @@ build:relwithdebinfo --linkopt=-Wl,--gdb-index
 
 # Release (CMake: standard Release flags, no debug symbols/defines)
 build:release --copt=-O3
+build:release --stamp
 
 # ===========================================================================
 # Sanitizer configurations
@@ -197,6 +204,7 @@ build:ci --remote_cache=grpcs://remote.buildbuddy.io
 build:ci --remote_upload_local_results=true
 build:ci --remote_instance_name=tt-metal
 build:ci --remote_timeout=3600
+build:ci --stamp
 
 # Read-only variant for untrusted builds (forks, external PRs).
 # Prevents cache poisoning while still benefiting from cache hits.

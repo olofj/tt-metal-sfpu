@@ -1,1 +1,30 @@
 # Required to make this directory a Bazel package so .bzl files can be loaded.
+
+load("//bazel:stamp_version.bzl", "stamp_version")
+
+# Version stamp targets — extract values from workspace status.
+# Build with --stamp to embed real versions (CI/release).
+# Without --stamp (default), these still work but won't trigger rebuilds on git changes.
+
+stamp_version(
+    name = "version",
+    key = "STABLE_VERSION",
+    visibility = ["//visibility:public"],
+)
+
+stamp_version(
+    name = "git_commit",
+    key = "STABLE_GIT_COMMIT",
+    fallback = "unknown",
+    visibility = ["//visibility:public"],
+)
+
+stamp_version(
+    name = "git_tag",
+    key = "STABLE_GIT_TAG",
+    fallback = "untagged",
+    visibility = ["//visibility:public"],
+)
+
+# Export the stamp script so it can be tested.
+exports_files(["stamp_version.sh"])
