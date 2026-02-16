@@ -1,0 +1,23 @@
+load("//ttnn/bazel:ttnn_operation.bzl", "ttnn_operation")
+
+ttnn_operation(
+    name = "point_to_point",
+    srcs = [
+        "device/host/point_to_point_device_op.cpp",
+        "device/host/receive_program_factory.cpp",
+        "device/host/send_program_factory.cpp",
+        "point_to_point.cpp",
+    ],
+    hdrs = glob(
+        ["**/*.hpp", "**/*.h"],
+        exclude = ["device/kernels/**"],
+        allow_empty = True,
+    ),
+    extra_hdrs_deps = [
+        "//ttnn/cpp/ttnn/operations/ccl:ccl_hdrs",
+    ],
+    extra_deps = [
+        "//ttnn/cpp/ttnn/operations/ccl:ccl_hdrs",
+        "//ttnn/cpp/ttnn/operations/data_movement:data_movement_hdrs",
+    ],
+)

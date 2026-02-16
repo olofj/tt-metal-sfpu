@@ -1,0 +1,17 @@
+load("//ttnn/bazel:ttnn_operation.bzl", "ttnn_operation")
+
+ttnn_operation(
+    name = "debug",
+    srcs = [
+        "apply_device_delay.cpp",
+        "device/apply_device_delay_device_operation.cpp",
+    ],
+    hdrs = glob(
+        ["**/*.hpp", "**/*.h"],
+        exclude = ["device/kernels/**"],
+        allow_empty = True,
+    ),
+    extra_deps = [
+        "//ttnn/cpp/ttnn/operations/data_movement:data_movement_hdrs",
+    ],
+)

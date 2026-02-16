@@ -1,0 +1,9 @@
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+# Interface-only library: provides pad_tile.hpp as a device kernel header
+# (shipped to device for JIT compilation, not compiled by host).
+cc_library(
+    name = "kernel_helper_functions",
+    hdrs = ["pad_tile.hpp"],
+    visibility = ["//ttnn:__subpackages__"],
+)

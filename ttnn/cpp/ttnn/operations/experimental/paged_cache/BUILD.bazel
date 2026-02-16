@@ -1,0 +1,26 @@
+load("//ttnn/bazel:ttnn_operation.bzl", "ttnn_operation")
+
+ttnn_operation(
+    name = "paged_cache",
+    srcs = [
+        "device/fill_cache/paged_fill_cache_device_operation.cpp",
+        "device/fill_cache/paged_fill_cache_program_factory.cpp",
+        "device/fused_update_cache/paged_fused_update_cache_device_operation.cpp",
+        "device/fused_update_cache/paged_row_major_fused_update_cache_program_factory.cpp",
+        "device/fused_update_cache/paged_tiled_fused_update_cache_program_factory.cpp",
+        "device/update_cache/paged_update_cache_device_operation.cpp",
+        "device/update_cache/paged_update_cache_program_factory.cpp",
+        "paged_cache.cpp",
+    ],
+    hdrs = glob(
+        ["**/*.hpp", "**/*.h"],
+        exclude = ["device/kernels/**"],
+        allow_empty = True,
+    ),
+    extra_hdrs_deps = [
+        "//ttnn/cpp/ttnn/operations/core:core_hdrs",
+    ],
+    extra_deps = [
+        "//ttnn/cpp/ttnn/operations/core:core_hdrs",
+    ],
+)

@@ -50,18 +50,21 @@ cc_library(
         "core/tensor/py_to_tt_tensor.cpp",
     ],
     hdrs =
+        # All headers in the ttnn package. The glob automatically stops at
+        # subpackage boundaries (directories with their own BUILD.bazel),
+        # so operation headers under cpp/ttnn/operations/*/ are NOT included.
+        # Those are accessed via _hdrs deps listed below.
         glob(
             [
                 "api/**/*.hpp",
+                "core/**/*.hpp",
                 "cpp/ttnn/**/*.hpp",
                 "cpp/ttnn/**/*.h",
-                "core/**/*.hpp",
             ],
             exclude = [
                 # Subpackage — has its own BUILD.bazel
                 "core/tensor/flatbuffer/**",
-                # Kernel files are handled by the second glob below (which
-                # also picks up .cpp files that are shipped as JIT headers).
+                # Kernel files handled by the second glob below.
                 "cpp/ttnn/kernel/**",
             ],
             allow_empty = True,
@@ -99,6 +102,12 @@ cc_library(
         "//tt_metal:tt_metal",
         "//ttnn/core/tensor/flatbuffer:flatbuffer_hdrs",
         "//ttnn/core/tensor/flatbuffer:flatbuffer_schemas",
+        # Operation _hdrs targets needed because ttnn_core source files
+        # include operation headers (a legacy circular dependency from CMake).
+        # The _hdrs targets are dependency-free, so no cycle is created.
+        "//ttnn/cpp/ttnn/operations/core:core_hdrs",
+        "//ttnn/cpp/ttnn/operations/data_movement:data_movement_hdrs",
+        "//ttnn/cpp/ttnn/operations/experimental/ccl:ccl_hdrs",
         "@boost.algorithm",
         "@flatbuffers//:flatbuffers",
         "@fmt",

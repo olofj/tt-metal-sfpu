@@ -1,0 +1,29 @@
+load("//ttnn/bazel:ttnn_operation.bzl", "ttnn_operation")
+
+ttnn_operation(
+    name = "cnn",
+    srcs = [
+        "convert_to_chw/convert_to_chw.cpp",
+        "convert_to_chw/device/convert_to_chw_device_operation.cpp",
+        "convert_to_chw/device/convert_to_chw_program_factory.cpp",
+        "convert_to_hwc/convert_to_hwc.cpp",
+        "convert_to_hwc/device/convert_to_hwc_device_operation.cpp",
+        "convert_to_hwc/device/convert_to_hwc_program_factory.cpp",
+        "convert_to_hwc/device/gather.cpp",
+    ],
+    hdrs = glob(["**/*.hpp", "**/*.h"], allow_empty = True),
+    kernel_hdrs = glob(
+        [
+            "convert_to_chw/device/kernels/**",
+            "convert_to_hwc/device/kernels/**",
+        ],
+        exclude = ["**/*.hpp", "**/*.h"],
+        allow_empty = True,
+    ),
+    extra_hdrs_deps = [
+        "//ttnn/cpp/ttnn/operations/data_movement:data_movement_hdrs",
+    ],
+    extra_deps = [
+        "//ttnn/cpp/ttnn/operations/data_movement:data_movement_hdrs",
+    ],
+)

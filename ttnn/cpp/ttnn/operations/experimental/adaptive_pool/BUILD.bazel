@@ -1,0 +1,23 @@
+load("//ttnn/bazel:ttnn_operation.bzl", "ttnn_operation")
+
+ttnn_operation(
+    name = "adaptive_pool",
+    srcs = [
+        "adaptive_pool_utils.cpp",
+        "adaptive_pools.cpp",
+    ],
+    hdrs = glob(
+        ["**/*.hpp", "**/*.h"],
+        exclude = ["device/kernels/**"],
+        allow_empty = True,
+    ),
+    extra_hdrs_deps = [
+        "//ttnn/cpp/ttnn/operations/core:core_hdrs",
+        "//ttnn/cpp/ttnn/operations/pool:pool_hdrs",
+        "//ttnn/cpp/ttnn/operations/sliding_window:sliding_window_hdrs",
+    ],
+    extra_deps = [
+        "//ttnn/cpp/ttnn/operations/core:core_hdrs",
+        "//ttnn/cpp/ttnn/operations/pool:pool_hdrs",
+    ],
+)

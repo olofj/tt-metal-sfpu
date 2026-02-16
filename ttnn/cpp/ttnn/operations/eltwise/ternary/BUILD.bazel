@@ -1,0 +1,28 @@
+load("//ttnn/bazel:ttnn_operation.bzl", "ttnn_operation")
+
+ttnn_operation(
+    name = "ternary",
+    srcs = [
+        "device/ternary_device_operation.cpp",
+        "device/ternary_op_utils.cpp",
+        "device/ternary_program_factory.cpp",
+        "ternary.cpp",
+        "ternary_composite_op.cpp",
+    ],
+    hdrs = glob(
+        ["**/*.hpp", "**/*.h"],
+        exclude = ["device/kernels/**"],
+        allow_empty = True,
+    ),
+    extra_hdrs_deps = [
+        "//ttnn/cpp/ttnn/operations/core:core_hdrs",
+        "//ttnn/cpp/ttnn/operations/eltwise/binary:binary_hdrs",
+        "//ttnn/cpp/ttnn/operations/eltwise/unary:unary_hdrs",
+    ],
+    extra_deps = [
+        "//ttnn/cpp/ttnn/operations/data_movement:data_movement_hdrs",
+        "//ttnn/cpp/ttnn/operations/eltwise/binary:binary_hdrs",
+        "//ttnn/cpp/ttnn/operations/eltwise/binary_ng:binary_ng_hdrs",
+        "//ttnn/cpp/ttnn/operations/eltwise/unary:unary_hdrs",
+    ],
+)

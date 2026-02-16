@@ -1,0 +1,15 @@
+load("//ttnn/bazel:ttnn_operation.bzl", "ttnn_operation")
+
+ttnn_operation(
+    name = "full_like",
+    srcs = [
+        "device/full_like_device_operation.cpp",
+        "device/full_like_factory.cpp",
+        "full_like.cpp",
+    ],
+    hdrs = glob(
+        ["**/*.hpp", "**/*.h"],
+        exclude = ["device/kernels/**"],
+        allow_empty = True,
+    ),
+)

@@ -1,0 +1,28 @@
+load("//ttnn/bazel:ttnn_operation.bzl", "ttnn_operation")
+
+ttnn_operation(
+    name = "minimal_matmul",
+    srcs = [
+        "device/minimal_matmul_device_operation.cpp",
+        "device/minimal_matmul_program_factory.cpp",
+        "minimal_matmul.cpp",
+        "minimal_matmul_split.cpp",
+    ],
+    hdrs = glob(
+        ["**/*.hpp", "**/*.h"],
+        exclude = ["device/kernels/**"],
+        allow_empty = True,
+    ),
+    # NOTE: ccl excluded to break circular _hdrs deps
+    # (ccl→experimental/ccl→minimal_matmul→ccl). Full target has it via extra_deps.
+    extra_hdrs_deps = [
+        "//ttnn/cpp/ttnn/operations/core:core_hdrs",
+        "//ttnn/cpp/ttnn/operations/eltwise/unary:unary_hdrs",
+    ],
+    extra_deps = [
+        "//ttnn/cpp/ttnn/operations/ccl:ccl_hdrs",
+        "//ttnn/cpp/ttnn/operations/core:core_hdrs",
+        "//ttnn/cpp/ttnn/operations/eltwise/unary:unary_hdrs",
+        "//ttnn/cpp/ttnn/operations/experimental/ccl:ccl_hdrs",
+    ],
+)

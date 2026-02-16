@@ -1,0 +1,24 @@
+load("//ttnn/bazel:ttnn_operation.bzl", "ttnn_operation")
+
+ttnn_operation(
+    name = "prefetcher",
+    srcs = [
+        "prefetcher/device/dram_prefetcher_device_operation.cpp",
+        "prefetcher/device/dram_prefetcher_program_factory.cpp",
+        "prefetcher/dram_prefetcher.cpp",
+    ],
+    hdrs = glob(["**/*.hpp", "**/*.h"], allow_empty = True),
+    kernel_hdrs = glob(
+        [
+            "prefetcher/device/kernels/**",
+        ],
+        exclude = ["**/*.hpp", "**/*.h"],
+        allow_empty = True,
+    ),
+    extra_hdrs_deps = [
+        "//ttnn/cpp/ttnn/operations/core:core_hdrs",
+    ],
+    extra_deps = [
+        "//ttnn/cpp/ttnn/operations/ccl:ccl_hdrs",
+    ],
+)

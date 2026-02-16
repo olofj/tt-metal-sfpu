@@ -1,0 +1,35 @@
+load("//ttnn/bazel:ttnn_operation.bzl", "ttnn_operation")
+
+ttnn_operation(
+    name = "unary",
+    srcs = [
+        "common/unary_op_utils.cpp",
+        "device/unary_composite_op.cpp",
+        "device/unary_device_operation.cpp",
+        "device/unary_program_factory.cpp",
+        "device/unary_sharded_program_factory.cpp",
+        "unary.cpp",
+    ],
+    hdrs = glob(
+        ["**/*.hpp", "**/*.h"],
+        exclude = ["device/kernels/**"],
+        allow_empty = True,
+    ),
+    # NOTE: eltwise/binary and eltwise/ternary excluded to break circular
+    # _hdrs deps (binary_hdrs→unary_hdrs, ternary_hdrs→unary_hdrs).
+    # The full :unary target still depends on them via extra_deps.
+    extra_hdrs_deps = [
+        "//ttnn/cpp/ttnn/operations/core:core_hdrs",
+        "//ttnn/cpp/ttnn/operations/data_movement:data_movement_hdrs",
+        "//ttnn/cpp/ttnn/operations/eltwise/complex:complex_hdrs",
+    ],
+    extra_deps = [
+        "//ttnn/cpp/ttnn/operations/core:core_hdrs",
+        "//ttnn/cpp/ttnn/operations/data_movement:data_movement_hdrs",
+        "//ttnn/cpp/ttnn/operations/eltwise/binary:binary_hdrs",
+        "//ttnn/cpp/ttnn/operations/eltwise/complex:complex_hdrs",
+        "//ttnn/cpp/ttnn/operations/eltwise/complex_unary:complex_unary_hdrs",
+        "//ttnn/cpp/ttnn/operations/eltwise/ternary:ternary_hdrs",
+        "//ttnn/cpp/ttnn/operations/reduction:reduction_hdrs",
+    ],
+)

@@ -1,19 +1,20 @@
 load("//ttnn/bazel:ttnn_operation.bzl", "ttnn_operation")
 
 ttnn_operation(
-    name = "bernoulli",
+    name = "moe_gate_mm",
     srcs = [
-        "bernoulli.cpp",
-        "device/bernoulli_device_operation.cpp",
-        "device/bernoulli_program_factory.cpp",
+        "device/moe_gate_mm_device_operation.cpp",
+        "device/moe_gate_mm_program_factory.cpp",
     ],
     hdrs = glob(
         ["**/*.hpp", "**/*.h"],
         exclude = ["device/kernels/**"],
         allow_empty = True,
     ),
-    # kernel_hdrs auto-globs device/kernels/**
     extra_hdrs_deps = [
+        "//ttnn/cpp/ttnn/operations/core:core_hdrs",
+    ],
+    extra_deps = [
         "//ttnn/cpp/ttnn/operations/core:core_hdrs",
     ],
 )

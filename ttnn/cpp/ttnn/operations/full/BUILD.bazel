@@ -1,0 +1,18 @@
+load("//ttnn/bazel:ttnn_operation.bzl", "ttnn_operation")
+
+ttnn_operation(
+    name = "full",
+    srcs = [
+        "device/full_device_operation.cpp",
+        "device/full_program_factory.cpp",
+        "full.cpp",
+    ],
+    hdrs = glob(
+        ["**/*.hpp", "**/*.h"],
+        exclude = ["device/kernels/**"],
+        allow_empty = True,
+    ),
+    extra_deps = [
+        "//ttnn/cpp/ttnn/operations/moreh:moreh_hdrs",
+    ],
+)

@@ -1,19 +1,22 @@
 load("//ttnn/bazel:ttnn_operation.bzl", "ttnn_operation")
 
 ttnn_operation(
-    name = "bernoulli",
+    name = "conv3d",
     srcs = [
-        "bernoulli.cpp",
-        "device/bernoulli_device_operation.cpp",
-        "device/bernoulli_program_factory.cpp",
+        "conv3d.cpp",
+        "device/conv3d_device_operation.cpp",
+        "device/conv3d_program_factory.cpp",
     ],
     hdrs = glob(
         ["**/*.hpp", "**/*.h"],
         exclude = ["device/kernels/**"],
         allow_empty = True,
     ),
-    # kernel_hdrs auto-globs device/kernels/**
     extra_hdrs_deps = [
         "//ttnn/cpp/ttnn/operations/core:core_hdrs",
+    ],
+    extra_deps = [
+        "//ttnn/cpp/ttnn/operations/core:core_hdrs",
+        "//ttnn/cpp/ttnn/operations/data_movement:data_movement_hdrs",
     ],
 )

@@ -1,0 +1,18 @@
+load("//ttnn/bazel:ttnn_operation.bzl", "ttnn_operation")
+
+ttnn_operation(
+    name = "unary_backward",
+    srcs = [
+        "gelu_backward/device/gelu_backward_device_operation.cpp",
+        "gelu_backward/device/gelu_backward_program_factory.cpp",
+        "gelu_backward/gelu_backward.cpp",
+    ],
+    hdrs = glob(["**/*.hpp", "**/*.h"], allow_empty = True),
+    kernel_hdrs = glob(
+        [
+            "gelu_backward/device/kernels/**",
+        ],
+        exclude = ["**/*.hpp", "**/*.h"],
+        allow_empty = True,
+    ),
+)

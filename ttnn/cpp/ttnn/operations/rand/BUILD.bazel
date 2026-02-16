@@ -1,19 +1,18 @@
 load("//ttnn/bazel:ttnn_operation.bzl", "ttnn_operation")
 
 ttnn_operation(
-    name = "bernoulli",
+    name = "rand",
     srcs = [
-        "bernoulli.cpp",
-        "device/bernoulli_device_operation.cpp",
-        "device/bernoulli_program_factory.cpp",
+        "device/rand_device_operation.cpp",
+        "device/rand_program_factory.cpp",
+        "rand.cpp",
     ],
     hdrs = glob(
         ["**/*.hpp", "**/*.h"],
         exclude = ["device/kernels/**"],
         allow_empty = True,
     ),
-    # kernel_hdrs auto-globs device/kernels/**
-    extra_hdrs_deps = [
+    extra_deps = [
         "//ttnn/cpp/ttnn/operations/core:core_hdrs",
     ],
 )

@@ -1,0 +1,28 @@
+load("//ttnn/bazel:ttnn_operation.bzl", "ttnn_operation")
+
+ttnn_operation(
+    name = "binary_ng",
+    srcs = [
+        "device/binary_ng_device_operation.cpp",
+        "device/binary_ng_program_factory.cpp",
+        "device/binary_ng_utils.cpp",
+    ],
+    hdrs = glob(["**/*.hpp", "**/*.h"], allow_empty = True),
+    kernel_hdrs = glob(
+        [
+            "device/kernels/**",
+            "device/kernels_ng/**",
+        ],
+        exclude = ["**/*.hpp", "**/*.h"],
+        allow_empty = True,
+    ),
+    extra_hdrs_deps = [
+        "//ttnn/cpp/ttnn/operations/core:core_hdrs",
+        "//ttnn/cpp/ttnn/operations/eltwise/binary:binary_hdrs",
+        "//ttnn/cpp/ttnn/operations/eltwise/unary:unary_hdrs",
+    ],
+    extra_deps = [
+        "//ttnn/cpp/ttnn/operations/eltwise/binary:binary_hdrs",
+        "//ttnn/cpp/ttnn/operations/eltwise/unary:unary_hdrs",
+    ],
+)

@@ -15,18 +15,23 @@ ttnn_operation(
         "device/element_wise_multi_core_program_factory.cpp",
         "device/element_wise_multi_core_sfpu_pgm_factory.cpp",
     ],
-    hdrs = [
-        "binary.hpp",
-        "binary_composite.hpp",
-        "common/binary_op_types.hpp",
-        "common/binary_op_utils.hpp",
-        "device/binary_composite_op.hpp",
-        "device/binary_device_operation.hpp",
-        "device/eltwise_multi_core_program_factory_common.hpp",
-    ],
+    hdrs = glob(
+        ["**/*.hpp", "**/*.h"],
+        exclude = ["device/kernels/**"],
+        allow_empty = True,
+    ),
     # Cross-operation deps: binary_composite_op.cpp includes matmul headers.
     # Uses _hdrs target to avoid circular dep (matmul also includes binary).
+    extra_hdrs_deps = [
+        "//ttnn/cpp/ttnn/operations/core:core_hdrs",
+        "//ttnn/cpp/ttnn/operations/eltwise/unary:unary_hdrs",
+    ],
     extra_deps = [
+        "//ttnn/cpp/ttnn/operations/core:core_hdrs",
+        "//ttnn/cpp/ttnn/operations/data_movement:data_movement_hdrs",
+        "//ttnn/cpp/ttnn/operations/eltwise/binary_ng:binary_ng_hdrs",
+        "//ttnn/cpp/ttnn/operations/eltwise/ternary:ternary_hdrs",
+        "//ttnn/cpp/ttnn/operations/eltwise/unary:unary_hdrs",
         "//ttnn/cpp/ttnn/operations/matmul:matmul_hdrs",
     ],
     # kernel_hdrs auto-globs device/kernels/**

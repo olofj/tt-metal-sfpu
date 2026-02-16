@@ -19,29 +19,25 @@ ttnn_operation(
         "device/sparse/factory/sparse_matmul_multicore_reuse_mcast_1d_optimized.cpp",
         "device/sparse/sparse_matmul_device_operation.cpp",
     ],
-    hdrs = [
-        "matmul.hpp",
-        "device/config/matmul_program_config.hpp",
-        "device/config/matmul_program_config_types.hpp",
-        "device/factory/matmul_multicore_program_factory.hpp",
-        "device/factory/matmul_multicore_reuse_batched_hs_dram_sharded_program_factory.hpp",
-        "device/factory/matmul_multicore_reuse_mcast_1d_program_factory.hpp",
-        "device/factory/matmul_multicore_reuse_mcast_2d_program_factory.hpp",
-        "device/factory/matmul_multicore_reuse_mcast_dram_sharded_program_factory.hpp",
-        "device/factory/matmul_multicore_reuse_optimized_program_factory.hpp",
-        "device/factory/matmul_multicore_reuse_program_factory.hpp",
-        "device/matmul_1d_type.hpp",
-        "device/matmul_device_operation.hpp",
-        "device/matmul_device_operation_types.hpp",
-        "device/sparse/factory/sparse_matmul_multicore_reuse_mcast_1d_optimized.hpp",
-        "device/sparse/sparse_matmul_device_operation.hpp",
-        "device/sparse/sparse_matmul_device_operation_types.hpp",
-        "device/utilities/matmul_utilities.hpp",
-    ],
+    hdrs = glob(
+        ["**/*.hpp", "**/*.h"],
+        exclude = ["device/kernels/**"],
+        allow_empty = True,
+    ),
     # Cross-operation deps: matmul.cpp includes eltwise/binary headers.
     # Uses _hdrs target to avoid circular dep (binary also includes matmul).
+    # NOTE: ccl excluded to break circular _hdrs deps
+    # (ccl→experimental/ccl→matmul→ccl). Full target has it via extra_deps.
+    extra_hdrs_deps = [
+        "//ttnn/cpp/ttnn/operations/core:core_hdrs",
+        "//ttnn/cpp/ttnn/operations/eltwise/unary:unary_hdrs",
+    ],
     extra_deps = [
+        "//ttnn/cpp/ttnn/operations/ccl:ccl_hdrs",
+        "//ttnn/cpp/ttnn/operations/data_movement:data_movement_hdrs",
         "//ttnn/cpp/ttnn/operations/eltwise/binary:binary_hdrs",
+        "//ttnn/cpp/ttnn/operations/eltwise/unary:unary_hdrs",
+        "//ttnn/cpp/ttnn/operations/kernel_helper_functions",
     ],
     # kernel_hdrs auto-globs device/kernels/**
 )

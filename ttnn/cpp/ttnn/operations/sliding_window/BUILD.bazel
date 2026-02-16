@@ -1,0 +1,30 @@
+load("//ttnn/bazel:ttnn_operation.bzl", "ttnn_operation")
+
+ttnn_operation(
+    name = "sliding_window",
+    srcs = [
+        "halo/device/halo_device_operation.cpp",
+        "halo/device/untilize_with_halo_program_factory.cpp",
+        "halo/halo.cpp",
+        "op_slicing/op_slicing.cpp",
+        "sliding_window.cpp",
+    ],
+    hdrs = glob(["**/*.hpp", "**/*.h"], allow_empty = True),
+    kernel_hdrs = glob(
+        [
+            "halo/device/kernels/**",
+        ],
+        exclude = ["**/*.hpp", "**/*.h"],
+        allow_empty = True,
+    ),
+    extra_hdrs_deps = [
+        "//ttnn/cpp/ttnn/operations/core:core_hdrs",
+    ],
+    extra_deps = [
+        "//ttnn/cpp/ttnn/operations/conv:conv_hdrs",
+        "//ttnn/cpp/ttnn/operations/core:core_hdrs",
+        "//ttnn/cpp/ttnn/operations/data_movement:data_movement_hdrs",
+        "//ttnn/cpp/ttnn/operations/experimental/padded_slice:padded_slice_hdrs",
+        "//ttnn/cpp/ttnn/operations/experimental/slice_write:slice_write_hdrs",
+    ],
+)

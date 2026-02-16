@@ -1,0 +1,37 @@
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+# Header-only target: no deps to avoid circular dependency with ttnn_core.
+# The core operation's headers are included by ttnn_core files.
+cc_library(
+    name = "core_hdrs",
+    hdrs = glob(
+        ["**/*.hpp", "**/*.h"],
+        allow_empty = True,
+    ),
+    includes = ["."],
+    visibility = ["//ttnn:__subpackages__"],
+)
+
+# The core operation is special: both TTNN::Core and TT::Metalium are PUBLIC
+# dependencies in CMake (its headers expose types from both).
+cc_library(
+    name = "core",
+    srcs = [
+        "compute_kernel/compute_kernel_config.cpp",
+        "core.cpp",
+        "to_dtype/to_dtype_op.cpp",
+        "to_layout/to_layout_op.cpp",
+    ],
+    copts = [
+        "-Wno-c++11-narrowing",
+        "-Wno-unused-lambda-capture",
+    ],
+    visibility = ["//ttnn:__subpackages__"],
+    deps = [
+        ":core_hdrs",
+        "//tt_metal:tt_metal",
+        "//ttnn:ttnn_core",
+        "//ttnn/cpp/ttnn/operations/data_movement:data_movement_hdrs",
+        "//ttnn/cpp/ttnn/operations/experimental/reshape:reshape_hdrs",
+    ],
+)

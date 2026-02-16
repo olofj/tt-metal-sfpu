@@ -1,0 +1,22 @@
+load("//ttnn/bazel:ttnn_operation.bzl", "ttnn_operation")
+
+ttnn_operation(
+    name = "padded_slice",
+    srcs = [
+        "device/padded_slice_device_operation.cpp",
+        "device/padded_slice_rm_program_factory.cpp",
+        "device/padded_slice_tile_program_factory.cpp",
+        "device/padded_slice_utils.cpp",
+        "padded_slice.cpp",
+    ],
+    hdrs = glob(
+        ["**/*.hpp", "**/*.h"],
+        exclude = ["device/kernels/**"],
+        allow_empty = True,
+    ),
+    extra_deps = [
+        "//ttnn/cpp/ttnn/operations/core:core_hdrs",
+        "//ttnn/cpp/ttnn/operations/data_movement:data_movement_hdrs",
+        "//ttnn/cpp/ttnn/operations/experimental/reshape:reshape_hdrs",
+    ],
+)

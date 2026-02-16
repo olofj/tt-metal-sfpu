@@ -1,0 +1,16 @@
+load("//ttnn/bazel:ttnn_operation.bzl", "ttnn_operation")
+
+ttnn_operation(
+    name = "reshape",
+    srcs = [
+        "view.cpp",
+    ],
+    hdrs = glob(
+        ["**/*.hpp", "**/*.h"],
+        exclude = ["device/kernels/**"],
+        allow_empty = True,
+    ),
+    extra_deps = [
+        "//ttnn/cpp/ttnn/operations/data_movement:data_movement_hdrs",
+    ],
+)

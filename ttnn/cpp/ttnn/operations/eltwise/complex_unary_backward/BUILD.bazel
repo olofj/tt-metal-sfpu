@@ -1,0 +1,23 @@
+load("//ttnn/bazel:ttnn_operation.bzl", "ttnn_operation")
+
+ttnn_operation(
+    name = "complex_unary_backward",
+    srcs = [
+        "device/complex_unary_backward_op.cpp",
+    ],
+    hdrs = glob(
+        ["**/*.hpp", "**/*.h"],
+        exclude = ["device/kernels/**"],
+        allow_empty = True,
+    ),
+    extra_hdrs_deps = [
+        "//ttnn/cpp/ttnn/operations/eltwise/complex:complex_hdrs",
+    ],
+    extra_deps = [
+        "//ttnn/cpp/ttnn/operations/eltwise/binary:binary_hdrs",
+        "//ttnn/cpp/ttnn/operations/eltwise/complex:complex_hdrs",
+        "//ttnn/cpp/ttnn/operations/eltwise/complex_binary:complex_binary_hdrs",
+        "//ttnn/cpp/ttnn/operations/eltwise/complex_unary:complex_unary_hdrs",
+        "//ttnn/cpp/ttnn/operations/eltwise/ternary:ternary_hdrs",
+    ],
+)

@@ -1,0 +1,22 @@
+load("//ttnn/bazel:ttnn_operation.bzl", "ttnn_operation")
+
+ttnn_operation(
+    name = "examples",
+    srcs = [
+        "example/device/example_device_operation.cpp",
+        "example/device/multi_core_program_factory.cpp",
+        "example/device/single_core_program_factory.cpp",
+        "example_multiple_return/device/example_multiple_return_device_operation.cpp",
+        "example_multiple_return/device/single_core_program_factory.cpp",
+        "example_multiple_return/example_multiple_return.cpp",
+    ],
+    hdrs = glob(["**/*.hpp", "**/*.h"], allow_empty = True),
+    kernel_hdrs = glob(
+        [
+            "example/device/kernels/**",
+            "example_multiple_return/device/kernels/**",
+        ],
+        exclude = ["**/*.hpp", "**/*.h"],
+        allow_empty = True,
+    ),
+)

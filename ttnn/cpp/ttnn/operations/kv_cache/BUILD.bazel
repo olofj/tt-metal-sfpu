@@ -1,19 +1,22 @@
 load("//ttnn/bazel:ttnn_operation.bzl", "ttnn_operation")
 
 ttnn_operation(
-    name = "bernoulli",
+    name = "kv_cache",
     srcs = [
-        "bernoulli.cpp",
-        "device/bernoulli_device_operation.cpp",
-        "device/bernoulli_program_factory.cpp",
+        "device/fill_cache_multi_core_program_factory.cpp",
+        "device/update_cache_device_operation.cpp",
+        "device/update_cache_multi_core_program_factory.cpp",
+        "kv_cache.cpp",
     ],
     hdrs = glob(
         ["**/*.hpp", "**/*.h"],
         exclude = ["device/kernels/**"],
         allow_empty = True,
     ),
-    # kernel_hdrs auto-globs device/kernels/**
     extra_hdrs_deps = [
+        "//ttnn/cpp/ttnn/operations/core:core_hdrs",
+    ],
+    extra_deps = [
         "//ttnn/cpp/ttnn/operations/core:core_hdrs",
     ],
 )

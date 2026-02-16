@@ -1,0 +1,15 @@
+load("//ttnn/bazel:ttnn_operation.bzl", "ttnn_operation")
+
+ttnn_operation(
+    name = "index_fill",
+    srcs = [
+        "device/index_fill_device_operation.cpp",
+        "device/index_fill_multi_core_factory.cpp",
+        "index_fill.cpp",
+    ],
+    hdrs = glob(
+        ["**/*.hpp", "**/*.h"],
+        exclude = ["device/kernels/**"],
+        allow_empty = True,
+    ),
+)
