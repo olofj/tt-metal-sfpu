@@ -5,7 +5,6 @@
 #include <boost/core/lightweight_test.hpp>
 #include <boost/container/vector.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
-#include <boost/lockfree/queue.hpp>
 #include <yaml-cpp/yaml.h>
 #include <fmt/core.h>
 #include <nlohmann/json.hpp>

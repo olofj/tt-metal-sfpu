@@ -16,13 +16,12 @@ bazel_dep(name = "rules_cc", version = "0.1.1")
 # ===========================================================================
 
 # Boost (modularized on BCR — one module per component)
-bazel_dep(name = "boost.algorithm", version = "1.83.0")
-bazel_dep(name = "boost.asio", version = "1.83.0")
-bazel_dep(name = "boost.container", version = "1.83.0")
-bazel_dep(name = "boost.core", version = "1.83.0")
-bazel_dep(name = "boost.interprocess", version = "1.83.0")
-bazel_dep(name = "boost.lockfree", version = "1.83.0")
-bazel_dep(name = "boost.smart_ptr", version = "1.83.0")
+bazel_dep(name = "boost.algorithm", version = "1.87.0")
+bazel_dep(name = "boost.asio", version = "1.87.0")
+bazel_dep(name = "boost.container", version = "1.87.0")
+bazel_dep(name = "boost.core", version = "1.87.0")
+bazel_dep(name = "boost.interprocess", version = "1.87.0")
+bazel_dep(name = "boost.smart_ptr", version = "1.87.0")
 
 # Protocol Buffers — v21.x avoids the abseil dependency.
 # CMake build pins to v21.12; BCR has v21.7. Use single_version_override
@@ -50,8 +49,10 @@ bazel_dep(name = "range-v3", version = "0.12.0")
 # spdlog — configured to use external fmt (header-only)
 bazel_dep(name = "spdlog", version = "1.14.1")
 
-# FlatBuffers — need both the flatc compiler and the C++ runtime
-bazel_dep(name = "flatbuffers", version = "24.3.25")
+# FlatBuffers — C++ runtime only.
+# The BCR entry depends on rules_swift which is incompatible with Bazel 9.
+# Fetched via http_archive in extensions.bzl to avoid the conflict.
+# bazel_dep(name = "flatbuffers", version = "24.3.25")  # disabled: rules_swift conflict
 
 # ===========================================================================
 # Dependencies NOT on BCR — fetched via module extensions
@@ -89,6 +90,15 @@ use_repo(non_bcr_deps, "enchantum")
 
 # tt-logger — Tenstorrent logging library. Not on BCR.
 use_repo(non_bcr_deps, "tt_logger")
+
+# FlatBuffers — C++ runtime. Not on BCR due to rules_swift conflict with Bazel 9.
+use_repo(non_bcr_deps, "flatbuffers")
+
+# picosha2 — header-only SHA256 library. Not on BCR. Used by UMD.
+use_repo(non_bcr_deps, "picosha2")
+
+# Standalone ASIO — header-only async I/O. Not on BCR. Used by UMD.
+use_repo(non_bcr_deps, "asio")
 
 # ===========================================================================
 # SFPI RISC-V cross-compilation toolchain

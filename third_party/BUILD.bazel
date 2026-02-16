@@ -4,6 +4,8 @@
 # Build: bazel build //third_party:dep_smoke_test
 # Query: bazel query 'deps(//third_party:dep_smoke_test)' --output=label | sort
 
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+
 cc_binary(
     name = "dep_smoke_test",
     srcs = ["dep_smoke_test.cpp"],
@@ -12,13 +14,12 @@ cc_binary(
         "@boost.core",
         "@boost.container",
         "@boost.smart_ptr",
-        "@boost.lockfree",
         "@yaml-cpp",
         "@fmt",
         "@nlohmann_json",
         "@range-v3",
         "@spdlog",
-        "@flatbuffers",
+        "@flatbuffers//:flatbuffers",
         "@protobuf//:protobuf",
         "@google_benchmark//:benchmark",
         "@com_google_googletest//:gtest",
