@@ -146,3 +146,52 @@ filegroup(
         ":quasar_linker_scripts",
     ],
 )
+
+# ===================================================================
+# Pre-compiled support objects for firmware linking
+#
+# Compiled once with the SFPI cross-compiler and linked into firmware
+# ELFs.  Mirrors HW_OBJ_SRC_PAIRS in tt_metal/hw/CMakeLists.txt
+# (lines 322-404).
+#
+# Build with: bazel build --config=sfpi-{wormhole,blackhole} //tt_metal/hw/toolchain:...
+# ===================================================================
+
+_SUPPORT_OBJ_COPTS = [
+    "-DTENSIX_FIRMWARE",
+    "-DLOCAL_MEM_EN=0",
+    "-Itt_metal/hw/inc",
+    "-Itt_metal/hw/firmware/src/tt-1xx",
+]
+
+# C runtime startup — entry point for all firmware except active ERISC
+cc_library(
+    name = "tmu_crt0",
+    srcs = ["tmu-crt0.S"],
+    copts = _SUPPORT_OBJ_COPTS,
+)
+
+# Compiler intrinsic substitutes (atexit, exit, wzerorange)
+cc_library(
+    name = "substitutes",
+    srcs = ["substitutes.cpp"],
+    copts = _SUPPORT_OBJ_COPTS,
+)
+
+# Wormhole-only: NCRISC IRAM trampoline (saves/restores register state)
+cc_library(
+    name = "wh_iram_trampoline",
+    srcs = ["wh-iram-trampoline.S"],
+    copts = _SUPPORT_OBJ_COPTS + [
+        "-Itt_metal/hw/inc/internal/tt-1xx/wormhole",
+    ],
+)
+
+# Wormhole-only: NCRISC IRAM start (kernel entry point in IRAM mode)
+cc_library(
+    name = "wh_iram_start",
+    srcs = ["wh-iram-start.S"],
+    copts = _SUPPORT_OBJ_COPTS + [
+        "-Itt_metal/hw/inc/internal/tt-1xx/wormhole",
+    ],
+)
