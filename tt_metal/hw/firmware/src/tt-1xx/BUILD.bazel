@@ -4,6 +4,10 @@ Produces bare-metal ELF binaries for each (processor, architecture) combination
 by cross-compiling firmware source files with the SFPI RISC-V toolchain and
 linking against pre-compiled support objects and preprocessed linker scripts.
 
+Each firmware binary also has a "_weakened" companion that serves as a link
+library for JIT user kernels — this mirrors JitBuildState::weaken() in
+tt_metal/jit_build/build.cpp (lines 583-597).
+
 Mirrors the JIT firmware build in tt_metal/jit_build/build.cpp and the
 pre-compiled object build in tt_metal/hw/CMakeLists.txt (lines 322-404).
 
@@ -13,6 +17,9 @@ Usage:
 
     # Single target:
     bazel build --config=sfpi-wormhole //tt_metal/hw/firmware/src/tt-1xx:brisc_wormhole
+
+    # Weakened firmware (for JIT linking):
+    bazel build --config=sfpi-wormhole //tt_metal/hw/firmware/src/tt-1xx:brisc_wormhole_weakened
 """
 
 load(":firmware_defs.bzl", "all_firmware")

@@ -1044,7 +1044,7 @@ void ElfFile::Impl::Elf<Is64>::XIPify() {
     Impl::XIPify();  // success
 }
 
-#ifdef ELF_STANDALONE
+#if defined(ELF_STANDALONE) && !defined(ELF_STANDALONE_NO_MAIN)
 int main(int argc, char* argv[]) {
     ll_api::ElfFile elf;
     if (argc != 3) {

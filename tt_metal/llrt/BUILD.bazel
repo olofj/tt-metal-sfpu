@@ -1,0 +1,24 @@
+# Exports for tt_elffile — used by the firmware weakening host tool.
+# The full llrt library will be added here as the Bazel migration continues.
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files([
+    "tt_elffile.cpp",
+    "tt_elffile.hpp",
+])
+
+# Standalone ElfFile library — compiled without the full tt-metal infrastructure.
+# Uses -DELF_STANDALONE for stub logging/assert and -DELF_STANDALONE_NO_MAIN
+# to suppress the built-in main() so consumers can provide their own.
+cc_library(
+    name = "elffile_standalone",
+    srcs = ["tt_elffile.cpp"],
+    hdrs = ["tt_elffile.hpp"],
+    copts = [
+        "-DELF_STANDALONE",
+        "-DELF_STANDALONE_NO_MAIN",
+    ],
+    strip_include_prefix = "",
+    include_prefix = "tt_metal/llrt",
+)

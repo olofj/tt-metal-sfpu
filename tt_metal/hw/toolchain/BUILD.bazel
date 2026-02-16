@@ -148,6 +148,22 @@ filegroup(
 )
 
 # ===================================================================
+# Host tools — compiled with the execution platform's toolchain
+# ===================================================================
+
+# Firmware symbol weakener — processes RISC-V ELFs to weaken/localize
+# symbols so firmware can serve as a link library for user kernels.
+# Mirrors JitBuildState::weaken() in tt_metal/jit_build/build.cpp.
+#
+# Built for the host (not cross-compiled), invoked by the weaken_firmware
+# Bazel rule via cfg = "exec".
+cc_binary(
+    name = "weaken_firmware_tool",
+    srcs = ["weaken_firmware.cpp"],
+    deps = ["//tt_metal/llrt:elffile_standalone"],
+)
+
+# ===================================================================
 # Pre-compiled support objects for firmware linking
 #
 # Compiled once with the SFPI cross-compiler and linked into firmware
