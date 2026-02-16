@@ -1,5 +1,28 @@
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("//bazel:cc_fbs.bzl", "cc_fbs_library")
+
+# Export hand-written flatbuffer wrapper headers so ttnn_core can depend on them.
+# These cannot be compiled here because they depend on core tensor types (circular).
+cc_library(
+    name = "flatbuffer_hdrs",
+    hdrs = [
+        "tensor_flatbuffer.hpp",
+        "tensor_spec_flatbuffer.hpp",
+    ],
+    # "." puts ttnn/core/tensor/flatbuffer/ on the include path.
+    # ".." puts ttnn/core/tensor/ so "flatbuffer/tensor_flatbuffer.hpp" resolves.
+    includes = [".."],
+    visibility = ["//ttnn:__subpackages__"],
+    deps = [":flatbuffer_schemas"],
+)
+
+# Export source files for compilation by //ttnn:ttnn_core.
+# They cannot be compiled here due to circular deps with core tensor types.
+exports_files([
+    "tensor_flatbuffer.cpp",
+    "tensor_spec_flatbuffer.cpp",
+])
 
 # FlatBuffer schemas for tensor serialization.
 #

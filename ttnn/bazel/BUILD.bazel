@@ -1,0 +1,2 @@
+# This package provides Bazel macros for the TTNN operations layer.
+# See ttnn_operation.bzl for the primary macro.

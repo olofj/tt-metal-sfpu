@@ -1,0 +1,23 @@
+load("//ttnn/bazel:ttnn_operation.bzl", "ttnn_operation")
+
+ttnn_operation(
+    name = "embedding",
+    srcs = [
+        "embedding.cpp",
+        "device/embedding_device_operation.cpp",
+        "device/embedding_program_factory_common.cpp",
+        "device/embeddings_fused_program_factory.cpp",
+        "device/embeddings_rm_program_factory.cpp",
+        "device/embeddings_tilized_indices_program_factory.cpp",
+    ],
+    hdrs = [
+        "embedding.hpp",
+        "device/embedding_device_operation.hpp",
+        "device/embedding_device_operation_types.hpp",
+        "device/embedding_program_factory_common.hpp",
+        "device/embeddings_fused_program_factory.hpp",
+        "device/embeddings_rm_program_factory.hpp",
+        "device/embeddings_tilized_indices_program_factory.hpp",
+    ],
+    # kernel_hdrs auto-globs device/kernels/**
+)

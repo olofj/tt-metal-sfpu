@@ -1,0 +1,33 @@
+load("//ttnn/bazel:ttnn_operation.bzl", "ttnn_operation")
+
+ttnn_operation(
+    name = "binary",
+    srcs = [
+        "binary.cpp",
+        "common/binary_op_utils.cpp",
+        "device/binary_composite_op.cpp",
+        "device/binary_device_operation.cpp",
+        "device/broadcast_height_and_width_multi_core_program_factory.cpp",
+        "device/broadcast_height_multi_core_program_factory.cpp",
+        "device/broadcast_height_multi_core_sharded_optimized_program_factory.cpp",
+        "device/broadcast_height_multi_core_sharded_program_factory.cpp",
+        "device/broadcast_width_multi_core_program_factory.cpp",
+        "device/element_wise_multi_core_program_factory.cpp",
+        "device/element_wise_multi_core_sfpu_pgm_factory.cpp",
+    ],
+    hdrs = [
+        "binary.hpp",
+        "binary_composite.hpp",
+        "common/binary_op_types.hpp",
+        "common/binary_op_utils.hpp",
+        "device/binary_composite_op.hpp",
+        "device/binary_device_operation.hpp",
+        "device/eltwise_multi_core_program_factory_common.hpp",
+    ],
+    # Cross-operation deps: binary_composite_op.cpp includes matmul headers.
+    # Uses _hdrs target to avoid circular dep (matmul also includes binary).
+    extra_deps = [
+        "//ttnn/cpp/ttnn/operations/matmul:matmul_hdrs",
+    ],
+    # kernel_hdrs auto-globs device/kernels/**
+)

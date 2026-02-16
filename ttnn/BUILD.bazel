@@ -1,0 +1,108 @@
+# ttnn — top-level package for the TT-NN operations framework.
+#
+# Provides ttnn_core (the TTNN core library) which all TTNN operations
+# depend on. Mirrors the CMake target TTNN::Core.
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "ttnn_core",
+    srcs = [
+        "core/async_runtime.cpp",
+        "core/cluster.cpp",
+        "core/config.cpp",
+        "core/core.cpp",
+        "core/device.cpp",
+        "core/distributed/api.cpp",
+        "core/distributed/bidirectional_fabric_socket.cpp",
+        "core/distributed/create_socket.cpp",
+        "core/distributed/distributed_tensor.cpp",
+        "core/distributed/distribution_mode.cpp",
+        "core/distributed/fabric_socket.cpp",
+        "core/distributed/host_ccl.cpp",
+        "core/distributed/mpi_socket.cpp",
+        "core/events.cpp",
+        "core/global_circular_buffer.cpp",
+        "core/global_semaphore.cpp",
+        "core/graph/graph_argument_serializer.cpp",
+        "core/graph/graph_processor.cpp",
+        "core/graph/graph_trace_utils.cpp",
+        "core/graph/levelized_graph.cpp",
+        "core/operation.cpp",
+        "core/reports.cpp",
+        # These live in the //ttnn/core/tensor/flatbuffer subpackage but must
+        # be compiled here because they depend on core tensor types (circular).
+        "//ttnn/core/tensor/flatbuffer:tensor_flatbuffer.cpp",
+        "//ttnn/core/tensor/flatbuffer:tensor_spec_flatbuffer.cpp",
+        "core/tensor/host_buffer/functions.cpp",
+        "core/tensor/serialization.cpp",
+        "core/tensor/storage.cpp",
+        "core/tensor/tensor.cpp",
+        "core/tensor/tensor_attributes.cpp",
+        "core/tensor/tensor_impl.cpp",
+        "core/tensor/tensor_ops.cpp",
+        "core/tensor/tensor_utils.cpp",
+        "core/tensor/to_string.cpp",
+        "core/tensor/unit_mesh/unit_mesh_utils.cpp",
+        "core/tensor/xtensor/partition.cpp",
+        "core/tensor/py_to_tt_tensor.cpp",
+    ],
+    hdrs =
+        glob(
+            [
+                "api/**/*.hpp",
+                "cpp/ttnn/**/*.hpp",
+                "cpp/ttnn/**/*.h",
+                "core/**/*.hpp",
+            ],
+            exclude = [
+                # Subpackage — has its own BUILD.bazel
+                "core/tensor/flatbuffer/**",
+                # Kernel files are handled by the second glob below (which
+                # also picks up .cpp files that are shipped as JIT headers).
+                "cpp/ttnn/kernel/**",
+            ],
+            allow_empty = True,
+        ) +
+        # Device kernel files shipped as headers for JIT compilation at runtime.
+        # These .cpp/.hpp files under kernel/ are NOT compiled by the host —
+        # they are FILE_SET kernels (TYPE HEADERS) in CMake.
+        glob(
+            ["cpp/ttnn/kernel/**"],
+            allow_empty = True,
+        ),
+    copts = [
+        "-Wno-c++11-narrowing",
+        "-Wno-unused-lambda-capture",
+        "-isystem",
+        ".",
+        "-isystem",
+        "$(GENDIR)",
+    ],
+    # These include paths replicate CMake's FixmeOpAPIDir and FixmeOpIncDirs:
+    #   - "cpp" makes #include "ttnn/operations/matmul/matmul.hpp" resolve
+    #     (because headers live at ttnn/cpp/ttnn/operations/...)
+    #   - "." makes #include from within ttnn/ resolve (FixmeOpIncDirs includes ttnn/)
+    #   - "api" makes #include "ttnn/tensor/layout/layout.hpp" resolve
+    #     (the api/ directory mirrors the public header tree)
+    #   - "core" makes core-relative includes resolve
+    includes = [
+        ".",
+        "api",
+        "api/ttnn",
+        "core",
+        "cpp",
+    ],
+    deps = [
+        "//tt_metal:tt_metal",
+        "//ttnn/core/tensor/flatbuffer:flatbuffer_hdrs",
+        "//ttnn/core/tensor/flatbuffer:flatbuffer_schemas",
+        "@boost.algorithm",
+        "@flatbuffers//:flatbuffers",
+        "@fmt",
+        "@nlohmann_json//:json",
+        "@xtensor//:xtensor",
+    ],
+)
