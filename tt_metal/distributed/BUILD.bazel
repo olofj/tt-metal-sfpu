@@ -1,14 +1,21 @@
-# distributed — header-only target for mesh device/workload headers.
+# distributed — mesh device management, workloads, and multi-host support.
 #
-# In CMake, distributed/ is part of the monolithic tt_metal target.
-# This header-only target makes the headers available to other Bazel
-# targets (impl, fabric, etc.) that include them. The actual .cpp files
-# will be added when distributed/ gets its own full cc_library target
-# (Phase 4: core tt_metal library).
+# Mirrors the CMake OBJECT library: distributed
+# Contains ~25 source files for mesh device orchestration, command queues,
+# socket communication, workload distribution, and multi-host contexts.
+#
+# MPI support: In CMake, MPI is conditionally enabled via ENABLE_DISTRIBUTED.
+# The Bazel build compiles the single-host fallback by default.
+# MPI support can be added later via a config_setting + select().
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
 package(default_visibility = ["//tt_metal:__subpackages__"])
+
+# ---------------------------------------------------------------------------
+# Header-only subset — used by impl, fabric, and other libraries that need
+# to include distributed headers without linking against the full .cpp library.
+# ---------------------------------------------------------------------------
 
 cc_library(
     name = "distributed_hdrs",
@@ -25,5 +32,77 @@ cc_library(
         "//tt_metal/hostdevcommon",
         "//tt_metal/third_party/umd/device",
         "//tt_stl",
+    ],
+)
+
+# ---------------------------------------------------------------------------
+# Full distributed library — all 25 source files.
+#
+# The multihost/ subdirectory contains the distributed context implementation.
+# Without MPI, single_host_context.cpp is compiled as the fallback.
+# distributed_context.cpp uses #ifdef OPEN_MPI to select the implementation.
+# ---------------------------------------------------------------------------
+
+cc_library(
+    name = "distributed",
+    srcs = [
+        # Root sources
+        "d2h_socket.cpp",
+        "dispatch_context.cpp",
+        "dummy_mesh_command_queue.cpp",
+        "distributed.cpp",
+        "distributed_coordinate_translator.cpp",
+        "distributed_host_buffer.cpp",
+        "fd_mesh_command_queue.cpp",
+        "h2d_socket.cpp",
+        "mesh_buffer.cpp",
+        "mesh_command_queue_base.cpp",
+        "mesh_device.cpp",
+        "mesh_device_view.cpp",
+        "mesh_event.cpp",
+        "mesh_socket.cpp",
+        "mesh_socket_serialization.cpp",
+        "mesh_socket_utils.cpp",
+        "mesh_trace.cpp",
+        "mesh_workload.cpp",
+        "mesh_workload_utils.cpp",
+        "pinned_memory.cpp",
+        "sd_mesh_command_queue.cpp",
+        "system_mesh.cpp",
+        "system_mesh_translation_map.cpp",
+        # multihost/ — single-host fallback (no MPI)
+        "multihost/distributed_context.cpp",
+        "multihost/single_host_context.cpp",
+        # Private headers (not exported by distributed_hdrs)
+        "multihost/single_host_context.hpp",
+    ],
+    copts = [
+        "-Wno-int-to-pointer-cast",
+        # Source files use workspace-root-relative includes like
+        # "tt_metal/distributed/mesh_socket_utils.hpp" and
+        # "tt_metal/hw/inc/hostdev/socket.h".
+        "-isystem",
+        ".",
+        # Generated FlatBuffer headers are at
+        # $(GENDIR)/tt_metal/distributed/flatbuffer/socket_peer_descriptor_generated.h
+        # Source files include them as "socket_peer_descriptor_generated.h".
+        "-isystem",
+        "$(GENDIR)/tt_metal/distributed/flatbuffer",
+        "-isystem",
+        "$(GENDIR)",
+    ],
+    deps = [
+        ":distributed_hdrs",
+        "//tt_metal/api:mesh_coordinate_cc_fbs",
+        "//tt_metal/common",
+        "//tt_metal/distributed/flatbuffer:flatbuffer_schemas",
+        "//tt_metal/fabric:fabric_hdrs",
+        "//tt_metal/impl:impl_hdrs",
+        "//tt_metal/llrt:llrt_hdrs",
+        "//tt_metal/third_party:tracy",
+        "//tt_metal/third_party/umd/device",
+        "@fmt",
+        "@taskflow//:taskflow",
+        "@tt_logger//:tt_logger",
     ],
 )
