@@ -1,0 +1,23 @@
+# Vendored third-party libraries that live as git submodules.
+# BUILD files for http_archive deps are in //third_party/*.BUILD.
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+# Tracy Profiler — vendored from https://github.com/tenstorrent-metal/tracy
+#
+# Without TRACY_ENABLE, all macros are no-ops and only headers are needed.
+# With --config=tracy (-DTRACY_ENABLE), the TracyClient.cpp source is
+# compiled and the full profiling infrastructure is linked in.
+cc_library(
+    name = "tracy",
+    hdrs = glob([
+        "tracy/public/tracy/**/*.hpp",
+        "tracy/public/tracy/**/*.h",
+        "tracy/public/common/**/*.hpp",
+        "tracy/public/common/**/*.h",
+        "tracy/public/client/**/*.hpp",
+        "tracy/public/client/**/*.h",
+    ]),
+    includes = ["tracy/public"],
+    visibility = ["//visibility:public"],
+)

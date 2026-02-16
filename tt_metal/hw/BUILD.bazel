@@ -1,3 +1,5 @@
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
 """JIT build input filegroups for TT-Metalium kernel compilation.
 
 Packages all runtime inputs needed by the JIT kernel compilation system
@@ -32,18 +34,24 @@ package(default_visibility = ["//visibility:public"])
 
 filegroup(
     name = "jit_api_headers",
-    srcs = glob([
-        "inc/api/**/*.h",
-        "inc/api/**/*.hpp",
-    ]),
+    srcs = glob(
+        [
+            "inc/api/**/*.h",
+            "inc/api/**/*.hpp",
+        ],
+        allow_empty = True,
+    ),
 )
 
 filegroup(
     name = "jit_hostdev_headers",
-    srcs = glob([
-        "inc/hostdev/**/*.h",
-        "inc/hostdev/**/*.hpp",
-    ]),
+    srcs = glob(
+        [
+            "inc/hostdev/**/*.h",
+            "inc/hostdev/**/*.hpp",
+        ],
+        allow_empty = True,
+    ),
 )
 
 filegroup(
@@ -59,15 +67,19 @@ filegroup(
             "inc/internal/tt-1xx/blackhole/**",
             "inc/internal/tt-2xx/quasar/**",
         ],
+        allow_empty = True,
     ),
 )
 
 filegroup(
     name = "jit_experimental_headers",
-    srcs = glob([
-        "inc/experimental/**/*.h",
-        "inc/experimental/**/*.hpp",
-    ]),
+    srcs = glob(
+        [
+            "inc/experimental/**/*.h",
+            "inc/experimental/**/*.hpp",
+        ],
+        allow_empty = True,
+    ),
 )
 
 filegroup(
@@ -149,6 +161,26 @@ filegroup(
 # //tt_metal/hw/firmware/src/tt-1xx — they are built separately and
 # should be declared as deps, not included in this filegroup.
 # ===================================================================
+
+# ===================================================================
+# Host-device shared headers as a cc_library.
+#
+# Mirrors the CMake INTERFACE library target `hw` (Metalium::Metal::Hardware)
+# for the subset of headers needed by host-side compilation.
+# The include path is set so consumers can use workspace-root-relative
+# includes like: #include "tt_metal/hw/inc/hostdev/fabric_telemetry_msgs.h"
+# ===================================================================
+
+cc_library(
+    name = "hw",
+    hdrs = glob(
+        [
+            "inc/hostdev/**/*.h",
+            "inc/hostdev/**/*.hpp",
+        ],
+        allow_empty = True,
+    ),
+)
 
 filegroup(
     name = "jit_build_inputs",

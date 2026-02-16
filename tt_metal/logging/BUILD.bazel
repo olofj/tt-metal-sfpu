@@ -1,0 +1,13 @@
+# logging — thin wrapper around tt-logger/spdlog.
+# Mirrors the CMake OBJECT library: TT::Metalium::Logging
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+cc_library(
+    name = "logging",
+    srcs = ["logging.cpp"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@tt_logger//:tt_logger",
+    ],
+)

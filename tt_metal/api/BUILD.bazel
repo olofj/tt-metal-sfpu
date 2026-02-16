@@ -1,0 +1,43 @@
+# tt-metalium public API headers.
+#
+# The full set of headers will be assembled as part of Phase 4 (core
+# tt_metal library). For now, subsets are exported as separate targets
+# so that individual module BUILD files (common, impl, etc.) can
+# depend on the API headers they define.
+
+package(default_visibility = ["//tt_metal:__subpackages__"])
+
+# API headers for types defined in tt_metal/common.
+# Includes: CoreCoord, Shape, MeshCoord, HostBuffer, bfloat types, etc.
+cc_library(
+    name = "common_api_hdrs",
+    hdrs = [
+        "tt-metalium/bfloat16.hpp",
+        "tt-metalium/bfloat4.hpp",
+        "tt-metalium/bfloat8.hpp",
+        "tt-metalium/core_coord.hpp",
+        "tt-metalium/host_buffer.hpp",
+        "tt-metalium/maybe_remote.hpp",
+        "tt-metalium/memory_pin.hpp",
+        "tt-metalium/mesh_coord.hpp",
+        "tt-metalium/shape.hpp",
+        "tt-metalium/shape2d.hpp",
+        "tt-metalium/shape_base.hpp",
+        "tt-metalium/tt_backend_api_types.hpp",
+        "tt-metalium/work_split.hpp",
+    ],
+    # Two include roots:
+    # 1. "." makes <tt-metalium/core_coord.hpp> work
+    # 2. "tt-metalium" makes bare <core_coord.hpp> work (legacy includes)
+    includes = [
+        ".",
+        "tt-metalium",
+    ],
+    deps = [
+        "//tt_stl",
+        "//tt_metal/third_party/umd/device",
+        "@enchantum//:enchantum",
+        "@fmt",
+        "@nlohmann_json//:json",
+    ],
+)

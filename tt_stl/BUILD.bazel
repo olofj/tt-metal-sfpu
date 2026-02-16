@@ -1,0 +1,37 @@
+# tt_stl — Tenstorrent's standard library extensions.
+# Mirrors the CMake target: TT::STL (tt_stl SHARED library)
+#
+# Mostly header-only except for llvm_small_vector.cpp. All external
+# dependencies are INTERFACE in CMake, meaning they propagate to consumers.
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
+cc_library(
+    name = "tt_stl",
+    srcs = ["tt_stl/llvm/llvm_small_vector.cpp"],
+    hdrs = glob([
+        "tt_stl/*.hpp",
+        "tt_stl/llvm/*.hpp",
+    ]),
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@enchantum//:enchantum",
+        "@fmt",
+        "@nlohmann_json//:json",
+        "@reflect//:reflect_lib",
+        "@tt_logger//:tt_logger",
+    ],
+)
+
+# Unit tests for tt_stl — mirrors CMake unit_tests_stl / unit_tests_stl_smoke.
+cc_test(
+    name = "unit_tests_stl",
+    srcs = glob(["tests/test_*.cpp"]),
+    deps = [
+        ":tt_stl",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)

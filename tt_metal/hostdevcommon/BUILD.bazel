@@ -1,0 +1,22 @@
+# hostdevcommon — headers shared between host and device code.
+# Mirrors the CMake INTERFACE library: TT::Metalium::HostDevCommon
+#
+# Pure header-only. Used by both host-side compilation and JIT
+# kernel compilation at runtime.
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+cc_library(
+    name = "hostdevcommon",
+    hdrs = glob([
+        "api/hostdevcommon/**/*.h",
+        "api/hostdevcommon/**/*.hpp",
+    ]),
+    includes = ["api"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//tt_metal/hw",
+        "//tt_metal/third_party/umd/device",
+        "@fmt",
+    ],
+)
