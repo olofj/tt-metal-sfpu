@@ -50,7 +50,7 @@ def nanobind_extension(
         srcs = srcs + hdrs,
         deps = deps + [
             "@nanobind",
-            "@python_headers//:headers",
+            "@rules_python//python/cc:current_py_cc_headers",
         ],
         copts = copts + [
             "-fvisibility=hidden",

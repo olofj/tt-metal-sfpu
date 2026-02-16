@@ -1,7 +1,6 @@
 """Module extensions for dependencies not available on the Bazel Central Registry."""
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load("//third_party/python:repo.bzl", "python_headers")
 load("//toolchain/clang:repo.bzl", "clang_toolchain_repo")
 load("//toolchain/sfpi:repo.bzl", "sfpi_toolchain_repo")
 
@@ -180,13 +179,3 @@ sfpi_ext = module_extension(
     implementation = _sfpi_ext_impl,
 )
 
-# ===========================================================================
-# System Python headers (for nanobind extension modules)
-# ===========================================================================
-
-def _python_ext_impl(module_ctx):
-    python_headers(name = "python_headers")
-
-python_ext = module_extension(
-    implementation = _python_ext_impl,
-)

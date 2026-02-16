@@ -45,7 +45,7 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "@python_headers//:headers",
+        "@rules_python//python/cc:current_py_cc_headers",
         "@robin_map//:robin_map",
     ],
 )

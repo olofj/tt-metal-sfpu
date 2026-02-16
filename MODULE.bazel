@@ -115,15 +115,25 @@ use_repo(non_bcr_deps, "picosha2")
 use_repo(non_bcr_deps, "asio")
 
 # ===========================================================================
-# System Python headers (for nanobind extension modules)
+# Hermetic Python 3.12 toolchain (for nanobind extension modules)
 #
-# Auto-detects the system Python 3 include path using python3-config.
-# This will be replaced by hermetic Python (rules_python) in Phase 6.
+# Downloads a hermetic CPython 3.12 interpreter from rules_python so the
+# build does not depend on system-installed Python headers.  Nanobind
+# targets use @rules_python//python/cc:current_py_cc_headers to get the
+# Python.h include path from this toolchain.
+#
+# Python 3.12 is the minimum version for stable ABI (abi3) support,
+# matching the Py_LIMITED_API=0x030C0000 define in nanobind.BUILD.
 # ===========================================================================
 
-python_ext = use_extension("//:extensions.bzl", "python_ext")
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
 
-use_repo(python_ext, "python_headers")
+python.toolchain(
+    python_version = "3.12",
+    is_default = True,
+)
+
+use_repo(python, "python_3_12")
 
 # ===========================================================================
 # Hermetic Clang 20 host toolchain
