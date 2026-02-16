@@ -1,0 +1,28 @@
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//bazel:cc_fbs.bzl", "cc_fbs_library")
+
+# FlatBuffer schemas for tensor serialization.
+#
+# tensor_topology.fbs and tensor.fbs include mesh_coordinate.fbs from
+# tt_metal/api via: include "tt-metalium/serialized_descriptors/mesh_coordinate.fbs"
+cc_fbs_library(
+    name = "flatbuffer_schemas",
+    srcs = [
+        "mesh_shape.fbs",
+        "tensor.fbs",
+        "tensor_spec.fbs",
+        "tensor_topology.fbs",
+    ],
+    fbs_deps = ["//tt_metal/api:mesh_coordinate_fbs"],
+    visibility = ["//ttnn:__subpackages__"],
+)
+
+cc_test(
+    name = "fbs_compile_test",
+    srcs = ["fbs_compile_test.cpp"],
+    deps = [
+        ":flatbuffer_schemas",
+        "//tt_metal/api:mesh_coordinate_cc_fbs",
+        "@com_google_googletest//:gtest_main",
+    ],
+)

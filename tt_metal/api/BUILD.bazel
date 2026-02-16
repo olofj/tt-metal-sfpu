@@ -5,6 +5,8 @@
 # so that individual module BUILD files (common, impl, etc.) can
 # depend on the API headers they define.
 
+load("//bazel:cc_fbs.bzl", "cc_fbs_library", "fbs_library")
+
 package(default_visibility = ["//tt_metal:__subpackages__"])
 
 # API headers for types defined in tt_metal/common.
@@ -39,5 +41,27 @@ cc_library(
         "@enchantum//:enchantum",
         "@fmt",
         "@nlohmann_json//:json",
+    ],
+)
+
+# FlatBuffer schema for MeshCoordinate — used by distributed and ttnn schemas.
+# The fbs_library provides the include root (tt_metal/api) so that downstream
+# schemas can write: include "tt-metalium/serialized_descriptors/mesh_coordinate.fbs"
+fbs_library(
+    name = "mesh_coordinate_fbs",
+    srcs = ["tt-metalium/serialized_descriptors/mesh_coordinate.fbs"],
+    include_root = "tt_metal/api",
+    visibility = [
+        "//tt_metal:__subpackages__",
+        "//ttnn:__subpackages__",
+    ],
+)
+
+cc_fbs_library(
+    name = "mesh_coordinate_cc_fbs",
+    srcs = ["tt-metalium/serialized_descriptors/mesh_coordinate.fbs"],
+    visibility = [
+        "//tt_metal:__subpackages__",
+        "//ttnn:__subpackages__",
     ],
 )

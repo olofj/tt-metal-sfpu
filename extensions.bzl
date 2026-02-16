@@ -98,13 +98,19 @@ def _non_bcr_deps_impl(module_ctx):
         build_file = "//third_party:tt_logger.BUILD",
     )
 
-    # FlatBuffers 24.3.25 — C++ headers only.
+    # FlatBuffers 24.3.25 — C++ runtime and flatc compiler.
     # The BCR module depends on rules_swift which conflicts with Bazel 9.
+    # patch_cmds removes sub-package BUILD files so our overlay BUILD can
+    # glob sources from src/ and grpc/src/compiler/.
     http_archive(
         name = "flatbuffers",
         urls = ["https://github.com/google/flatbuffers/archive/refs/tags/v24.3.25.tar.gz"],
         strip_prefix = "flatbuffers-24.3.25",
         build_file = "//third_party:flatbuffers.BUILD",
+        patch_cmds = [
+            "find . -mindepth 2 -name BUILD.bazel -delete",
+            "find . -mindepth 2 -name BUILD -delete",
+        ],
     )
 
     # picosha2 v1.0.1 — header-only SHA256 library (used by UMD)
