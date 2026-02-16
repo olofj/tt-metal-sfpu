@@ -1,0 +1,67 @@
+# tt_metal — top-level monolithic library target.
+#
+# Mirrors the CMake shared library: tt_metal (libtt_metal.so)
+# Aggregates all subsystem libraries (impl, llrt, fabric, distributed,
+# jit_build, detail, common) plus root source files (tt_metal.cpp,
+# graph/graph_tracking.cpp, hal.cpp) into a single linkable target.
+#
+# In CMake, the subsystem libraries are OBJECT libraries that get merged
+# into the final shared library. In Bazel, they are cc_library targets
+# that this top-level target depends on.
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "tt_metal",
+    srcs = [
+        "tt_metal.cpp",
+        "graph/graph_tracking.cpp",
+        "hal.cpp",
+        # thread_pool.cpp was deferred from //tt_metal/common because it
+        # depends on impl/ and llrt/ headers, creating a circular dep.
+        # Compiled here where all subsystems are available.
+        "//tt_metal/common:thread_pool.cpp",
+    ],
+    copts = [
+        "-Wno-int-to-pointer-cast",
+        # Root sources use a mix of include styles:
+        #   - bare includes: <allocator.hpp>, <host_api.hpp>
+        #   - impl-relative: "context/metal_context.hpp", "kernels/kernel.hpp"
+        #   - workspace-root-relative: "tt_metal/common/tt_backend_api_types.hpp"
+        "-isystem",
+        ".",
+        "-isystem",
+        "$(GENDIR)",
+    ],
+    deps = [
+        # Internal subsystem libraries
+        "//tt_metal/impl",
+        "//tt_metal/common",
+        "//tt_metal/jit_build",
+        "//tt_metal/llrt",
+        "//tt_metal/detail",
+        "//tt_metal/distributed",
+        "//tt_metal/fabric",
+        "//tt_metal/logging",
+        # API headers (provides the public tt-metalium/ header set)
+        "//tt_metal/api:impl_api_hdrs",
+        "//tt_metal/api:mesh_coordinate_cc_fbs",
+        # Other internal
+        "//tt_metal/hostdevcommon",
+        "//tt_metal/third_party:tracy",
+        "//tools/scaleout:scaleout_tools",
+        "//tt_stl",
+        # External — public API surface
+        "//tt_metal/third_party/umd/device",
+        "@enchantum//:enchantum",
+        "@flatbuffers//:flatbuffers",
+        "@fmt",
+        "@nlohmann_json//:json",
+        "@reflect//:reflect_lib",
+        "@tt_logger//:tt_logger",
+        # System
+        "//third_party/system:numa",
+    ],
+)

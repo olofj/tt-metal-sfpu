@@ -5,11 +5,13 @@
 # HostBuffer, etc.) used throughout the tt-metal stack. In CMake it is
 # built as an OBJECT library linked into the monolithic tt_metal target.
 #
-# Note: thread_pool.cpp is excluded — it has circular dependencies on
-# impl/ and llrt/ that do not yet exist as Bazel targets (Phase 4).
-# It will be added once those targets are available.
+# Note: thread_pool.cpp is compiled in //tt_metal:tt_metal (the top-level
+# library) because it depends on impl/ and llrt/ headers, creating a
+# circular dependency if included here.
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+exports_files(["thread_pool.cpp"])
 
 cc_library(
     name = "common",
