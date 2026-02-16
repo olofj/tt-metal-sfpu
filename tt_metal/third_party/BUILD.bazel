@@ -29,7 +29,13 @@ filegroup(
     name = "wheel_data",
     srcs = glob(
         ["tt_llk*/**/*"],
-        exclude = ["tt_llk*/**/.*", "tt_llk*/.github/**"],
+        exclude = [
+            "tt_llk*/**/.*",
+            "tt_llk*/.github/**",
+            "tt_llk/tests/**",
+            "tt_llk/docs/**",
+            "tt_llk/infra/**",
+        ],
         allow_empty = True,
     ),
     visibility = ["//visibility:public"],

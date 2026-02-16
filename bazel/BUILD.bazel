@@ -1,5 +1,6 @@
 # Required to make this directory a Bazel package so .bzl files can be loaded.
 
+load("@rules_python//python:defs.bzl", "py_test")
 load("//bazel:stamp_version.bzl", "stamp_version")
 
 # Version stamp targets — extract values from workspace status.
@@ -28,3 +29,24 @@ stamp_version(
 
 # Export the stamp script so it can be tested.
 exports_files(["stamp_version.sh"])
+
+# ---------------------------------------------------------------------------
+# Wheel content validation test
+#
+# Inspects the built ttnn wheel zip to verify all required components are
+# present: Python packages, native extension, firmware, JIT headers, etc.
+#
+# Usage:
+#   bazel test //bazel:wheel_content_test
+# ---------------------------------------------------------------------------
+
+py_test(
+    name = "wheel_content_test",
+    srcs = ["wheel_content_test.py"],
+    data = ["//:ttnn_wheel"],
+    main = "wheel_content_test.py",
+    tags = [
+        "wheel",
+        "packaging",
+    ],
+)

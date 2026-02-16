@@ -103,6 +103,7 @@ filegroup(
 py_wheel(
     name = "ttnn_wheel",
     distribution = "ttnn",
+    visibility = ["//visibility:public"],
     version = "{STABLE_VERSION}",
     stamp = -1,
     python_tag = "cp310",
