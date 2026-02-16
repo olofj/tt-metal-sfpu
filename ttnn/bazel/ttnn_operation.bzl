@@ -17,14 +17,21 @@ Usage:
         hdrs = glob(["**/*.hpp", "**/*.h"], exclude=["device/kernels/**"], allow_empty=True),
     )
 
-This generates two targets:
-    - :matmul       — full cc_library (srcs + hdrs, all deps)
-    - :matmul_hdrs  — header-only cc_library (hdrs only, NO deps on ttnn_core)
+This generates three targets:
+    - :matmul         — full cc_library (srcs + hdrs, all deps)
+    - :matmul_hdrs    — header-only cc_library (hdrs only, NO deps on ttnn_core)
+    - :nanobind_srcs  — filegroup of *_nanobind.cpp files for the _ttnn extension
 
 The _hdrs target is deliberately dependency-free (beyond extra_hdrs_deps for
 cross-operation headers). This allows:
   1. ttnn_core to depend on operation _hdrs targets without circular deps
   2. Other operations to depend on _hdrs to break circular compile deps
+
+The _nanobind_srcs target exports nanobind binding source files so the _ttnn
+Python extension module (built from //ttnn:BUILD.bazel) can compile them.
+These files are NOT compiled into the operation library itself — they are
+only compiled as part of the Python extension, matching CMake's separate
+TTNN_SRC_PYBIND / CCL_TTNN_SRCS_PYBIND source lists.
 """
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
@@ -40,9 +47,10 @@ def ttnn_operation(
         visibility = None):
     """Creates cc_library targets for a single TTNN operation.
 
-    Generates two targets:
+    Generates three targets:
       - {name}: Full library with sources, headers, and all dependencies.
       - {name}_hdrs: Header-only library with NO ttnn_core dep (breaks cycles).
+      - nanobind_srcs: Filegroup of *_nanobind.cpp for the _ttnn extension.
 
     Args:
         name: Target name, should match the operation directory name.
@@ -102,4 +110,18 @@ def ttnn_operation(
         implementation_deps = [
             "//tt_metal:tt_metal",
         ],
+    )
+
+    # Nanobind binding sources: exported for the _ttnn Python extension module.
+    # These *_nanobind.cpp files are NOT compiled into the operation library —
+    # they are only compiled as part of //ttnn:_ttnn.so.
+    # Uses a fixed name "nanobind_srcs" (not prefixed with operation name) so
+    # the _ttnn BUILD target can reference them uniformly as pkg:nanobind_srcs.
+    native.filegroup(
+        name = "nanobind_srcs",
+        srcs = native.glob(
+            ["**/*_nanobind.cpp"],
+            allow_empty = True,
+        ),
+        visibility = _visibility,
     )

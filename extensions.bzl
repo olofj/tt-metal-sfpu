@@ -1,6 +1,7 @@
 """Module extensions for dependencies not available on the Bazel Central Registry."""
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("//third_party/python:repo.bzl", "python_headers")
 load("//toolchain/clang:repo.bzl", "clang_toolchain_repo")
 load("//toolchain/sfpi:repo.bzl", "sfpi_toolchain_repo")
 
@@ -46,6 +47,16 @@ def _non_bcr_deps_impl(module_ctx):
         urls = ["https://github.com/wjakob/nanobind/archive/c5a3a378aa61d104c82ca053cb1e367782cd3618.tar.gz"],
         strip_prefix = "nanobind-c5a3a378aa61d104c82ca053cb1e367782cd3618",
         build_file = "//third_party:nanobind.BUILD",
+    )
+
+    # robin-map v1.4.0 — hash map used internally by nanobind.
+    # Bundled as a git submodule in nanobind (ext/robin_map), which is not
+    # included in GitHub tarballs. Fetched separately.
+    http_archive(
+        name = "robin_map",
+        urls = ["https://github.com/Tessil/robin-map/archive/refs/tags/v1.4.0.tar.gz"],
+        strip_prefix = "robin-map-1.4.0",
+        build_file = "//third_party:robin_map.BUILD",
     )
 
     # xtl 0.8.0 — header-only support library for xtensor
@@ -167,4 +178,15 @@ def _sfpi_ext_impl(module_ctx):
 
 sfpi_ext = module_extension(
     implementation = _sfpi_ext_impl,
+)
+
+# ===========================================================================
+# System Python headers (for nanobind extension modules)
+# ===========================================================================
+
+def _python_ext_impl(module_ctx):
+    python_headers(name = "python_headers")
+
+python_ext = module_extension(
+    implementation = _python_ext_impl,
 )

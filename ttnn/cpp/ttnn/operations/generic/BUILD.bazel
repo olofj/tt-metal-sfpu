@@ -1,0 +1,16 @@
+load("//ttnn/bazel:ttnn_operation.bzl", "ttnn_operation")
+
+ttnn_operation(
+    name = "generic",
+    srcs = [
+        "device/generic_op_device_operation.cpp",
+        "device/generic_op_program_factory.cpp",
+        "generic_op.cpp",
+    ],
+    hdrs = glob(
+        ["**/*.hpp", "**/*.h"],
+        exclude = ["device/kernels/**"],
+        allow_empty = True,
+    ),
+    # kernel_hdrs auto-globs device/kernels/**
+)

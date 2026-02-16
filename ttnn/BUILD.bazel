@@ -1,8 +1,10 @@
 # ttnn — top-level package for the TT-NN operations framework.
 #
-# Provides ttnn_core (the TTNN core library) which all TTNN operations
-# depend on. Mirrors the CMake target TTNN::Core.
+# Provides two main targets:
+#   - ttnn_core: The TTNN core library (mirrors CMake TTNN::Core)
+#   - _ttnn.so: The nanobind Python extension module (mirrors CMake _ttnn)
 
+load("//bazel:nanobind_extension.bzl", "nanobind_extension")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -114,4 +116,123 @@ cc_library(
         "@nlohmann_json//:json",
         "@xtensor//:xtensor",
     ],
+)
+
+# ===========================================================================
+# _ttnn — nanobind Python extension module
+#
+# Compiles all nanobind binding sources and links them into _ttnn.so,
+# loadable via `import _ttnn`. Mirrors the CMake target defined in
+# ttnn/CMakeLists.txt lines 729-847 (the WITH_PYTHON_BINDINGS block).
+#
+# Sources come from three locations:
+#   1. cpp/ttnn-nanobind/ — core binding module (__init__.cpp, tensor.cpp, etc.)
+#   2. cpp/ttnn/operations/**/*_nanobind.cpp — per-operation bindings (via filegroups)
+#   3. core/{distributed,graph}/*_nanobind.cpp — core subsystem bindings
+# ===========================================================================
+
+# Operation targets with nanobind binding sources (*_nanobind.cpp files).
+# The _ttnn extension compiles these bindings and links the operation libraries.
+# Operations WITHOUT nanobind sources (binary_ng, complex_binary) are listed
+# separately in _TTNN_LINK_ONLY_OPS — they are linked but have no bindings.
+_TTNN_NANOBIND_OPS = [
+    "//ttnn/cpp/ttnn/operations/bernoulli",
+    "//ttnn/cpp/ttnn/operations/ccl",
+    "//ttnn/cpp/ttnn/operations/conv",
+    "//ttnn/cpp/ttnn/operations/data_movement",
+    "//ttnn/cpp/ttnn/operations/debug",
+    "//ttnn/cpp/ttnn/operations/eltwise/binary",
+    "//ttnn/cpp/ttnn/operations/eltwise/binary_backward",
+    "//ttnn/cpp/ttnn/operations/eltwise/complex",
+    "//ttnn/cpp/ttnn/operations/eltwise/complex_unary",
+    "//ttnn/cpp/ttnn/operations/eltwise/complex_unary_backward",
+    "//ttnn/cpp/ttnn/operations/eltwise/quantization",
+    "//ttnn/cpp/ttnn/operations/eltwise/ternary",
+    "//ttnn/cpp/ttnn/operations/eltwise/ternary_backward",
+    "//ttnn/cpp/ttnn/operations/eltwise/unary",
+    "//ttnn/cpp/ttnn/operations/eltwise/unary_backward",
+    "//ttnn/cpp/ttnn/operations/embedding",
+    "//ttnn/cpp/ttnn/operations/embedding_backward",
+    "//ttnn/cpp/ttnn/operations/examples",
+    "//ttnn/cpp/ttnn/operations/full",
+    "//ttnn/cpp/ttnn/operations/full_like",
+    "//ttnn/cpp/ttnn/operations/generic",
+    "//ttnn/cpp/ttnn/operations/index_fill",
+    "//ttnn/cpp/ttnn/operations/kv_cache",
+    "//ttnn/cpp/ttnn/operations/loss",
+    "//ttnn/cpp/ttnn/operations/matmul",
+    "//ttnn/cpp/ttnn/operations/moreh",
+    "//ttnn/cpp/ttnn/operations/normalization",
+    "//ttnn/cpp/ttnn/operations/point_to_point",
+    "//ttnn/cpp/ttnn/operations/pool",
+    "//ttnn/cpp/ttnn/operations/prefetcher",
+    "//ttnn/cpp/ttnn/operations/rand",
+    "//ttnn/cpp/ttnn/operations/reduction",
+    "//ttnn/cpp/ttnn/operations/sliding_window",
+    "//ttnn/cpp/ttnn/operations/transformer",
+    "//ttnn/cpp/ttnn/operations/uniform",
+    # Experimental operations:
+    "//ttnn/cpp/ttnn/operations/experimental/adaptive_pool",
+    "//ttnn/cpp/ttnn/operations/experimental/deepseek/moe/moe_gate_mm",
+    "//ttnn/cpp/ttnn/operations/experimental/bcast_to",
+    "//ttnn/cpp/ttnn/operations/experimental/ccl",
+    "//ttnn/cpp/ttnn/operations/experimental/cnn",
+    "//ttnn/cpp/ttnn/operations/experimental/conv3d",
+    "//ttnn/cpp/ttnn/operations/experimental/copy",
+    "//ttnn/cpp/ttnn/operations/experimental/dropout",
+    "//ttnn/cpp/ttnn/operations/experimental/isin",
+    "//ttnn/cpp/ttnn/operations/experimental/matmul",
+    "//ttnn/cpp/ttnn/operations/experimental/minimal_matmul",
+    "//ttnn/cpp/ttnn/operations/experimental/padded_slice",
+    "//ttnn/cpp/ttnn/operations/experimental/paged_cache",
+    "//ttnn/cpp/ttnn/operations/experimental/plusone",
+    "//ttnn/cpp/ttnn/operations/experimental/reduction",
+    "//ttnn/cpp/ttnn/operations/experimental/reshape",
+    "//ttnn/cpp/ttnn/operations/experimental/slice_write",
+    "//ttnn/cpp/ttnn/operations/experimental/ssm",
+    "//ttnn/cpp/ttnn/operations/experimental/test",
+    "//ttnn/cpp/ttnn/operations/experimental/transformer",
+    "//ttnn/cpp/ttnn/operations/experimental/unary_backward",
+    "//ttnn/cpp/ttnn/operations/experimental/where",
+]
+
+# Operations that are linked into _ttnn but have no nanobind binding sources.
+_TTNN_LINK_ONLY_OPS = [
+    "//ttnn/cpp/ttnn/operations/eltwise/binary_ng",
+    "//ttnn/cpp/ttnn/operations/eltwise/complex_binary",
+]
+
+nanobind_extension(
+    name = "_ttnn",
+    srcs =
+        # Core nanobind module: entry point (__init__.cpp with NB_MODULE) plus
+        # type/tensor/device/cluster bindings.
+        glob(["cpp/ttnn-nanobind/**/*.cpp"]) +
+        # Core subsystem nanobind bindings (not in operation sub-packages).
+        [
+            "core/distributed/distributed_nanobind.cpp",
+            "core/graph/graph_nanobind.cpp",
+        ] +
+        # Experimental top-level nanobind (not in a sub-package).
+        glob(
+            ["cpp/ttnn/operations/experimental/*_nanobind.cpp"],
+            allow_empty = True,
+        ) +
+        # Per-operation nanobind bindings from sub-packages (via filegroups
+        # generated by ttnn_operation() macro).
+        [op + ":nanobind_srcs" for op in _TTNN_NANOBIND_OPS],
+    hdrs = glob(["cpp/ttnn-nanobind/**/*.hpp"]),
+    copts = [
+        "-Wno-c++11-narrowing",
+        "-Wno-unused-lambda-capture",
+    ],
+    deps = [
+        # Core TTNN library (provides tensor, device, graph, distributed types).
+        ":ttnn_core",
+        # The core operation uses plain cc_library (not ttnn_operation macro).
+        "//ttnn/cpp/ttnn/operations/core",
+        # External deps (matches CMake: target_link_libraries(ttnn PRIVATE Boost::algorithm)).
+        "@boost.algorithm",
+    ] + _TTNN_NANOBIND_OPS + _TTNN_LINK_ONLY_OPS,
+    visibility = ["//visibility:public"],
 )

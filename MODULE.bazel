@@ -80,6 +80,10 @@ use_repo(non_bcr_deps, "capnproto")
 # Pinned to exact commit matching v2.10.2.
 use_repo(non_bcr_deps, "nanobind")
 
+# robin-map — hash map library, used by nanobind internals.
+# Bundled as nanobind submodule but not included in tarballs.
+use_repo(non_bcr_deps, "robin_map")
+
 # xtensor stack — header-only numeric computing libraries. Not on BCR.
 use_repo(non_bcr_deps, "xtl")
 use_repo(non_bcr_deps, "xtensor")
@@ -108,6 +112,17 @@ use_repo(non_bcr_deps, "picosha2")
 
 # Standalone ASIO — header-only async I/O. Not on BCR. Used by UMD.
 use_repo(non_bcr_deps, "asio")
+
+# ===========================================================================
+# System Python headers (for nanobind extension modules)
+#
+# Auto-detects the system Python 3 include path using python3-config.
+# This will be replaced by hermetic Python (rules_python) in Phase 6.
+# ===========================================================================
+
+python_ext = use_extension("//:extensions.bzl", "python_ext")
+
+use_repo(python_ext, "python_headers")
 
 # ===========================================================================
 # Hermetic Clang 20 host toolchain
