@@ -1,0 +1,148 @@
+"""Preprocessed linker scripts for TT RISC-V firmware and kernels.
+
+Generates per-processor, per-architecture linker scripts by running the
+C preprocessor over template .ld files. This mirrors the CMake logic in
+tt_metal/hw/CMakeLists.txt (lines 173-294).
+
+Three categories of linker scripts:
+  1. Old-style (main.ld) — wormhole and blackhole, all standard processors
+  2. Erisc (erisc-b0-{kernel,app}.ld) — wormhole only, with/without IRAM
+  3. TLS-style (script_tng.ld) — quasar, trisc and dm processors
+"""
+
+load(":preprocess_ld.bzl", "preprocess_erisc_ld", "preprocess_main_ld", "preprocess_tng_ld")
+
+package(default_visibility = ["//visibility:public"])
+
+# ===================================================================
+# Configuration — must match tt_metal/hw/CMakeLists.txt
+# ===================================================================
+
+# Processor names as they appear in -DCOMPILE_FOR_${PROC} defines.
+# "TRISC=N" becomes -DCOMPILE_FOR_TRISC=N; the "=" is stripped for filenames.
+_PROCS = [
+    "BRISC",
+    "NCRISC",
+    "IERISC",
+    "SUBORDINATE_IERISC",
+    "TRISC=0",
+    "TRISC=1",
+    "TRISC=2",
+    "AERISC",
+    "MAIN_AERISC",
+    "SUBORDINATE_AERISC",
+]
+
+_ARCHS = {
+    "WORMHOLE": "//tt_metal/hw/inc/internal/tt-1xx/wormhole:dev_mem_map.h",
+    "BLACKHOLE": "//tt_metal/hw/inc/internal/tt-1xx/blackhole:dev_mem_map.h",
+}
+
+_TYPES = [
+    "FIRMWARE",
+    "KERNEL",
+]
+
+# ===================================================================
+# 1. Old-style linker scripts from main.ld
+# ===================================================================
+
+[preprocess_main_ld(
+    name = "ld_%s_%s_%s" % (arch.lower(), proc.replace("=", "").lower(), type.lower()),
+    arch = arch,
+    includes = [header],
+    proc = proc,
+    type = type,
+) for arch, header in _ARCHS.items() for proc in _PROCS for type in _TYPES]
+
+# ===================================================================
+# 2. Erisc-b0 linker scripts (wormhole only)
+# ===================================================================
+
+_WH_INCLUDE = ["//tt_metal/hw/inc/internal/tt-1xx/wormhole:dev_mem_map.h"]
+
+preprocess_erisc_ld(
+    name = "ld_wormhole_erisc_b0_kernel",
+    includes = _WH_INCLUDE,
+    script_type = "kernel",
+)
+
+preprocess_erisc_ld(
+    name = "ld_wormhole_erisc_b0_kernel_iram",
+    enable_iram = True,
+    includes = _WH_INCLUDE,
+    script_type = "kernel",
+)
+
+preprocess_erisc_ld(
+    name = "ld_wormhole_erisc_b0_app",
+    includes = _WH_INCLUDE,
+    script_type = "app",
+)
+
+preprocess_erisc_ld(
+    name = "ld_wormhole_erisc_b0_app_iram",
+    enable_iram = True,
+    includes = _WH_INCLUDE,
+    script_type = "app",
+)
+
+# ===================================================================
+# 3. TLS-style linker scripts from script_tng.ld (quasar)
+# ===================================================================
+
+# script_tng.ld does not #include any headers — no includes needed.
+[preprocess_tng_ld(
+    name = "ld_quasar_%s_%s%s" % (proc.lower(), type.lower(), ("_lgc" if ix else "")),
+    arch = "QUASAR",
+    includes = [],
+    ix = ix,
+    proc = proc,
+    type = type,
+) for proc in ["TRISC", "DM"] for type in _TYPES for ix in ([0] if type == "FIRMWARE" else [0, 1])]
+
+# ===================================================================
+# Aggregate targets
+# ===================================================================
+
+filegroup(
+    name = "wormhole_linker_scripts",
+    srcs = [
+        "ld_wormhole_%s_%s" % (proc.replace("=", "").lower(), type.lower())
+        for proc in _PROCS
+        for type in _TYPES
+    ] + [
+        "ld_wormhole_erisc_b0_kernel",
+        "ld_wormhole_erisc_b0_kernel_iram",
+        "ld_wormhole_erisc_b0_app",
+        "ld_wormhole_erisc_b0_app_iram",
+    ],
+)
+
+filegroup(
+    name = "blackhole_linker_scripts",
+    srcs = [
+        "ld_blackhole_%s_%s" % (proc.replace("=", "").lower(), type.lower())
+        for proc in _PROCS
+        for type in _TYPES
+    ],
+)
+
+filegroup(
+    name = "quasar_linker_scripts",
+    srcs = [
+        "ld_quasar_%s_%s%s" % (proc.lower(), type.lower(), ("_lgc" if ix else ""))
+        for proc in ["TRISC", "DM"]
+        for type in _TYPES
+        for ix in ([0] if type == "FIRMWARE" else [0, 1])
+    ],
+)
+
+filegroup(
+    name = "all_linker_scripts",
+    srcs = [
+        ":wormhole_linker_scripts",
+        ":blackhole_linker_scripts",
+        ":quasar_linker_scripts",
+    ],
+)

@@ -1,0 +1,4 @@
+exports_files(
+    ["dev_mem_map.h"],
+    visibility = ["//tt_metal/hw/toolchain:__pkg__"],
+)
