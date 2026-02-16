@@ -1,6 +1,7 @@
 """Module extensions for dependencies not available on the Bazel Central Registry."""
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("//toolchain/sfpi:repo.bzl", "sfpi_toolchain_repo")
 
 def _non_bcr_deps_impl(module_ctx):
     # Cap'n Proto v1.2.0
@@ -88,4 +89,15 @@ def _non_bcr_deps_impl(module_ctx):
 
 non_bcr_deps = module_extension(
     implementation = _non_bcr_deps_impl,
+)
+
+# ===========================================================================
+# SFPI RISC-V cross-compilation toolchain
+# ===========================================================================
+
+def _sfpi_ext_impl(module_ctx):
+    sfpi_toolchain_repo(name = "sfpi")
+
+sfpi_ext = module_extension(
+    implementation = _sfpi_ext_impl,
 )

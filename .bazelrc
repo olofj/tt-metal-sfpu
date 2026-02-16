@@ -28,3 +28,28 @@ build:gcc12 --extra_toolchains=//toolchain:gcc12
 
 # GCC 14 (matches cmake/x86_64-linux-gcc-14-toolchain.cmake)
 build:gcc14 --extra_toolchains=//toolchain:gcc14
+
+# ===========================================================================
+# SFPI RISC-V cross-compilation configurations
+#
+# Usage: bazel build --config=sfpi-wormhole //<target>
+#
+# These select the SFPI toolchain with architecture-specific -mcpu flags,
+# mirroring tt_metal/hw/CMakeLists.txt GPP_FLAGS_{arch}.
+# ===========================================================================
+
+# Wormhole (-mcpu=tt-wh, mirrors GPP_FLAGS_wormhole)
+build:sfpi-wormhole --extra_toolchains=//toolchain/sfpi:sfpi_wormhole
+build:sfpi-wormhole --platforms=//toolchain/sfpi:riscv_wormhole
+
+# Blackhole (-mcpu=tt-bh, mirrors GPP_FLAGS_blackhole)
+build:sfpi-blackhole --extra_toolchains=//toolchain/sfpi:sfpi_blackhole
+build:sfpi-blackhole --platforms=//toolchain/sfpi:riscv_blackhole
+
+# Quasar 32-bit (-mcpu=tt-qsr32, for TRISC/compute cores)
+build:sfpi-quasar32 --extra_toolchains=//toolchain/sfpi:sfpi_quasar32
+build:sfpi-quasar32 --platforms=//toolchain/sfpi:riscv_quasar32
+
+# Quasar 64-bit (-mcpu=tt-qsr64, for DM cores)
+build:sfpi-quasar64 --extra_toolchains=//toolchain/sfpi:sfpi_quasar64
+build:sfpi-quasar64 --platforms=//toolchain/sfpi:riscv_quasar64

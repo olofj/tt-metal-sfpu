@@ -91,6 +91,18 @@ use_repo(non_bcr_deps, "enchantum")
 use_repo(non_bcr_deps, "tt_logger")
 
 # ===========================================================================
+# SFPI RISC-V cross-compilation toolchain
+#
+# Downloads the pre-built SFPI compiler (riscv-tt-elf-g++) for building
+# device firmware targeting Wormhole, Blackhole, and Quasar chips.
+# Source of truth: tt_metal/sfpi-version, tt_metal/sfpi-info.sh
+# ===========================================================================
+
+sfpi_ext = use_extension("//:extensions.bzl", "sfpi_ext")
+
+use_repo(sfpi_ext, "sfpi")
+
+# ===========================================================================
 # C++ toolchains — mirrors cmake/*-toolchain.cmake + cmake/linking.cmake
 # ===========================================================================
 
@@ -99,4 +111,8 @@ register_toolchains(
     "//toolchain:clang20_libstdcpp",
     "//toolchain:gcc12",
     "//toolchain:gcc14",
+    "//toolchain/sfpi:sfpi_wormhole",
+    "//toolchain/sfpi:sfpi_blackhole",
+    "//toolchain/sfpi:sfpi_quasar32",
+    "//toolchain/sfpi:sfpi_quasar64",
 )
