@@ -110,6 +110,18 @@ use_repo(non_bcr_deps, "picosha2")
 use_repo(non_bcr_deps, "asio")
 
 # ===========================================================================
+# Hermetic Clang 20 host toolchain
+#
+# Downloads the official LLVM 20 release so the Bazel build does not
+# require a system-installed clang-20 package.  Includes clang, LLD,
+# libc++ headers/libraries, and LLVM binutils.
+# ===========================================================================
+
+clang_ext = use_extension("//:extensions.bzl", "clang_ext")
+
+use_repo(clang_ext, "llvm_clang")
+
+# ===========================================================================
 # SFPI RISC-V cross-compilation toolchain
 #
 # Downloads the pre-built SFPI compiler (riscv-tt-elf-g++) for building
@@ -123,11 +135,14 @@ use_repo(sfpi_ext, "sfpi")
 
 # ===========================================================================
 # C++ toolchains — mirrors cmake/*-toolchain.cmake + cmake/linking.cmake
+#
+# Hermetic Clang 20 toolchains (downloaded) are registered first so they
+# take priority.  System GCC toolchains remain as fallbacks.
 # ===========================================================================
 
 register_toolchains(
-    "//toolchain:clang20_libcpp",
-    "//toolchain:clang20_libstdcpp",
+    "//toolchain/clang:clang20_libcpp",
+    "//toolchain/clang:clang20_libstdcpp",
     "//toolchain:gcc12",
     "//toolchain:gcc14",
     "//toolchain/sfpi:sfpi_wormhole",

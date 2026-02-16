@@ -133,11 +133,11 @@ build:lto --linkopt=-Wl,--gc-sections
 # Enable custom toolchain resolution (required for registered toolchains)
 build --incompatible_enable_cc_toolchain_resolution
 
-# Clang 20 + libc++ (matches cmake/x86_64-linux-clang-20-libcpp-toolchain.cmake)
-build:clang20-libcpp --extra_toolchains=//toolchain:clang20_libcpp
+# Clang 20 + libc++ (hermetic — downloaded automatically)
+build:clang20-libcpp --extra_toolchains=//toolchain/clang:clang20_libcpp
 
-# Clang 20 + libstdc++ (matches cmake/x86_64-linux-clang-20-libstdcpp-toolchain.cmake)
-build:clang20-libstdcpp --extra_toolchains=//toolchain:clang20_libstdcpp
+# Clang 20 + libstdc++ (hermetic — downloaded automatically)
+build:clang20-libstdcpp --extra_toolchains=//toolchain/clang:clang20_libstdcpp
 
 # GCC 12 (matches cmake/x86_64-linux-gcc-12-toolchain.cmake)
 build:gcc12 --extra_toolchains=//toolchain:gcc12

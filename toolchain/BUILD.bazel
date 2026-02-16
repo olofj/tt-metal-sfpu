@@ -1,12 +1,13 @@
 """Host C++ toolchain definitions matching CMake toolchain files.
 
-Toolchain variants:
-  clang20-libcpp     — cmake/x86_64-linux-clang-20-libcpp-toolchain.cmake
-  clang20-libstdcpp  — cmake/x86_64-linux-clang-20-libstdcpp-toolchain.cmake
+Toolchain variants (system-installed, non-hermetic):
   gcc12              — cmake/x86_64-linux-gcc-12-toolchain.cmake
   gcc14              — cmake/x86_64-linux-gcc-14-toolchain.cmake
 
-Linker selection mirrors cmake/linking.cmake: prefer mold, then LLD, then ld.
+Clang 20 toolchains have moved to toolchain/clang/ and are now hermetic
+(downloaded automatically by Bazel).  See toolchain/clang/BUILD.bazel.
+
+Linker selection mirrors cmake/linking.cmake.
 Use --config=<name> in .bazelrc to select a toolchain.
 """
 
@@ -21,95 +22,6 @@ package(default_visibility = ["//visibility:public"])
 filegroup(
     name = "empty",
     srcs = [],
-)
-
-# ===================================================================
-# Clang 20 + libc++
-# ===================================================================
-
-cc_toolchain_config(
-    name = "clang20_libcpp_config",
-    compiler = "clang",
-    compiler_version = "20",
-    stdlib = "libc++",
-    cc_path = "/usr/bin/clang-20",
-    cxx_path = "/usr/bin/clang++-20",
-    linker_path = "/usr/bin/ld.mold",
-    cxx_builtin_include_directories = [
-        "/usr/lib/llvm-20/include/c++/v1",
-        "/usr/lib/llvm-20/lib/clang/20/include",
-        "/usr/include",
-    ],
-)
-
-cc_toolchain(
-    name = "clang20_libcpp_toolchain",
-    all_files = ":empty",
-    compiler_files = ":empty",
-    dwp_files = ":empty",
-    linker_files = ":empty",
-    objcopy_files = ":empty",
-    strip_files = ":empty",
-    toolchain_config = ":clang20_libcpp_config",
-)
-
-toolchain(
-    name = "clang20_libcpp",
-    exec_compatible_with = [
-        "@platforms//os:linux",
-        "@platforms//cpu:x86_64",
-    ],
-    target_compatible_with = [
-        "@platforms//os:linux",
-        "@platforms//cpu:x86_64",
-    ],
-    toolchain = ":clang20_libcpp_toolchain",
-    toolchain_type = "@rules_cc//cc:toolchain_type",
-)
-
-# ===================================================================
-# Clang 20 + libstdc++
-# ===================================================================
-
-cc_toolchain_config(
-    name = "clang20_libstdcpp_config",
-    compiler = "clang",
-    compiler_version = "20",
-    stdlib = "libstdc++",
-    cc_path = "/usr/bin/clang-20",
-    cxx_path = "/usr/bin/clang++-20",
-    linker_path = "/usr/bin/ld.mold",
-    cxx_builtin_include_directories = [
-        "/usr/include/c++/14",
-        "/usr/include/x86_64-linux-gnu/c++/14",
-        "/usr/lib/llvm-20/lib/clang/20/include",
-        "/usr/include",
-    ],
-)
-
-cc_toolchain(
-    name = "clang20_libstdcpp_toolchain",
-    all_files = ":empty",
-    compiler_files = ":empty",
-    dwp_files = ":empty",
-    linker_files = ":empty",
-    objcopy_files = ":empty",
-    strip_files = ":empty",
-    toolchain_config = ":clang20_libstdcpp_config",
-)
-
-toolchain(
-    name = "clang20_libstdcpp",
-    exec_compatible_with = [
-        "@platforms//os:linux",
-        "@platforms//cpu:x86_64",
-    ],
-    target_compatible_with = [
-        "@platforms//os:linux",
-        "@platforms//cpu:x86_64",
-    ],
-    toolchain = ":clang20_libstdcpp_toolchain",
-    toolchain_type = "@rules_cc//cc:toolchain_type",
 )
 
 # ===================================================================

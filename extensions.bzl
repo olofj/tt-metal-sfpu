@@ -1,6 +1,7 @@
 """Module extensions for dependencies not available on the Bazel Central Registry."""
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("//toolchain/clang:repo.bzl", "clang_toolchain_repo")
 load("//toolchain/sfpi:repo.bzl", "sfpi_toolchain_repo")
 
 def _non_bcr_deps_impl(module_ctx):
@@ -131,6 +132,17 @@ def _non_bcr_deps_impl(module_ctx):
 
 non_bcr_deps = module_extension(
     implementation = _non_bcr_deps_impl,
+)
+
+# ===========================================================================
+# Hermetic Clang 20 host toolchain
+# ===========================================================================
+
+def _clang_ext_impl(module_ctx):
+    clang_toolchain_repo(name = "llvm_clang")
+
+clang_ext = module_extension(
+    implementation = _clang_ext_impl,
 )
 
 # ===========================================================================
