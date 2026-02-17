@@ -1,0 +1,16 @@
+# TT-Transformers demo utilities.
+
+load("@rules_python//python:py_library.bzl", "py_library")
+
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "trace_region_config",
+    testonly = True,
+    srcs = ["trace_region_config.py"],
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "//models/common:utility_functions",
+        "@pip//loguru",
+    ],
+)

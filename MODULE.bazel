@@ -136,6 +136,24 @@ python.toolchain(
 use_repo(python, "python_3_12")
 
 # ===========================================================================
+# Python pip dependencies for tests
+#
+# Resolves test requirements (pytest, torch, numpy, etc.) from PyPI into
+# Bazel-managed repositories. Usage in BUILD files:
+#   deps = ["@pip//pytest"]
+# ===========================================================================
+
+pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+
+pip.parse(
+    hub_name = "pip",
+    python_version = "3.12",
+    requirements_lock = "//bazel:requirements_test_lock.txt",
+)
+
+use_repo(pip, "pip")
+
+# ===========================================================================
 # Hermetic Clang 20 host toolchain
 #
 # Downloads the official LLVM 20 release so the Bazel build does not

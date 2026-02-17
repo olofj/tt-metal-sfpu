@@ -1,0 +1,57 @@
+#
+# Locked Python test dependencies for Bazel py_test targets.
+#
+# Generated from bazel/requirements_test.txt by pip-compile.
+# To regenerate:
+#   pip-compile --strip-extras --no-emit-options \
+#     --extra-index-url https://download.pytorch.org/whl/cpu \
+#     --output-file=bazel/requirements_test_lock.txt \
+#     bazel/requirements_test.txt
+#
+# CPU-only PyTorch index for x86_64 (avoids CUDA deps):
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+filelock==3.24.2
+    # via torch
+fsspec==2026.2.0
+    # via torch
+iniconfig==2.3.0
+    # via pytest
+jinja2==3.1.6
+    # via torch
+loguru==0.6.0
+    # via -r bazel/requirements_test.txt
+markupsafe==3.0.3
+    # via jinja2
+mpmath==1.3.0
+    # via sympy
+networkx==3.6.1
+    # via torch
+numpy==1.26.4
+    # via -r bazel/requirements_test.txt
+packaging==26.0
+    # via pytest
+pluggy==1.6.0
+    # via pytest
+pygments==2.19.2
+    # via pytest
+pytest==8.4.2
+    # via
+    #   -r bazel/requirements_test.txt
+    #   pytest-split
+    #   pytest-timeout
+pytest-split==0.10.0
+    # via -r bazel/requirements_test.txt
+pytest-timeout==2.4.0
+    # via -r bazel/requirements_test.txt
+pyyaml==6.0.3
+    # via -r bazel/requirements_test.txt
+sympy==1.14.0
+    # via torch
+torch==2.7.1+cpu
+    # via -r bazel/requirements_test.txt
+typing-extensions==4.15.0
+    # via torch
+
+# pip-compile marks these as "unsafe" but they're required by torch at runtime.
+setuptools>=75.0.0

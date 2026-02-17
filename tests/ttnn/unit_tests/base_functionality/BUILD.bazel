@@ -1,0 +1,25 @@
+# TTNN base functionality unit tests.
+#
+# Each test_*.py file becomes an individual py_test target for maximum
+# affected-target granularity. This allows `bazel query rdeps(...)` to
+# determine exactly which tests are affected by a given source change.
+#
+# Usage:
+#   bazel test //tests/ttnn/unit_tests/base_functionality/...
+#   bazel test //tests/ttnn/unit_tests/base_functionality:all --test_tag_filters=post_commit
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "base_functionality_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "//tests/ttnn:test_utils",
+        "//models/common:utility_functions",
+        "@pip//torch",
+        "@pip//numpy",
+        "@pip//loguru",
+    ],
+    tags = ["ttnn", "unit"],
+)

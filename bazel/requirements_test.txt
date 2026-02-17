@@ -1,0 +1,24 @@
+# Python test dependencies for Bazel py_test targets.
+# Locked versions match tt_metal/python_env/requirements-dev.txt.
+#
+# These packages are resolved by rules_python pip.parse() and made available
+# as @pip//<package> deps in BUILD files.
+#
+# To regenerate the lock file after editing this file:
+#   pip-compile --strip-extras --no-emit-index-url --no-emit-options \
+#     --extra-index-url https://download.pytorch.org/whl/cpu \
+#     --output-file=bazel/requirements_test_lock.txt \
+#     bazel/requirements_test.txt
+
+pytest==8.4.2
+pytest-timeout==2.4.0
+pytest-split==0.10.0
+
+# Core numeric/ML stack used by nearly all tests.
+# CPU-only torch to avoid downloading CUDA deps (matches requirements-dev.txt).
+numpy>=1.24.4,<2
+torch==2.7.1
+loguru==0.6.0
+
+# Test utilities
+pyyaml>=5.4

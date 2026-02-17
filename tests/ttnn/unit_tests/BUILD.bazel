@@ -1,0 +1,4 @@
+# Intermediate package for TTNN unit tests.
+# Subdirectories contain the actual py_test targets.
+
+package(default_visibility = ["//tests:__subpackages__"])

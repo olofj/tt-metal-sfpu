@@ -28,7 +28,11 @@ stamp_version(
 )
 
 # Export the stamp script so it can be tested.
-exports_files(["stamp_version.sh"])
+# Export the pytest wrapper so pytest_test() targets can use it as main.
+exports_files([
+    "stamp_version.sh",
+    "pytest_wrapper.py",
+])
 
 # ---------------------------------------------------------------------------
 # Wheel content validation test

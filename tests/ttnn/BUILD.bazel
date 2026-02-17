@@ -1,0 +1,63 @@
+# TTNN Python test infrastructure.
+#
+# conftest.py files are NOT normal Python modules — pytest loads them
+# automatically based on directory hierarchy. In Bazel, they must be
+# included as data dependencies so they appear in the runfiles tree.
+
+load("@rules_python//python:py_library.bzl", "py_library")
+
+package(default_visibility = ["//tests:__subpackages__"])
+
+# All conftest.py files in the TTNN test tree, collected as a single
+# filegroup for easy inclusion in py_test data deps.
+filegroup(
+    name = "conftest_files",
+    srcs = glob(["**/conftest.py"]) + [
+        # Root conftest.py defines device fixtures, arch parametrization, etc.
+        "//:conftest.py",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Test utility modules imported by test files.
+# e.g., from tests.ttnn.utils_for_testing import assert_with_pcc
+py_library(
+    name = "test_utils",
+    testonly = True,
+    srcs = ["utils_for_testing.py"],
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "//models/common:utility_functions",
+        "@pip//numpy",
+        "@pip//torch",
+        "@pip//loguru",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# ---------------------------------------------------------------------------
+# CI test suites — filter tests by marker tags
+#
+# Usage:
+#   bazel test //tests/ttnn:post_commit_tests
+#   bazel test //tests/ttnn:frequent_tests
+#   bazel test //tests/ttnn/... --test_tag_filters=post_commit
+# ---------------------------------------------------------------------------
+
+test_suite(
+    name = "post_commit_tests",
+    tags = ["post_commit", "-slow", "-frequently_hangs"],
+    visibility = ["//visibility:public"],
+)
+
+test_suite(
+    name = "frequent_tests",
+    tags = ["frequent"],
+    visibility = ["//visibility:public"],
+)
+
+test_suite(
+    name = "nightly_tests",
+    tags = ["slow"],
+    visibility = ["//visibility:public"],
+)
