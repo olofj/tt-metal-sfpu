@@ -1,0 +1,20 @@
+# TT-Eager unit tests for fallback ops (21 test files).
+#
+# These tests exercise fallback operations that run on the host CPU when
+# a native TT accelerator implementation is not available.
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "fallback_ops_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//tests/tt_eager:sweep_test_utils",
+        "//ttnn/ttnn:ttnn_py",
+        "//models/common:utility_functions",
+        "@pip//torch",
+        "@pip//numpy",
+        "@pip//loguru",
+    ],
+    tags = ["tt_eager", "unit"],
+)

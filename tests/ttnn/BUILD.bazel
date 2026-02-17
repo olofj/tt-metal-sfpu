@@ -35,6 +35,18 @@ py_library(
     visibility = ["//visibility:public"],
 )
 
+# Utility module with shard grid helpers.
+# e.g., from tests.ttnn.ttnn_utility_fuction import get_shard_grid_from_num_cores
+py_library(
+    name = "ttnn_utility_fuction",
+    testonly = True,
+    srcs = ["ttnn_utility_fuction.py"],
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+    ],
+    visibility = ["//visibility:public"],
+)
+
 # ---------------------------------------------------------------------------
 # CI test suites — filter tests by marker tags
 #

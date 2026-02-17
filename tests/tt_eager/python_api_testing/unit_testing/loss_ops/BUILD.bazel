@@ -1,0 +1,17 @@
+# TT-Eager unit tests for loss operations (2 test files).
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "loss_ops_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//tests/tt_eager:sweep_test_utils",
+        "//ttnn/ttnn:ttnn_py",
+        "//models/common:utility_functions",
+        "@pip//torch",
+        "@pip//numpy",
+        "@pip//loguru",
+    ],
+    tags = ["tt_eager", "unit"],
+)

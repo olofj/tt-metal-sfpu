@@ -1,0 +1,17 @@
+# TT-Eager sweep test helper function tests (1 test file).
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "helper_funcs_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//tests/tt_eager:sweep_test_utils",
+        "//ttnn/ttnn:ttnn_py",
+        "//models/common:utility_functions",
+        "@pip//torch",
+        "@pip//numpy",
+        "@pip//loguru",
+    ],
+    tags = ["tt_eager", "sweep"],
+)

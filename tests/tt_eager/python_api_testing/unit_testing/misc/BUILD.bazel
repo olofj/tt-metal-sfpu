@@ -1,0 +1,22 @@
+# TT-Eager miscellaneous unit tests (62 test files).
+#
+# Covers matmul, attention, sharding, normalization, rotary embedding,
+# NLP ops, and other core eager-mode operations.
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "misc_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//tests/tt_eager:sweep_test_utils",
+        "//tests/ttnn:test_utils",
+        "//tests/ttnn:ttnn_utility_fuction",
+        "//ttnn/ttnn:ttnn_py",
+        "//models/common:utility_functions",
+        "@pip//torch",
+        "@pip//numpy",
+        "@pip//loguru",
+    ],
+    tags = ["tt_eager", "unit"],
+)

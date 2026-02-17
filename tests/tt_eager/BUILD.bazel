@@ -1,0 +1,31 @@
+# TT-Eager Python test infrastructure.
+#
+# Shared libraries for sweep_tests and unit_testing test files.
+# No conftest.py files exist in the tt_eager tree — tests use the root
+# conftest.py (included via //tests/ttnn:conftest_files in pytest_test macro).
+
+load("@rules_python//python:py_library.bzl", "py_library")
+
+package(default_visibility = ["//tests:__subpackages__"])
+
+# Sweep test utility modules imported by test files via:
+#   from tests.tt_eager.python_api_testing.sweep_tests import comparison_funcs
+#   from tests.tt_eager.python_api_testing.sweep_tests.run_pytorch_ci_tests import run_single_pytorch_test
+py_library(
+    name = "sweep_test_utils",
+    testonly = True,
+    srcs = glob(
+        ["python_api_testing/sweep_tests/**/*.py"],
+        exclude = ["python_api_testing/sweep_tests/pytests/**"],
+    ),
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "//models/common:utility_functions",
+        "//tests/ttnn:test_utils",
+        "@pip//torch",
+        "@pip//numpy",
+        "@pip//loguru",
+        "@pip//pytest",
+        "@pip//pyyaml",
+    ],
+)
