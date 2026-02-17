@@ -128,6 +128,20 @@ build:distributed --define=enable_distributed=true
 build:time-trace --copt=-ftime-trace
 
 # ===========================================================================
+# Clang-tidy static analysis
+#
+# Mirrors CMakePresets.json clang-tidy preset. Uses the hermetic Clang 20
+# toolchain's bundled clang-tidy binary via a Bazel aspect.
+#
+# Usage:
+#   bazel build --config=clang-tidy //...        # Lint everything
+#   bazel build --config=clang-tidy //<target>   # Lint one target
+# ===========================================================================
+
+build:clang-tidy --aspects=//bazel:clang_tidy.bzl%clang_tidy_aspect
+build:clang-tidy --output_groups=clang_tidy
+
+# ===========================================================================
 # LTO configuration
 #
 # Mirrors cmake/linking.cmake LTO section. Uses thin LTO by default

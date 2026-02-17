@@ -5,8 +5,8 @@ not require a system-installed clang-20 package.  Follows the same
 pattern as toolchain/sfpi/repo.bzl.
 
 The tarball includes clang, clang++, lld (used in place of mold),
-llvm-ar, llvm-nm, llvm-objcopy, llvm-objdump, llvm-strip, libc++
-headers and libraries, and compiler-rt builtins.
+llvm-ar, llvm-nm, llvm-objcopy, llvm-objdump, llvm-strip, clang-tidy,
+libc++ headers and libraries, and compiler-rt builtins.
 """
 
 LLVM_VERSION = "20.1.8"
@@ -143,6 +143,12 @@ filegroup(
 filegroup(
     name = "empty",
     srcs = [],
+)
+
+# clang-tidy binary for the //bazel:clang_tidy.bzl aspect.
+filegroup(
+    name = "clang_tidy",
+    srcs = ["bin/clang-tidy"],
 )
 
 """
