@@ -34,6 +34,14 @@ exports_files([
     "pytest_wrapper.py",
 ])
 
+# Zstd compressor for pkg_tar targets (CI tarball).
+# Matches the CI compression flags: zstd --adapt=min=9 -T0
+sh_binary(
+    name = "zstd_compress",
+    srcs = ["zstd_compress.sh"],
+    visibility = ["//visibility:public"],
+)
+
 # ---------------------------------------------------------------------------
 # Wheel content validation test
 #

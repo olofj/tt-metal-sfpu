@@ -660,6 +660,516 @@ tt_deb(
 )
 
 # ===========================================================================
+# CI tarball — compiled artifact bundle for hardware test jobs
+#
+# Replaces the ad-hoc tar command in .github/workflows/build-artifact.yaml
+# (lines 535-542) that creates ttm_any.tar.zst. This tarball is the primary
+# mechanism for passing build outputs between CI jobs: the build job produces
+# it, and every downstream test job extracts it via setup-job/action.yml.
+#
+# Tarball layout (matches CMake build):
+#   ttnn/ttnn/_ttnn.so          — nanobind Python extension
+#   build/lib/                  — shared libraries (libtt_metal.so, etc.)
+#   build/programming_examples/ — compiled example binaries
+#   build/test/                 — compiled gtest binaries
+#   build/tools/                — tool executables (future)
+#   runtime/                    — device firmware and runtime files
+#
+# Usage:
+#   bazel build //packaging:ci_tarball --config=ci
+#   bazel build //packaging:ci_tarball_tar           # uncompressed .tar
+#
+# NOTE: The CMake CI workflows reference monolithic test binaries like
+# build/test/tt_metal/unit_tests_api. The Bazel build produces individual
+# test binaries instead (one per cc_test target). CI workflows will need
+# updating to use the individual binaries — tracked by tt-metal-90z.
+# ===========================================================================
+
+# --- Component sub-tarballs ---
+# Each component maps to a top-level directory in the CI tarball.
+
+# Shared libraries → build/lib/
+# Mirrors: libtt_metal.so, libumd.so, libtt_stl.so, libTracyClient.so,
+#          _ttnncpp.so (TTNN C++ shared library)
+pkg_tar(
+    name = "ci_tarball_lib",
+    srcs = [
+        ":libTracyClient.so",
+        ":libtt_metal.so",
+        ":libtt_stl.so",
+        ":libumd.so",
+    ],
+    package_dir = "build/lib",
+)
+
+# _ttnncpp.so ships alongside the other libs in build/lib/.
+pkg_tar(
+    name = "ci_tarball_lib_ttnn",
+    srcs = ["//ttnn:ttnncpp_shared"],
+    package_dir = "build/lib",
+)
+
+# Nanobind Python extension → ttnn/ttnn/
+# CI expects ttnn/ttnn/*.so (the _ttnn.so nanobind module).
+pkg_tar(
+    name = "ci_tarball_ttnn_ext",
+    srcs = ["//ttnn:_ttnn.so"],
+    package_dir = "ttnn/ttnn",
+)
+
+# Programming examples → build/programming_examples/
+# Compiled example binaries (metal_example_add_2_integers_in_compute, etc.)
+pkg_tar(
+    name = "ci_tarball_examples",
+    srcs = ["//tt_metal/programming_examples:programming_examples"],
+    package_dir = "build/programming_examples",
+)
+
+# Runtime firmware and toolchain → runtime/
+# Device firmware .o files and linker scripts (runtime/hw/**).
+pkg_tar(
+    name = "ci_tarball_runtime",
+    srcs = ["//:runtime_hw_files"],
+    strip_prefix = ".",
+)
+
+# --- Test binaries → build/test/ ---
+# Individual gtest binaries from each test package. These replace the
+# CMake monolithic executables (unit_tests_api, unit_tests_dispatch, etc.)
+# with finer-grained individual test binaries.
+
+# TTNN gtest binaries
+pkg_tar(
+    name = "ci_tarball_test_ttnn_gtests",
+    testonly = True,
+    srcs = [
+        "//tests/ttnn/unit_tests/gtests:accessor_test_accessor_benchmarks",
+        "//tests/ttnn/unit_tests/gtests:accessor_test_tensor_accessor",
+        "//tests/ttnn/unit_tests/gtests:accessor_test_tensor_accessor_on_device",
+        "//tests/ttnn/unit_tests/gtests:ccl_test_ccl_commands",
+        "//tests/ttnn/unit_tests/gtests:ccl_test_ccl_helpers",
+        "//tests/ttnn/unit_tests/gtests:ccl_test_ccl_reduce_scatter_host_helpers",
+        "//tests/ttnn/unit_tests/gtests:ccl_test_ccl_tensor_slicers",
+        "//tests/ttnn/unit_tests/gtests:ccl_test_erisc_data_mover_with_workers",
+        "//tests/ttnn/unit_tests/gtests:ccl_test_fabric_erisc_data_mover_loopback_with_workers",
+        "//tests/ttnn/unit_tests/gtests:ccl_test_persistent_fabric_ccl_ops",
+        "//tests/ttnn/unit_tests/gtests:ccl_test_send_recv_ops",
+        "//tests/ttnn/unit_tests/gtests:ccl_test_sharded_address_generators",
+        "//tests/ttnn/unit_tests/gtests:ccl_test_sharded_address_generators_new",
+        "//tests/ttnn/unit_tests/gtests:test_add",
+        "//tests/ttnn/unit_tests/gtests:test_add_int",
+        "//tests/ttnn/unit_tests/gtests:test_async_runtime",
+        "//tests/ttnn/unit_tests/gtests:test_broadcast_to",
+        "//tests/ttnn/unit_tests/gtests:test_ccl_multi_cq_multi_device",
+        "//tests/ttnn/unit_tests/gtests:test_conv2d",
+        "//tests/ttnn/unit_tests/gtests:test_convert_to_hwc_gather",
+        "//tests/ttnn/unit_tests/gtests:test_create_tensor",
+        "//tests/ttnn/unit_tests/gtests:test_create_tensor_multi_device",
+        "//tests/ttnn/unit_tests/gtests:test_create_tensor_with_layout",
+        "//tests/ttnn/unit_tests/gtests:test_distributed_tensor",
+        "//tests/ttnn/unit_tests/gtests:test_emitc_sanity",
+        "//tests/ttnn/unit_tests/gtests:test_generic_op",
+        "//tests/ttnn/unit_tests/gtests:test_graph_add",
+        "//tests/ttnn/unit_tests/gtests:test_graph_basic",
+        "//tests/ttnn/unit_tests/gtests:test_graph_capture_arguments_morehdot",
+        "//tests/ttnn/unit_tests/gtests:test_graph_capture_arguments_transpose",
+        "//tests/ttnn/unit_tests/gtests:test_graph_query_op_constraints",
+        "//tests/ttnn/unit_tests/gtests:test_graph_query_op_runtime",
+        "//tests/ttnn/unit_tests/gtests:test_launch_operation",
+        "//tests/ttnn/unit_tests/gtests:test_levelized_graph",
+        "//tests/ttnn/unit_tests/gtests:test_mesh_tensor",
+        "//tests/ttnn/unit_tests/gtests:test_multi_cq_multi_dev",
+        "//tests/ttnn/unit_tests/gtests:test_multiprod_queue",
+        "//tests/ttnn/unit_tests/gtests:test_multi_tensor_ccl",
+        "//tests/ttnn/unit_tests/gtests:test_partition",
+        "//tests/ttnn/unit_tests/gtests:test_reflect",
+        "//tests/ttnn/unit_tests/gtests:test_relational_int",
+        "//tests/ttnn/unit_tests/gtests:test_rsub_int",
+        "//tests/ttnn/unit_tests/gtests:test_sliding_window_infra",
+        "//tests/ttnn/unit_tests/gtests:test_sub_int",
+        "//tests/ttnn/unit_tests/gtests:test_tensor_layout",
+        "//tests/ttnn/unit_tests/gtests:test_tensor_nd_sharding",
+        "//tests/ttnn/unit_tests/gtests:test_tensor_serialization",
+        "//tests/ttnn/unit_tests/gtests:test_tensor_topology",
+        "//tests/ttnn/unit_tests/gtests:test_to_and_from_json",
+        "//tests/ttnn/unit_tests/gtests:test_unit_mesh_utils",
+        "//tests/ttnn/unit_tests/gtests:test_vector_conversion",
+        "//tests/ttnn/unit_tests/gtests:test_xtensor_adapter",
+        "//tests/ttnn/unit_tests/gtests:test_xtensor_conversion",
+    ],
+    package_dir = "build/test/ttnn",
+)
+
+# tt_metal core test binaries
+pkg_tar(
+    name = "ci_tarball_test_tt_metal",
+    testonly = True,
+    srcs = [
+        "//tests/tt_metal/tt_metal:api_allocator_test_free_list_opt_allocator",
+        "//tests/tt_metal/tt_metal:api_allocator_test_l1_banking_allocator",
+        "//tests/tt_metal/tt_metal:api_allocator_test_overlapped_bank_manager",
+        "//tests/tt_metal/tt_metal:api_circular_buffer_test_CircularBuffer_allocation",
+        "//tests/tt_metal/tt_metal:api_circular_buffer_test_CircularBuffer_creation",
+        "//tests/tt_metal/tt_metal:api_circular_buffer_test_CircularBuffer_non_blocking",
+        "//tests/tt_metal/tt_metal:api_circular_buffer_test_CircularBuffer_wrapping",
+        "//tests/tt_metal/tt_metal:api_core_coord_test_CoreRange_adjacent",
+        "//tests/tt_metal/tt_metal:api_core_coord_test_CoreRange_contains",
+        "//tests/tt_metal/tt_metal:api_core_coord_test_CoreRange_intersects",
+        "//tests/tt_metal/tt_metal:api_core_coord_test_CoreRange_iterator",
+        "//tests/tt_metal/tt_metal:api_core_coord_test_CoreRange_merge",
+        "//tests/tt_metal/tt_metal:api_core_coord_test_CoreRangeSet_construct",
+        "//tests/tt_metal/tt_metal:api_core_coord_test_CoreRangeSet_contains",
+        "//tests/tt_metal/tt_metal:api_core_coord_test_CoreRangeSet_intersects",
+        "//tests/tt_metal/tt_metal:api_core_coord_test_CoreRangeSet_merge",
+        "//tests/tt_metal/tt_metal:api_dataflow_buffer_test_dataflow_buffer",
+        "//tests/tt_metal/tt_metal:api_dataflow_buffer_test_dataflow_buffer_configs",
+        "//tests/tt_metal/tt_metal:api_distribution_spec_test_buffer_distribution_spec",
+        "//tests/tt_metal/tt_metal:api_tensor_test_tensor_sharding",
+        "//tests/tt_metal/tt_metal:api_test_banked",
+        "//tests/tt_metal/tt_metal:api_test_bit_utils",
+        "//tests/tt_metal/tt_metal:api_test_blockfloat_common",
+        "//tests/tt_metal/tt_metal:api_test_buffer_region",
+        "//tests/tt_metal/tt_metal:api_test_compile_defines",
+        "//tests/tt_metal/tt_metal:api_test_compile_time_args",
+        "//tests/tt_metal/tt_metal:api_test_core_local_mem_api",
+        "//tests/tt_metal/tt_metal:api_test_direct",
+        "//tests/tt_metal/tt_metal:api_test_dram",
+        "//tests/tt_metal/tt_metal:api_test_dram_to_l1_multicast",
+        "//tests/tt_metal/tt_metal:api_test_duplicate_kernel",
+        "//tests/tt_metal/tt_metal:api_test_global_circular_buffers",
+        "//tests/tt_metal/tt_metal:api_test_global_semaphores",
+        "//tests/tt_metal/tt_metal:api_test_host_buffer",
+        "//tests/tt_metal/tt_metal:api_test_kernel_compile_cache",
+        "//tests/tt_metal/tt_metal:api_test_kernel_creation",
+        "//tests/tt_metal/tt_metal:api_test_memory_pin",
+        "//tests/tt_metal/tt_metal:api_test_noc",
+        "//tests/tt_metal/tt_metal:api_test_runtime_args",
+        "//tests/tt_metal/tt_metal:api_test_semaphores",
+        "//tests/tt_metal/tt_metal:api_test_shape_base",
+        "//tests/tt_metal/tt_metal:api_test_sharded_l1_buffer",
+        "//tests/tt_metal/tt_metal:api_test_simple_dram_buffer",
+        "//tests/tt_metal/tt_metal:api_test_simple_l1_buffer",
+        "//tests/tt_metal/tt_metal:api_test_soc_descriptor",
+        "//tests/tt_metal/tt_metal:api_test_stream_scratch_register",
+        "//tests/tt_metal/tt_metal:api_test_tilize_untilize",
+        "//tests/tt_metal/tt_metal:api_test_worker_config_buffer",
+        "//tests/tt_metal/tt_metal:data_movement_all_from_all_test_all_from_all",
+        "//tests/tt_metal/tt_metal:data_movement_all_to_all_test_all_to_all",
+        "//tests/tt_metal/tt_metal:data_movement_atomics_test_atomic_semaphore_bandwidth",
+        "//tests/tt_metal/tt_metal:data_movement_conv_hardcoded_test_conv_hardcoded",
+        "//tests/tt_metal/tt_metal:data_movement_core_bidirectional_test_core_bidirectional",
+        "//tests/tt_metal/tt_metal:data_movement_deinterleave_hardcoded_test_deinterleave_hardcoded",
+        "//tests/tt_metal/tt_metal:data_movement_direct_write_test_direct_write",
+        "//tests/tt_metal/tt_metal:data_movement_dram_sharded_test_dram_sharded",
+        "//tests/tt_metal/tt_metal:data_movement_dram_unary_test_unary_dram",
+        "//tests/tt_metal/tt_metal:data_movement_interleaved_test_interleaved",
+        "//tests/tt_metal/tt_metal:data_movement_interleaved_to_sharded_hardcoded_test_interleaved_to_sharded_hardcoded",
+        "//tests/tt_metal/tt_metal:data_movement_loopback_test_loopback",
+        "//tests/tt_metal/tt_metal:data_movement_multicast_atomics_test_multicast_atomic_semaphore",
+        "//tests/tt_metal/tt_metal:data_movement_multi_interleaved_test_multi_interleaved",
+        "//tests/tt_metal/tt_metal:data_movement_noc_api_latency_test_noc_api_latency",
+        "//tests/tt_metal/tt_metal:data_movement_one_from_all_test_one_from_all",
+        "//tests/tt_metal/tt_metal:data_movement_one_from_one_test_one_from_one",
+        "//tests/tt_metal/tt_metal:data_movement_one_packet_test_one_packet",
+        "//tests/tt_metal/tt_metal:data_movement_one_to_all_test_multicast_schemes",
+        "//tests/tt_metal/tt_metal:data_movement_one_to_all_test_one_to_all",
+        "//tests/tt_metal/tt_metal:data_movement_one_to_one_test_one_to_one",
+        "//tests/tt_metal/tt_metal:data_movement_pcie_read_bw_test_pcie_read_bw",
+        "//tests/tt_metal/tt_metal:data_movement_reshard_hardcoded_test_reshard_hardcoded",
+        "//tests/tt_metal/tt_metal:data_movement_transaction_id_test_transaction_id",
+        "//tests/tt_metal/tt_metal:debug_tools_dprint_test_eth_cores",
+        "//tests/tt_metal/tt_metal:debug_tools_dprint_test_invalid_print_core",
+        "//tests/tt_metal/tt_metal:debug_tools_dprint_test_mute_device",
+        "//tests/tt_metal/tt_metal:debug_tools_dprint_test_mute_print_server",
+        "//tests/tt_metal/tt_metal:debug_tools_dprint_test_print_all_harts",
+        "//tests/tt_metal/tt_metal:debug_tools_dprint_test_print_before_finish",
+        "//tests/tt_metal/tt_metal:debug_tools_dprint_test_print_buffering",
+        "//tests/tt_metal/tt_metal:debug_tools_dprint_test_print_config_register",
+        "//tests/tt_metal/tt_metal:debug_tools_dprint_test_print_prepend_device_core_risc",
+        "//tests/tt_metal/tt_metal:debug_tools_dprint_test_print_tensix_dest",
+        "//tests/tt_metal/tt_metal:debug_tools_dprint_test_print_tile",
+        "//tests/tt_metal/tt_metal:debug_tools_dprint_test_print_tiles_multiple",
+        "//tests/tt_metal/tt_metal:debug_tools_inspector_test_rpc_startup",
+        "//tests/tt_metal/tt_metal:debug_tools_watcher_test_assert",
+        "//tests/tt_metal/tt_metal:debug_tools_watcher_test_link_training",
+        "//tests/tt_metal/tt_metal:debug_tools_watcher_test_noc_sanitize_delays",
+        "//tests/tt_metal/tt_metal:debug_tools_watcher_test_pause",
+        "//tests/tt_metal/tt_metal:debug_tools_watcher_test_ringbuf",
+        "//tests/tt_metal/tt_metal:debug_tools_watcher_test_runtime_args_known_garbage",
+        "//tests/tt_metal/tt_metal:debug_tools_watcher_test_sanitize",
+        "//tests/tt_metal/tt_metal:debug_tools_watcher_test_stack_usage",
+        "//tests/tt_metal/tt_metal:debug_tools_watcher_test_waypoint",
+        "//tests/tt_metal/tt_metal:device_test_device",
+        "//tests/tt_metal/tt_metal:device_test_device_cluster_api",
+        "//tests/tt_metal/tt_metal:device_test_device_init_and_teardown",
+        "//tests/tt_metal/tt_metal:device_test_device_pool",
+        "//tests/tt_metal/tt_metal:device_test_galaxy_cluster_api",
+        "//tests/tt_metal/tt_metal:device_test_mock_device_api",
+        "//tests/tt_metal/tt_metal:device_test_release_ownership",
+        "//tests/tt_metal/tt_metal:device_test_simulator_device",
+        "//tests/tt_metal/tt_metal:dispatch_dispatch_buffer_test_BufferCorePageMapping_Iterator",
+        "//tests/tt_metal/tt_metal:dispatch_dispatch_buffer_test_EnqueueWriteBuffer_and_EnqueueReadBuffer",
+        "//tests/tt_metal/tt_metal:dispatch_dispatch_buffer_test_large_mesh_buffer",
+        "//tests/tt_metal/tt_metal:dispatch_dispatch_buffer_test_sub_device",
+        "//tests/tt_metal/tt_metal:dispatch_dispatch_device_test_enqueue_read_write_core",
+        "//tests/tt_metal/tt_metal:dispatch_dispatch_event_test_EnqueueWaitForEvent",
+        "//tests/tt_metal/tt_metal:dispatch_dispatch_event_test_events",
+        "//tests/tt_metal/tt_metal:dispatch_dispatch_program_test_dataflow_cb",
+        "//tests/tt_metal/tt_metal:dispatch_dispatch_program_test_dispatch",
+        "//tests/tt_metal/tt_metal:dispatch_dispatch_program_test_dispatch_stress",
+        "//tests/tt_metal/tt_metal:dispatch_dispatch_program_test_EnqueueProgram",
+        "//tests/tt_metal/tt_metal:dispatch_dispatch_program_test_global_circular_buffers",
+        "//tests/tt_metal/tt_metal:dispatch_dispatch_program_test_kernel_config_buffer",
+        "//tests/tt_metal/tt_metal:dispatch_dispatch_program_test_sub_device",
+        "//tests/tt_metal/tt_metal:dispatch_dispatch_trace_test_EnqueueTrace",
+        "//tests/tt_metal/tt_metal:dispatch_dispatch_trace_test_sub_device",
+        "//tests/tt_metal/tt_metal:dispatch_dispatch_util_test_device_command",
+        "//tests/tt_metal/tt_metal:dispatch_dispatch_util_test_dispatch_settings",
+        "//tests/tt_metal/tt_metal:dispatch_dispatch_util_test_ringbuffer_cache",
+        "//tests/tt_metal/tt_metal:eth_test_basic_eth",
+        "//tests/tt_metal/tt_metal:eth_test_buffer_movement_kernels",
+        "//tests/tt_metal/tt_metal:eth_test_erisc_app_direct_send",
+        "//tests/tt_metal/tt_metal:eth_test_eth_multi_txq_rxq",
+        "//tests/tt_metal/tt_metal:eth_test_ring_gather_kernels",
+        "//tests/tt_metal/tt_metal:hal_codegen_test",
+        "//tests/tt_metal/tt_metal:integration_matmul_test_matmul_large_block",
+        "//tests/tt_metal/tt_metal:integration_matmul_test_matmul_multi_core_multi_dram_in0_mcast_in1_mcast",
+        "//tests/tt_metal/tt_metal:integration_matmul_test_matmul_multi_core_multi_dram_inX_mcast",
+        "//tests/tt_metal/tt_metal:integration_matmul_test_matmul_multi_core_X_dram",
+        "//tests/tt_metal/tt_metal:integration_matmul_test_matmul_single_core",
+        "//tests/tt_metal/tt_metal:integration_matmul_test_matmul_X_tile",
+        "//tests/tt_metal/tt_metal:integration_test_basic_pipeline",
+        "//tests/tt_metal/tt_metal:integration_test_flatten",
+        "//tests/tt_metal/tt_metal:integration_test_sfpu_compute",
+        "//tests/tt_metal/tt_metal:integration_vecadd_test_vecadd_multi_core",
+        "//tests/tt_metal/tt_metal:jit_build_test_depend",
+        "//tests/tt_metal/tt_metal:lightmetal_test_lightmetal",
+        "//tests/tt_metal/tt_metal:llk_test_broadcast",
+        "//tests/tt_metal/tt_metal:llk_test_compute_kernel_sentinel",
+        "//tests/tt_metal/tt_metal:llk_test_copy_block_matmul_partials",
+        "//tests/tt_metal/tt_metal:llk_test_cumsum",
+        "//tests/tt_metal/tt_metal:llk_test_dropout_sfpu_compute",
+        "//tests/tt_metal/tt_metal:llk_test_golden_impls",
+        "//tests/tt_metal/tt_metal:llk_test_mul_reduce_scalar",
+        "//tests/tt_metal/tt_metal:llk_test_pack_rows",
+        "//tests/tt_metal/tt_metal:llk_test_reconfig",
+        "//tests/tt_metal/tt_metal:llk_test_reduce",
+        "//tests/tt_metal/tt_metal:llk_test_sfpu_compute",
+        "//tests/tt_metal/tt_metal:llk_test_single_core_binary_compute",
+        "//tests/tt_metal/tt_metal:llk_test_single_core_matmul_compute",
+        "//tests/tt_metal/tt_metal:llk_test_single_core_matmul_int8",
+        "//tests/tt_metal/tt_metal:llk_test_stochastic_rounding",
+        "//tests/tt_metal/tt_metal:llk_test_transpose",
+        "//tests/tt_metal/tt_metal:llk_test_unary_broadcast",
+        "//tests/tt_metal/tt_metal:llk_test_untilize_tilize",
+        "//tests/tt_metal/tt_metal:misc_test_tilize_untilize",
+        "//tests/tt_metal/tt_metal:noc_debugging_test_reads_writes",
+        "//tests/tt_metal/tt_metal:noc_test_dynamic_noc",
+        "//tests/tt_metal/tt_metal:sfpi_test_sfpi",
+        "//tests/tt_metal/tt_metal:test_add_two_ints",
+        "//tests/tt_metal/tt_metal:test_bcast",
+        "//tests/tt_metal/tt_metal:test_bfp8_conversion",
+        "//tests/tt_metal/tt_metal:test_bmm",
+        "//tests/tt_metal/tt_metal:test_clean_init",
+        "//tests/tt_metal/tt_metal:test_compile_program",
+        "//tests/tt_metal/tt_metal:test_compile_sets_kernel_binaries",
+        "//tests/tt_metal/tt_metal:test_core_range_set",
+        "//tests/tt_metal/tt_metal:test_datacopy",
+        "//tests/tt_metal/tt_metal:test_datacopy_bfp8b",
+        "//tests/tt_metal/tt_metal:test_datacopy_output_in_l1",
+        "//tests/tt_metal/tt_metal:test_dm_loopback",
+        "//tests/tt_metal/tt_metal:test_dram_copy_sticks_multi_core",
+        "//tests/tt_metal/tt_metal:test_dram_loopback_single_core",
+        "//tests/tt_metal/tt_metal:test_eltwise_binary",
+        "//tests/tt_metal/tt_metal:test_generic_binary_reader_matmul_large_block",
+        "//tests/tt_metal/tt_metal:test_interleaved_l1_buffer",
+        "//tests/tt_metal/tt_metal:test_interleaved_layouts",
+        "//tests/tt_metal/tt_metal:test_matmul_single_tile_bfp8b",
+        "//tests/tt_metal/tt_metal:test_matmul_single_tile_output_in_l1",
+        "//tests/tt_metal/tt_metal:test_multi_core_kernel",
+        "//tests/tt_metal/tt_metal:test_multi_dm_add_two_ints",
+        "//tests/tt_metal/tt_metal:test_multiple_programs",
+        "//tests/tt_metal/tt_metal:test_quasar_basic_trisc",
+        "//tests/tt_metal/tt_metal:test_sdpa_reduce_c",
+        "//tests/tt_metal/tt_metal:test_single_dm_l1_write",
+        "//tests/tt_metal/tt_metal:test_stress_noc_mcast",
+        "//tests/tt_metal/tt_metal:test_transpose_hc",
+        "//tests/tt_metal/tt_metal:test_untilize_eltwise_binary",
+        "//tests/tt_metal/tt_metal:test_unaligned_read_write_core",
+    ],
+    package_dir = "build/test/tt_metal",
+)
+
+# tt_fabric test binaries
+pkg_tar(
+    name = "ci_tarball_test_tt_fabric",
+    testonly = True,
+    srcs = [
+        "//tests/tt_metal/tt_fabric:bench_unicast",
+        "//tests/tt_metal/tt_fabric:fabric_data_movement_test_basic_1d_fabric",
+        "//tests/tt_metal/tt_fabric:fabric_data_movement_test_basic_fabric_apis",
+        "//tests/tt_metal/tt_fabric:fabric_data_movement_test_basic_fabric_mux",
+        "//tests/tt_metal/tt_fabric:fabric_data_movement_test_basic_fabric_smoke",
+        "//tests/tt_metal/tt_fabric:fabric_data_movement_test_fabric_traffic_generator_kernel",
+        "//tests/tt_metal/tt_fabric:fabric_router_test_builder_connection_mapping",
+        "//tests/tt_metal/tt_fabric:fabric_router_test_connection_mapping_logic",
+        "//tests/tt_metal/tt_fabric:fabric_router_test_connection_registry",
+        "//tests/tt_metal/tt_fabric:fabric_router_test_control_plane_logical_to_physical",
+        "//tests/tt_metal/tt_fabric:fabric_router_test_custom_routing_tables",
+        "//tests/tt_metal/tt_fabric:fabric_router_test_fabric_builder_local_connections",
+        "//tests/tt_metal/tt_fabric:fabric_router_test_fabric_topology_helpers",
+        "//tests/tt_metal/tt_fabric:fabric_router_test_mesh_graph_descriptor",
+        "//tests/tt_metal/tt_fabric:fabric_router_test_multi_host",
+        "//tests/tt_metal/tt_fabric:fabric_router_test_router_archetypes",
+        "//tests/tt_metal/tt_fabric:fabric_router_test_router_channel_mapping",
+        "//tests/tt_metal/tt_fabric:fabric_router_test_router_connection_mapping",
+        "//tests/tt_metal/tt_fabric:fabric_router_test_router_connections",
+        "//tests/tt_metal/tt_fabric:fabric_router_test_routing_tables",
+        "//tests/tt_metal/tt_fabric:fabric_router_test_topology_mapper",
+        "//tests/tt_metal/tt_fabric:fabric_router_test_topology_mapper_utils",
+        "//tests/tt_metal/tt_fabric:fabric_router_test_topology_solver",
+        "//tests/tt_metal/tt_fabric:fabric_router_test_z_router_device_detection",
+        "//tests/tt_metal/tt_fabric:fabric_router_test_z_router_integration",
+        "//tests/tt_metal/tt_fabric:physical_discovery_test_physical_system_descriptor",
+        "//tests/tt_metal/tt_fabric:system_health_test_system_health",
+        "//tests/tt_metal/tt_fabric:test_addrgen_write",
+        "//tests/tt_metal/tt_fabric:test_bandwidth_telemetry_validation",
+    ],
+    package_dir = "build/test/tt_fabric",
+)
+
+# tt_metal distributed test binaries
+pkg_tar(
+    name = "ci_tarball_test_distributed",
+    testonly = True,
+    srcs = [
+        "//tests/tt_metal/distributed:benchmark_distributed_host_buffer",
+        "//tests/tt_metal/distributed:benchmark_thread_pool",
+        "//tests/tt_metal/distributed:test_auto_mpi_init",
+        "//tests/tt_metal/distributed:test_control_plane_local_mesh_binding",
+        "//tests/tt_metal/distributed:test_dispatch_context",
+        "//tests/tt_metal/distributed:test_distributed_host_buffer",
+        "//tests/tt_metal/distributed:test_end_to_end_eltwise",
+        "//tests/tt_metal/distributed:test_hd_sockets",
+        "//tests/tt_metal/distributed:test_maybe_remote",
+        "//tests/tt_metal/distributed:test_mesh_allocator",
+        "//tests/tt_metal/distributed:test_mesh_buffer",
+        "//tests/tt_metal/distributed:test_mesh_coord",
+        "//tests/tt_metal/distributed:test_mesh_device",
+        "//tests/tt_metal/distributed:test_mesh_device_reshape",
+        "//tests/tt_metal/distributed:test_mesh_device_view",
+        "//tests/tt_metal/distributed:test_mesh_events",
+        "//tests/tt_metal/distributed:test_mesh_socket",
+        "//tests/tt_metal/distributed:test_mesh_sub_device",
+        "//tests/tt_metal/distributed:test_mesh_trace",
+        "//tests/tt_metal/distributed:test_mesh_workload",
+        "//tests/tt_metal/distributed:test_thread_pool",
+        "//tests/tt_metal/distributed/multiprocess:test_sanity",
+        "//tests/tt_metal/distributed/multiprocess:test_visible_devices_mp",
+    ],
+    package_dir = "build/test/distributed",
+)
+
+# Perf microbenchmark test binaries
+pkg_tar(
+    name = "ci_tarball_test_perf_microbenchmark",
+    testonly = True,
+    srcs = [
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:10_dram_read_remote_cb_sync_test_dram_read_remote_cb",
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:11_remote_cb_sync_matmul_single_core_test_remote_cb_sync_matmul",
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:1_compute_mm_test_compute_mm",
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:2_noc_adjacent_test_noc_adjacent",
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:2_noc_rtor_test_noc_rtor",
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:3_pcie_transfer_test_pull_from_pcie",
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:3_pcie_transfer_test_rw_buffer",
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:6_dram_offchip_test_dram_offchip",
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:7_kernel_launch_test_kernel_launch",
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:8_dram_adjacent_core_read_test_dram_read",
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:9_dram_adjacent_read_remote_l1_write_test_dram_read_l1_write",
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:dispatch_benchmark_rw_buffer",
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:dispatch_test_bw_and_latency",
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:dispatch_test_dispatcher",
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:dispatch_test_pgm_dispatch",
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:dispatch_test_prefetcher",
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:ethernet_test_all_ethernet_links",
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:ethernet_test_ethernet_bidirectional_bandwidth_no_edm",
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:ethernet_test_ethernet_link_ping_latency_no_edm",
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:noc_test_noc_unicast_vs_multicast_to_single_core_latency",
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:old_matmul_matmul_global_l1",
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:old_matmul_matmul_local_l1",
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:old_noc_test_noc_read_global_l1",
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:old_noc_test_noc_read_local_l1",
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:old_pcie_test_enqueue_rw_buffer",
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:old_pcie_test_rw_buffer",
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:old_pcie_test_rw_device_dram",
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:old_pcie_test_rw_device_l1",
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:routing_test_tt_fabric",
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:routing_test_tt_fabric_mux_bandwidth",
+        "//tests/tt_metal/tt_metal/perf_microbenchmark:tensix_test_gathering",
+    ],
+    package_dir = "build/test/perf_microbenchmark",
+)
+
+# Multihost test binaries
+pkg_tar(
+    name = "ci_tarball_test_multihost",
+    testonly = True,
+    srcs = [
+        "//tests/tt_metal/multihost/fabric_tests:multi_host_fabric_tests",
+        "//tests/tt_metal/multihost/fault_tolerance_tests:fault_tolerance_tests",
+        "//tests/tt_metal/multihost/multi_host_tests:multi_host_tests",
+        "//tests/tt_metal/multihost/single_host_mp_tests:single_host_mp_tests",
+        "//tests/tt_metal/multihost/socket_pipeline/multiprocess:unit_tests_pipeline",
+        "//tests/tt_metal/multihost/socket_pipeline/multiprocess:unit_tests_single_host_pipeline",
+        "//tests/tt_metal/multihost/sockets:multi_host_socket_tests",
+        "//tests/tt_metal/multihost/ttswitch_tests:multi_host_ttswitch_tests",
+    ],
+    package_dir = "build/test/multihost",
+)
+
+# --- Aggregate test tarball ---
+pkg_tar(
+    name = "ci_tarball_tests",
+    testonly = True,
+    deps = [
+        ":ci_tarball_test_distributed",
+        ":ci_tarball_test_multihost",
+        ":ci_tarball_test_perf_microbenchmark",
+        ":ci_tarball_test_tt_fabric",
+        ":ci_tarball_test_tt_metal",
+        ":ci_tarball_test_ttnn_gtests",
+    ],
+)
+
+# --- Top-level CI tarball (uncompressed) ---
+# Composes all component sub-tarballs into a single archive.
+pkg_tar(
+    name = "ci_tarball_tar",
+    testonly = True,
+    deps = [
+        ":ci_tarball_examples",
+        ":ci_tarball_lib",
+        ":ci_tarball_lib_ttnn",
+        ":ci_tarball_runtime",
+        ":ci_tarball_tests",
+        ":ci_tarball_ttnn_ext",
+    ],
+)
+
+# --- Compressed CI tarball (.tar.zst) ---
+# Uses zstd compression matching CI flags (--adapt=min=9 -T0).
+# This is the target CI workflows should build.
+genrule(
+    name = "ci_tarball",
+    testonly = True,
+    srcs = [":ci_tarball_tar"],
+    outs = ["ttm_any.tar.zst"],
+    cmd = "$(execpath //bazel:zstd_compress) < $< > $@",
+    tools = ["//bazel:zstd_compress"],
+    visibility = ["//visibility:public"],
+)
+
+# ===========================================================================
 # Tests
 # ===========================================================================
 
@@ -674,4 +1184,17 @@ sh_test(
         ":nn_cmake_config_version",
         ":nn_cmake_targets",
     ],
+)
+
+# Verifies CI tarball contains expected directory structure and files.
+sh_test(
+    name = "ci_tarball_test",
+    srcs = ["ci_tarball_test.sh"],
+    args = ["$(location :ci_tarball_tar)"],
+    data = [":ci_tarball_tar"],
+    tags = [
+        "ci_tarball",
+        "packaging",
+    ],
+    testonly = True,
 )
