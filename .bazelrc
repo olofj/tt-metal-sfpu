@@ -219,6 +219,18 @@ build:ci-readonly --remote_instance_name=tt-metal
 build:ci-readonly --remote_timeout=3600
 
 # ===========================================================================
+# TTSim simulator configuration
+#
+# Usage: bazel test --config=ttsim //tests/...
+#
+# Enables slow-dispatch mode, required for TTSim. The TT_METAL_SIMULATOR
+# and TT_METAL_SIMULATOR_HOME variables must be set in the host environment
+# (see passthrough rules below); this config only sets dispatch mode.
+# ===========================================================================
+
+test:ttsim --test_env=TT_METAL_SLOW_DISPATCH_MODE=1
+
+# ===========================================================================
 # Test environment variable passthrough
 #
 # Bazel test sandboxing strips environment variables by default. These

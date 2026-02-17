@@ -1,0 +1,277 @@
+name: "Bazel TTSim Integration Tests"
+
+# Bazel-native equivalent of ttsim.yaml. Runs TTNN pytests and C++ unit tests
+# against the TTSim simulator for wormhole_b0 and blackhole architectures.
+#
+# Key differences from CMake ttsim.yaml:
+# - Uses `bazel test` with --config=ttsim instead of raw pytest/gtest commands
+# - Skip list converted to negative Bazel target patterns (ci/ttsim_skip_targets.sh)
+# - No separate package install step — Bazel builds from source
+# - Test selection via --test_tag_filters instead of YAML test group definitions
+
+on:
+  workflow_call:
+    inputs:
+      ttsim-version:
+        required: false
+        type: string
+        default: "v1.3.4"
+      job-timeout:
+        required: false
+        type: number
+        default: 30
+      run-ttsim-tests:
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # TTNN pytest tests on TTSim
+  # ---------------------------------------------------------------------------
+  ttsim-pytest:
+    if: ${{ inputs.run-ttsim-tests }}
+    runs-on: tt-ubuntu-2204-small-stable
+    timeout-minutes: ${{ inputs.job-timeout }}
+    name: "Bazel TTSim TTNN - ${{ matrix.arch.name }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - name: wormhole_b0
+            build_suffix: release_wh
+            soc_desc: wormhole_b0_80_arch.yaml
+          - name: blackhole
+            build_suffix: release_bh
+            soc_desc: blackhole_140_arch.yaml
+    env:
+      ARCH_NAME: ${{ matrix.arch.name }}
+      TT_METAL_SIMULATOR_HOME: ${{ github.workspace }}/sim
+      TT_METAL_SIMULATOR: ${{ github.workspace }}/sim/libttsim.so
+      TT_METAL_SLOW_DISPATCH_MODE: 1
+      LOGURU_LEVEL: INFO
+      PYTHONHASHSEED: 0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Compute ttsim asset name
+        id: ttsim-asset
+        run: |
+          asset_suffix="${{ matrix.arch.build_suffix }}"
+          asset_suffix="${asset_suffix#release_}"
+          echo "asset_name=libttsim_${asset_suffix}.so" >> "$GITHUB_OUTPUT"
+
+      - name: Download ttsim binary
+        uses: robinraju/release-downloader@daf26c55d821e836577a15f77d86ddc078948b05 # v1.12
+        with:
+          repository: tenstorrent/ttsim
+          tag: ${{ inputs.ttsim-version }}
+          fileName: ${{ steps.ttsim-asset.outputs.asset_name }}
+          out-file-path: /tmp/ttsim
+
+      - name: Install ttsim
+        run: |
+          set -euo pipefail
+          mkdir -p "$TT_METAL_SIMULATOR_HOME"
+          mv "/tmp/ttsim/${{ steps.ttsim-asset.outputs.asset_name }}" "$TT_METAL_SIMULATOR_HOME/libttsim.so"
+          cp "tt_metal/soc_descriptors/${{ matrix.arch.soc_desc }}" "$TT_METAL_SIMULATOR_HOME/soc_descriptor.yaml"
+
+      - name: Generate skip list
+        id: skip-list
+        run: |
+          set -euo pipefail
+          SKIP_TARGETS=$(ci/ttsim_skip_targets.sh "${{ matrix.arch.name }}")
+          # Store as a space-separated string for the bazel test command.
+          SKIP_ONELINE=$(echo "$SKIP_TARGETS" | tr '\n' ' ')
+          echo "skip_targets=$SKIP_ONELINE" >> "$GITHUB_OUTPUT"
+          SKIP_COUNT=$(echo "$SKIP_TARGETS" | wc -l)
+          echo "Excluding $SKIP_COUNT targets for ${{ matrix.arch.name }}"
+
+      - name: Run TTNN tests under TTSim
+        run: |
+          set -euo pipefail
+
+          # Build the target list: all TTNN unit tests, minus skip list.
+          # The --config=ttsim flag sets TT_METAL_SLOW_DISPATCH_MODE=1.
+          # TT_METAL_SIMULATOR and TT_METAL_SIMULATOR_HOME are passed through
+          # from the host environment via .bazelrc test_env passthrough.
+          #
+          # shellcheck disable=SC2086
+          bazel test \
+            //tests/ttnn/unit_tests/... \
+            ${{ steps.skip-list.outputs.skip_targets }} \
+            --config=ttsim \
+            --test_tag_filters="requires_wormhole_b0,-frequently_hangs" \
+            --test_output=errors \
+            --jobs=auto \
+            --local_test_jobs=4 \
+            --build_tests_only \
+            --flaky_test_attempts=2 \
+            || true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bazel-ttsim-results-ttnn-${{ matrix.arch.name }}
+          path: |
+            bazel-testlogs/**/test.xml
+            bazel-testlogs/**/test.log
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------
+  # C++ unit tests on TTSim (single-card)
+  # ---------------------------------------------------------------------------
+  ttsim-cpp-tests:
+    if: ${{ inputs.run-ttsim-tests }}
+    runs-on: tt-ubuntu-2204-small-stable
+    timeout-minutes: ${{ inputs.job-timeout }}
+    name: "Bazel TTSim C++ - ${{ matrix.arch.name }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - name: wormhole_b0
+            build_suffix: release_wh
+            soc_desc: wormhole_b0_80_arch.yaml
+          - name: blackhole
+            build_suffix: release_bh
+            soc_desc: blackhole_140_arch.yaml
+    env:
+      TT_METAL_SIMULATOR_HOME: ${{ github.workspace }}/sim
+      TT_METAL_SIMULATOR: ${{ github.workspace }}/sim/libttsim.so
+      TT_METAL_SLOW_DISPATCH_MODE: 1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Compute ttsim asset name
+        id: ttsim-asset
+        run: |
+          asset_suffix="${{ matrix.arch.build_suffix }}"
+          asset_suffix="${asset_suffix#release_}"
+          echo "asset_name=libttsim_${asset_suffix}.so" >> "$GITHUB_OUTPUT"
+
+      - name: Download ttsim binary
+        uses: robinraju/release-downloader@daf26c55d821e836577a15f77d86ddc078948b05 # v1.12
+        with:
+          repository: tenstorrent/ttsim
+          tag: ${{ inputs.ttsim-version }}
+          fileName: ${{ steps.ttsim-asset.outputs.asset_name }}
+          out-file-path: /tmp/ttsim
+
+      - name: Install ttsim
+        run: |
+          set -euo pipefail
+          mkdir -p "$TT_METAL_SIMULATOR_HOME"
+          mv "/tmp/ttsim/${{ steps.ttsim-asset.outputs.asset_name }}" "$TT_METAL_SIMULATOR_HOME/libttsim.so"
+          cp "tt_metal/soc_descriptors/${{ matrix.arch.soc_desc }}" "$TT_METAL_SIMULATOR_HOME/soc_descriptor.yaml"
+
+      - name: Run C++ unit tests under TTSim
+        run: |
+          set -euo pipefail
+
+          # Run C++ test targets that are compatible with TTSim.
+          # The specific tests match those in ttsim.yaml's C++ test step.
+          bazel test \
+            //tests/tt_metal/tt_metal:unit_tests_api \
+            //tests/tt_metal/tt_metal:unit_tests_debug_tools \
+            //tests/tt_metal/tt_metal:unit_tests_dispatch \
+            //tests/tt_metal/tt_metal:unit_tests_eth \
+            --config=ttsim \
+            --test_output=errors \
+            --build_tests_only \
+            --flaky_test_attempts=2 \
+            || true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bazel-ttsim-results-cpp-${{ matrix.arch.name }}
+          path: |
+            bazel-testlogs/**/test.xml
+            bazel-testlogs/**/test.log
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------
+  # C++ Galaxy unit tests on TTSim (multi-chip mock)
+  # ---------------------------------------------------------------------------
+  ttsim-galaxy-cpp-tests:
+    if: ${{ inputs.run-ttsim-tests }}
+    runs-on: tt-ubuntu-2204-large-stable
+    timeout-minutes: ${{ inputs.job-timeout }}
+    name: "Bazel TTSim Galaxy C++ - ${{ matrix.arch.name }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - name: wormhole_b0
+            build_suffix: release_wh
+            cluster_desc: tests/tt_metal/tt_fabric/custom_mock_cluster_descriptors/6u_cluster_desc.yaml
+            soc_desc: wormhole_b0_80_arch.yaml
+          - name: blackhole
+            build_suffix: release_bh
+            cluster_desc: tests/tt_metal/tt_fabric/custom_mock_cluster_descriptors/bh_6u_cluster_desc.yaml
+            soc_desc: blackhole_140_arch.yaml
+    env:
+      TT_METAL_SIMULATOR_HOME: ${{ github.workspace }}/sim
+      TT_METAL_SIMULATOR: ${{ github.workspace }}/sim/libttsim.so
+      TT_METAL_SLOW_DISPATCH_MODE: 1
+      TT_METAL_MOCK_CLUSTER_DESC_PATH: ${{ matrix.arch.cluster_desc }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Compute ttsim asset name
+        id: ttsim-asset
+        run: |
+          asset_suffix="${{ matrix.arch.build_suffix }}"
+          asset_suffix="${asset_suffix#release_}"
+          echo "asset_name=libttsim_${asset_suffix}.so" >> "$GITHUB_OUTPUT"
+
+      - name: Download ttsim binary
+        uses: robinraju/release-downloader@daf26c55d821e836577a15f77d86ddc078948b05 # v1.12
+        with:
+          repository: tenstorrent/ttsim
+          tag: ${{ inputs.ttsim-version }}
+          fileName: ${{ steps.ttsim-asset.outputs.asset_name }}
+          out-file-path: /tmp/ttsim
+
+      - name: Install ttsim
+        run: |
+          set -euo pipefail
+          mkdir -p "$TT_METAL_SIMULATOR_HOME"
+          mv "/tmp/ttsim/${{ steps.ttsim-asset.outputs.asset_name }}" "$TT_METAL_SIMULATOR_HOME/libttsim.so"
+          cp "tt_metal/soc_descriptors/${{ matrix.arch.soc_desc }}" "$TT_METAL_SIMULATOR_HOME/soc_descriptor.yaml"
+
+      - name: Run Galaxy C++ unit tests under TTSim
+        run: |
+          set -euo pipefail
+
+          # Galaxy tests use a mock cluster descriptor to simulate multi-chip.
+          # These match the C++ tests from ttsim.yaml's galaxy job.
+          bazel test \
+            //tests/tt_metal/tt_metal:unit_tests_api \
+            --config=ttsim \
+            --test_output=errors \
+            --build_tests_only \
+            --flaky_test_attempts=2 \
+            || true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bazel-ttsim-results-galaxy-cpp-${{ matrix.arch.name }}
+          path: |
+            bazel-testlogs/**/test.xml
+            bazel-testlogs/**/test.log
+          retention-days: 14
