@@ -29,10 +29,11 @@ filegroup(
     srcs = glob(["test_kernels/**"]),
 )
 
-# Perf microbenchmark routing kernels — JIT-compiled at runtime by fabric tests.
-filegroup(
+# Perf microbenchmark routing kernels — alias to the subpackage filegroup.
+# The actual files live in //tests/tt_metal/tt_metal/perf_microbenchmark.
+alias(
     name = "perf_routing_kernels",
-    srcs = glob(["perf_microbenchmark/routing/kernels/**"]),
+    actual = "//tests/tt_metal/tt_metal/perf_microbenchmark:routing_kernels",
 )
 
 # Test utilities are in //tests/tt_metal:test_utils (parent package).

@@ -1,0 +1,363 @@
+# Performance microbenchmark tests — hardware-dependent test targets for
+# dispatch, ethernet, routing/fabric, NOC, compute, and memory subsystems.
+#
+# Mirrors the CMake test executables from
+# tests/tt_metal/tt_metal/perf_microbenchmark/CMakeLists.txt and sources.cmake.
+# Each test gets its own cc_test target for fine-grained affected-target analysis.
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
+package(default_visibility = ["//tests:__subpackages__"])
+
+# --------------------------------------------------------------------------
+# Runtime kernel files (JIT-compiled on device, NOT compiled by Bazel).
+# Declared as data dependencies for tests that reference them at runtime.
+# --------------------------------------------------------------------------
+
+filegroup(
+    name = "kernels",
+    srcs = glob(
+        ["**/kernels/**"],
+        exclude = ["routing/kernels/**"],
+    ),
+)
+
+# Routing kernels — exported separately for use by tt_fabric tests.
+filegroup(
+    name = "routing_kernels",
+    srcs = glob(["routing/kernels/**"]),
+    visibility = [
+        "//tests/tt_metal/tt_fabric:__pkg__",
+        "//tests/tt_metal/tt_metal:__pkg__",
+    ],
+)
+
+# --------------------------------------------------------------------------
+# Shared utility headers used by most perf microbenchmark tests.
+# --------------------------------------------------------------------------
+
+cc_library(
+    name = "perf_common",
+    testonly = True,
+    hdrs = glob(["common/*.hpp"]),
+    deps = [
+        "//tests:test_metal_common_libs",
+    ],
+)
+
+# --------------------------------------------------------------------------
+# Dispatch test header (common.h) — shared infrastructure for dispatch tests.
+# --------------------------------------------------------------------------
+
+cc_library(
+    name = "dispatch_common",
+    testonly = True,
+    hdrs = ["dispatch/common.h"],
+    deps = [
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+    ],
+)
+
+# --------------------------------------------------------------------------
+# Routing/fabric test support library — the additional .cpp sources that
+# test_tt_fabric.cpp links against (TEST_TT_FABRIC_ADDITIONAL_SOURCES in CMake).
+# --------------------------------------------------------------------------
+
+cc_library(
+    name = "routing_test_support",
+    testonly = True,
+    srcs = [
+        "routing/tt_fabric_telemetry_manager.cpp",
+        "routing/tt_fabric_test_bandwidth_profiler.cpp",
+        "routing/tt_fabric_test_bandwidth_results.cpp",
+        "routing/tt_fabric_test_code_profiler.cpp",
+        "routing/tt_fabric_test_common_types.cpp",
+        "routing/tt_fabric_test_config.cpp",
+        "routing/tt_fabric_test_context.cpp",
+        "routing/tt_fabric_test_device_setup.cpp",
+        "routing/tt_fabric_test_eth_readback.cpp",
+        "routing/tt_fabric_test_latency_results.cpp",
+        "routing/tt_fabric_test_progress_monitor.cpp",
+        "routing/tt_fabric_test_results.cpp",
+    ],
+    hdrs = glob(["routing/*.hpp"]),
+    deps = [
+        ":perf_common",
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+        "@yaml-cpp",
+    ],
+)
+
+# --------------------------------------------------------------------------
+# Dispatch benchmarks (require Google Benchmark)
+# --------------------------------------------------------------------------
+
+cc_test(
+    name = "dispatch_test_pgm_dispatch",
+    srcs = ["dispatch/test_pgm_dispatch.cpp"],
+    data = [":kernels"],
+    deps = [
+        ":dispatch_common",
+        ":perf_common",
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+        "//tests/tt_metal/tt_metal:test_fixtures",
+        "@google_benchmark//:benchmark",
+    ],
+    tags = ["perf_microbenchmark", "dispatch", "requires_wormhole_b0"],
+)
+
+cc_test(
+    name = "dispatch_benchmark_rw_buffer",
+    srcs = ["dispatch/benchmark_rw_buffer.cpp"],
+    data = [":kernels"],
+    deps = [
+        ":perf_common",
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+        "@google_benchmark//:benchmark",
+    ],
+    tags = ["perf_microbenchmark", "dispatch", "requires_wormhole_b0"],
+)
+
+# --------------------------------------------------------------------------
+# Dispatch x86_64-only tests
+# --------------------------------------------------------------------------
+
+cc_test(
+    name = "dispatch_test_prefetcher",
+    srcs = ["dispatch/test_prefetcher.cpp"],
+    data = [":kernels"],
+    deps = [
+        ":dispatch_common",
+        ":perf_common",
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+        "//tests/tt_metal/tt_metal:test_fixtures",
+    ],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+    tags = ["perf_microbenchmark", "dispatch", "requires_wormhole_b0"],
+)
+
+cc_test(
+    name = "dispatch_test_bw_and_latency",
+    srcs = ["dispatch/test_bw_and_latency.cpp"],
+    data = [":kernels"],
+    deps = [
+        ":perf_common",
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+    ],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+    tags = ["perf_microbenchmark", "dispatch", "requires_wormhole_b0"],
+)
+
+cc_test(
+    name = "dispatch_test_dispatcher",
+    srcs = ["dispatch/test_dispatcher.cpp"],
+    data = [":kernels"],
+    deps = [
+        ":dispatch_common",
+        ":perf_common",
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+        "//tests/tt_metal/tt_metal:test_fixtures",
+    ],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+    tags = ["perf_microbenchmark", "dispatch", "requires_wormhole_b0"],
+)
+
+# --------------------------------------------------------------------------
+# Ethernet link benchmarks
+# --------------------------------------------------------------------------
+
+[cc_test(
+    name = "ethernet_" + src.replace(".cpp", ""),
+    srcs = ["ethernet/" + src],
+    data = [":kernels"],
+    deps = [
+        ":perf_common",
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+    ],
+    tags = ["perf_microbenchmark", "ethernet", "requires_multi_device", "requires_wormhole_b0"],
+) for src in [
+    "test_ethernet_bidirectional_bandwidth_no_edm.cpp",
+    "test_ethernet_link_ping_latency_no_edm.cpp",
+    "test_all_ethernet_links.cpp",
+]]
+
+# --------------------------------------------------------------------------
+# Routing / fabric tests
+# --------------------------------------------------------------------------
+
+cc_test(
+    name = "routing_test_tt_fabric_mux_bandwidth",
+    srcs = ["routing/test_tt_fabric_mux_bandwidth.cpp"],
+    data = [
+        ":kernels",
+        ":routing_kernels",
+    ],
+    deps = [
+        ":perf_common",
+        ":routing_test_support",
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+    ],
+    tags = ["perf_microbenchmark", "routing", "requires_multi_device", "requires_wormhole_b0"],
+)
+
+cc_test(
+    name = "routing_test_tt_fabric",
+    srcs = ["routing/test_tt_fabric.cpp"],
+    data = [
+        ":kernels",
+        ":routing_kernels",
+    ],
+    deps = [
+        ":perf_common",
+        ":routing_test_support",
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+        "@yaml-cpp",
+    ],
+    tags = ["perf_microbenchmark", "routing", "requires_multi_device", "requires_wormhole_b0"],
+)
+
+# --------------------------------------------------------------------------
+# NOC benchmark
+# --------------------------------------------------------------------------
+
+cc_test(
+    name = "noc_test_noc_unicast_vs_multicast_to_single_core_latency",
+    srcs = ["noc/test_noc_unicast_vs_multicast_to_single_core_latency.cpp"],
+    data = [":kernels"],
+    deps = [
+        ":perf_common",
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+    ],
+    tags = ["perf_microbenchmark", "noc", "requires_wormhole_b0"],
+)
+
+# --------------------------------------------------------------------------
+# Tensix benchmark
+# --------------------------------------------------------------------------
+
+cc_test(
+    name = "tensix_test_gathering",
+    srcs = ["tensix/test_gathering.cpp"],
+    data = [":kernels"],
+    deps = [
+        ":perf_common",
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+    ],
+    tags = ["perf_microbenchmark", "tensix", "requires_wormhole_b0"],
+)
+
+# --------------------------------------------------------------------------
+# Old/legacy benchmarks (matmul, NOC, PCIe)
+# --------------------------------------------------------------------------
+
+[cc_test(
+    name = "old_" + src.replace("/", "_").replace(".cpp", ""),
+    srcs = ["old/" + src],
+    data = [":kernels"],
+    deps = [
+        ":perf_common",
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+    ],
+    tags = ["perf_microbenchmark", "old", "requires_wormhole_b0"],
+) for src in [
+    "matmul/matmul_global_l1.cpp",
+    "matmul/matmul_local_l1.cpp",
+    "noc/test_noc_read_global_l1.cpp",
+    "noc/test_noc_read_local_l1.cpp",
+    "pcie/test_enqueue_rw_buffer.cpp",
+    "pcie/test_rw_device_dram.cpp",
+    "pcie/test_rw_device_l1.cpp",
+]]
+
+# CMake renames this target to "test_rw_buffer_old" to avoid collision
+# with 3_pcie_transfer/test_rw_buffer.cpp.
+cc_test(
+    name = "old_pcie_test_rw_buffer",
+    srcs = ["old/pcie/test_rw_buffer.cpp"],
+    data = [":kernels"],
+    deps = [
+        ":perf_common",
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+    ],
+    tags = ["perf_microbenchmark", "old", "requires_wormhole_b0"],
+)
+
+# --------------------------------------------------------------------------
+# Numbered benchmarks (1–11)
+# --------------------------------------------------------------------------
+
+[cc_test(
+    name = src.split("/")[0] + "_" + src.split("/")[1].replace(".cpp", ""),
+    srcs = [src],
+    data = [":kernels"],
+    deps = [
+        ":perf_common",
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+    ],
+    tags = ["perf_microbenchmark", "requires_wormhole_b0"],
+) for src in [
+    "1_compute_mm/test_compute_mm.cpp",
+    "2_noc_adjacent/test_noc_adjacent.cpp",
+    "2_noc_rtor/test_noc_rtor.cpp",
+    "3_pcie_transfer/test_rw_buffer.cpp",
+    "6_dram_offchip/test_dram_offchip.cpp",
+    "7_kernel_launch/test_kernel_launch.cpp",
+    "8_dram_adjacent_core_read/test_dram_read.cpp",
+    "9_dram_adjacent_read_remote_l1_write/test_dram_read_l1_write.cpp",
+    "10_dram_read_remote_cb_sync/test_dram_read_remote_cb.cpp",
+    "11_remote_cb_sync_matmul_single_core/test_remote_cb_sync_matmul.cpp",
+]]
+
+# x86_64-only PCIe test
+cc_test(
+    name = "3_pcie_transfer_test_pull_from_pcie",
+    srcs = ["3_pcie_transfer/test_pull_from_pcie.cpp"],
+    data = [":kernels"],
+    deps = [
+        ":perf_common",
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+    ],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+    tags = ["perf_microbenchmark", "requires_wormhole_b0"],
+)
+
+# --------------------------------------------------------------------------
+# Test suites for backward compatibility with CMake groupings
+# --------------------------------------------------------------------------
+
+test_suite(
+    name = "perf_microbenchmark_tests",
+    tags = ["perf_microbenchmark"],
+)
+
+test_suite(
+    name = "perf_microbenchmark_dispatch",
+    tags = ["perf_microbenchmark", "dispatch"],
+)
+
+test_suite(
+    name = "perf_microbenchmark_ethernet",
+    tags = ["perf_microbenchmark", "ethernet"],
+)
+
+test_suite(
+    name = "perf_microbenchmark_routing",
+    tags = ["perf_microbenchmark", "routing"],
+)
