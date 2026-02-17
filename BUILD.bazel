@@ -113,7 +113,7 @@ py_wheel(
     stamp = -1,
     python_tag = "cp310",
     abi = "abi3",
-    platform = "manylinux_2_35_x86_64",
+    platform = "manylinux_2_34_x86_64",
     # Strip prefixes to map workspace paths to wheel-internal paths.
     # Checked in order — first match wins.
     strip_path_prefixes = [
