@@ -1,0 +1,197 @@
+# Sphinx documentation build targets.
+#
+# Produces HTML documentation for tt-metalium (C++ API via Doxygen/Breathe)
+# and ttnn (Python API via autodoc).
+#
+# Usage:
+#   bazel build //docs:html_docs                    # full HTML docs tarball
+#   bazel build //docs:html_tt_metalium             # tt-metalium only
+#   bazel build //docs:html_ttnn                    # ttnn only
+#   bazel build //docs:doxygen_xml                  # Doxygen XML only
+#
+# The builds use local = True because:
+#   - Doxygen is a system tool (not hermetically managed by Bazel)
+#   - TTNN autodoc requires importing the native _ttnn.so extension
+#
+# To view the built documentation:
+#   tar -xf bazel-bin/docs/html_docs.tar.gz -C /tmp
+#   python3 -m http.server 8000 -d /tmp/html
+
+load("@rules_python//python:defs.bzl", "py_binary")
+
+# ---------------------------------------------------------------------------
+# Sphinx builder binary — hermetic Python with all doc dependencies
+# ---------------------------------------------------------------------------
+
+py_binary(
+    name = "sphinx_build",
+    srcs = ["sphinx_build.py"],
+    deps = [
+        "@pip//sphinx",
+        "@pip//sphinx_rtd_theme",
+        "@pip//sphinxcontrib_email",
+        "@pip//breathe",
+        "@pip//nbsphinx",
+        "@pip//sphinxcontrib_jquery",
+        "@pip//myst_parser",
+        "@pip//lxml",
+        "@pip//docutils",
+        "@pip//tabulate",
+    ],
+)
+
+# ---------------------------------------------------------------------------
+# Source filegroups
+# ---------------------------------------------------------------------------
+
+# Sphinx source files shared across both sub-projects.
+filegroup(
+    name = "sphinx_common_sources",
+    srcs = glob([
+        "source/conf.py",
+        "source/index.html",
+        "source/common/**",
+    ]),
+)
+
+# tt-metalium Sphinx sources (RST, conf.py, images).
+filegroup(
+    name = "sphinx_tt_metalium_sources",
+    srcs = glob(["source/tt-metalium/**"]),
+)
+
+# ttnn Sphinx sources (RST, conf.py, custom extensions, images).
+filegroup(
+    name = "sphinx_ttnn_sources",
+    srcs = glob(["source/ttnn/**"]),
+)
+
+# ---------------------------------------------------------------------------
+# Doxygen XML generation
+#
+# Runs Doxygen from the repository root (matching Makefile: cd .. && doxygen
+# docs/Doxyfile). The Doxyfile's INPUT directive enumerates specific C/C++
+# headers under tt_metal/ — Doxygen reads them directly from the filesystem.
+# ---------------------------------------------------------------------------
+
+genrule(
+    name = "doxygen_xml",
+    srcs = ["Doxyfile"],
+    outs = ["doxygen_xml.tar.gz"],
+    cmd = """
+        REPO_ROOT=$$(cd $$(dirname $(location Doxyfile))/.. && pwd)
+        cd "$$REPO_ROOT"
+        doxygen docs/Doxyfile 2>&1
+        tar -czf $$OLDPWD/$@ -C docs/doxygen_build xml
+    """,
+    local = True,
+    visibility = ["//visibility:public"],
+)
+
+# ---------------------------------------------------------------------------
+# tt-metalium HTML documentation
+# ---------------------------------------------------------------------------
+
+genrule(
+    name = "html_tt_metalium",
+    srcs = [
+        "Doxyfile",
+        ":doxygen_xml",
+        ":sphinx_common_sources",
+        ":sphinx_tt_metalium_sources",
+    ],
+    outs = ["tt_metalium_html.tar.gz"],
+    tools = [":sphinx_build"],
+    cmd = """
+        REPO_ROOT=$$(cd $$(dirname $(location Doxyfile))/.. && pwd)
+        DOCS_DIR="$$REPO_ROOT/docs"
+
+        # Extract Doxygen XML so Breathe can find it
+        mkdir -p "$$DOCS_DIR/doxygen_build"
+        tar -xzf $(location :doxygen_xml) -C "$$DOCS_DIR/doxygen_build"
+
+        # Build tt-metalium docs
+        $(location :sphinx_build) \
+            --project=tt-metalium \
+            --srcdir="$$DOCS_DIR/source/tt-metalium" \
+            --outdir="$$DOCS_DIR/build/tt-metalium"
+
+        # Package output
+        tar -czf $@ -C "$$DOCS_DIR/build" tt-metalium
+    """,
+    local = True,
+    visibility = ["//visibility:public"],
+)
+
+# ---------------------------------------------------------------------------
+# ttnn HTML documentation
+#
+# Requires ttnn to be importable (for autodoc and custom Sphinx extensions
+# like op_documenter.py which import ttnn.decorators). The installed ttnn
+# wheel or an editable install must be on PYTHONPATH.
+# ---------------------------------------------------------------------------
+
+genrule(
+    name = "html_ttnn",
+    srcs = [
+        "Doxyfile",
+        ":doxygen_xml",
+        ":sphinx_common_sources",
+        ":sphinx_ttnn_sources",
+    ],
+    outs = ["ttnn_html.tar.gz"],
+    tools = [":sphinx_build"],
+    cmd = """
+        REPO_ROOT=$$(cd $$(dirname $(location Doxyfile))/.. && pwd)
+        DOCS_DIR="$$REPO_ROOT/docs"
+
+        # Extract Doxygen XML so Breathe can find it
+        mkdir -p "$$DOCS_DIR/doxygen_build"
+        tar -xzf $(location :doxygen_xml) -C "$$DOCS_DIR/doxygen_build"
+
+        # Build ttnn docs (requires ttnn importable for autodoc)
+        $(location :sphinx_build) \
+            --project=ttnn \
+            --srcdir="$$DOCS_DIR/source/ttnn" \
+            --outdir="$$DOCS_DIR/build/ttnn"
+
+        # Package output
+        tar -czf $@ -C "$$DOCS_DIR/build" ttnn
+    """,
+    local = True,
+    visibility = ["//visibility:public"],
+)
+
+# ---------------------------------------------------------------------------
+# Combined HTML documentation
+#
+# Merges both sub-projects into a single tarball with the landing page.
+# Output structure matches CI: html/{tt-metalium,ttnn}/index.html
+# ---------------------------------------------------------------------------
+
+genrule(
+    name = "html_docs",
+    srcs = [
+        ":html_tt_metalium",
+        ":html_ttnn",
+        "source/index.html",
+    ],
+    outs = ["html_docs.tar.gz"],
+    cmd = """
+        STAGING=$$(mktemp -d)
+        mkdir -p "$$STAGING/html"
+
+        # Extract both sub-projects
+        tar -xzf $(location :html_tt_metalium) -C "$$STAGING/html"
+        tar -xzf $(location :html_ttnn) -C "$$STAGING/html"
+
+        # Copy landing page
+        cp $(location source/index.html) "$$STAGING/html/"
+
+        # Create final tarball
+        tar -czf $@ -C "$$STAGING" html
+
+        rm -rf "$$STAGING"
+    """,
+    visibility = ["//visibility:public"],
+)
