@@ -56,9 +56,15 @@ py_library(
 # ---------------------------------------------------------------------------
 # CI test suites — filter tests by marker tags
 #
+# These suites mirror the CI groupings defined in
+# tests/pipeline_reorg/ttnn-tests.yaml. Each test directory's pytest_suite
+# is tagged with markers (post_commit, slow, frequent) and CI-tier tags
+# (ttsim, merge_gate) so these top-level suites collect the right targets.
+#
 # Usage:
-#   bazel test //tests/ttnn:post_commit_tests
-#   bazel test //tests/ttnn:frequent_tests
+#   bazel test //tests/ttnn:post_commit_tests    # All post-commit tests
+#   bazel test //tests/ttnn:ttsim_tests          # Tests runnable on TTSim
+#   bazel test //tests/ttnn:nightly_tests        # Slow/nightly tests
 #   bazel test //tests/ttnn/... --test_tag_filters=post_commit
 # ---------------------------------------------------------------------------
 
@@ -77,5 +83,11 @@ test_suite(
 test_suite(
     name = "nightly_tests",
     tags = ["slow"],
+    visibility = ["//visibility:public"],
+)
+
+test_suite(
+    name = "ttsim_tests",
+    tags = ["post_commit", "ttsim", "-slow", "-frequently_hangs"],
     visibility = ["//visibility:public"],
 )

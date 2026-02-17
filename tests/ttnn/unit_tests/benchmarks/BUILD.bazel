@@ -9,6 +9,6 @@ pytest_suite(
         "//ttnn/ttnn:ttnn_py",
         "@pip//torch",
     ],
-    markers = ["models_performance_bare_metal"],
-    tags = ["ttnn", "unit", "benchmark", "requires_wormhole_b0"],
+    markers = ["post_commit", "models_performance_bare_metal"],
+    tags = ["ttnn", "unit", "benchmark", "requires_wormhole_b0", "ttsim"],
 )

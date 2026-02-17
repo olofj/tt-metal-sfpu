@@ -36,5 +36,6 @@ pytest_suite(
         "@pip//numpy",
         "@pip//loguru",
     ],
+    markers = ["post_commit"],
     tags = ["ttnn", "unit", "requires_wormhole_b0"],
 )
