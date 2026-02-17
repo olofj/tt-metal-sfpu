@@ -48,6 +48,22 @@ cc_library(
     deps = [":tracy"],
 )
 
+# Tracy headers for .deb packaging (metalium-dev).
+# Mirrors CMake install(FILES ...) rules in tracy/CMakeLists.txt that ship
+# tracy/, client/, and common/ header directories.
+filegroup(
+    name = "deb_tracy_headers",
+    srcs = glob([
+        "tracy/public/tracy/**/*.hpp",
+        "tracy/public/tracy/**/*.h",
+        "tracy/public/common/**/*.hpp",
+        "tracy/public/common/**/*.h",
+        "tracy/public/client/**/*.hpp",
+        "tracy/public/client/**/*.h",
+    ]),
+    visibility = ["//packaging:__pkg__"],
+)
+
 # TT LLK (Low-Level Kernel) headers bundled in the ttnn wheel.
 # Exclude dotfiles: Python's glob.glob() (used by setup.py) skips dotfiles
 # by default, so Bazel must explicitly exclude them to match.

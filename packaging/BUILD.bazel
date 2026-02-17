@@ -232,16 +232,49 @@ pkg_tar(
 )
 
 # 3rd-party headers exported in the public API.
-# CMake installs reflect, enchantum, TracyClient, tt-logger headers
-# to /usr/include/metalium-thirdparty/.
-# NOTE: These external header exports require Bazel filegroup targets in
-# their respective external workspace BUILD files. Left as a placeholder
-# until those are created — the headers are available via system packages
-# (nlohmann-json3-dev) or bundled in the shared libraries.
-pkg_files(
-    name = "metalium_dev_thirdparty_headers",
-    srcs = [],
-    prefix = "usr/include/metalium-thirdparty",
+# Mirrors CMake: install(TARGETS reflect enchantum TracyClient tt-logger
+#   FILE_SET api DESTINATION include/metalium-thirdparty)
+# Each library uses a separate pkg_tar because the source trees have
+# different layouts requiring distinct strip_prefix values.
+# NOTE: strip_prefix must be absolute (leading "/") for external repos;
+# without it, rules_pkg prepends the consuming package path ("packaging/").
+
+pkg_tar(
+    name = "metalium_dev_reflect_tar",
+    srcs = ["@reflect//:deb_headers"],
+    package_dir = "usr/include/metalium-thirdparty",
+    strip_prefix = "/external/+non_bcr_deps+reflect",
+)
+
+pkg_tar(
+    name = "metalium_dev_enchantum_tar",
+    srcs = ["@enchantum//:deb_headers"],
+    package_dir = "usr/include/metalium-thirdparty",
+    strip_prefix = "/external/+non_bcr_deps+enchantum/enchantum/include",
+)
+
+pkg_tar(
+    name = "metalium_dev_tracy_tar",
+    srcs = ["//tt_metal/third_party:deb_tracy_headers"],
+    package_dir = "usr/include/metalium-thirdparty",
+    strip_prefix = "/tt_metal/third_party/tracy/public",
+)
+
+pkg_tar(
+    name = "metalium_dev_tt_logger_tar",
+    srcs = ["@tt_logger//:deb_headers"],
+    package_dir = "usr/include/metalium-thirdparty",
+    strip_prefix = "/external/+non_bcr_deps+tt_logger/include",
+)
+
+pkg_tar(
+    name = "metalium_dev_thirdparty_headers_tar",
+    deps = [
+        ":metalium_dev_reflect_tar",
+        ":metalium_dev_enchantum_tar",
+        ":metalium_dev_tracy_tar",
+        ":metalium_dev_tt_logger_tar",
+    ],
 )
 
 # CMake package config files for find_package(TT-Metalium).
@@ -282,12 +315,12 @@ pkg_tar(
     name = "metalium_dev_data",
     srcs = [
         ":metalium_dev_cmake",
-        ":metalium_dev_thirdparty_headers",
     ],
     deps = [
         ":metalium_dev_api_headers_tar",
         ":metalium_dev_protos_tar",
         ":metalium_dev_stl_headers_tar",
+        ":metalium_dev_thirdparty_headers_tar",
     ],
 )
 

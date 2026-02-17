@@ -9,3 +9,11 @@ cc_library(
     includes = ["."],
     visibility = ["//visibility:public"],
 )
+
+# Single header for .deb packaging (metalium-dev).
+# Mirrors CMake FILE_SET api on the reflect target.
+filegroup(
+    name = "deb_headers",
+    srcs = ["reflect"],
+    visibility = ["//visibility:public"],
+)

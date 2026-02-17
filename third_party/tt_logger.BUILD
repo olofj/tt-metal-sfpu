@@ -10,3 +10,11 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
 )
+
+# Headers for .deb packaging (metalium-dev).
+# Mirrors CMake FILE_SET api on the tt-logger target.
+filegroup(
+    name = "deb_headers",
+    srcs = glob(["include/tt-logger/**/*.hpp"]),
+    visibility = ["//visibility:public"],
+)

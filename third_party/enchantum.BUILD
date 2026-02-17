@@ -6,3 +6,11 @@ cc_library(
     includes = ["enchantum/include"],
     visibility = ["//visibility:public"],
 )
+
+# Headers for .deb packaging (metalium-dev).
+# Mirrors CMake install(DIRECTORY enchantum/include/ ...) from upstream.
+filegroup(
+    name = "deb_headers",
+    srcs = glob(["enchantum/include/enchantum/**/*.hpp"]),
+    visibility = ["//visibility:public"],
+)
