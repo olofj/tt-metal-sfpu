@@ -21,5 +21,5 @@ pytest_suite(
         "@pip//numpy",
         "@pip//loguru",
     ],
-    tags = ["ttnn", "unit"],
+    tags = ["ttnn", "unit", "requires_wormhole_b0"],
 )

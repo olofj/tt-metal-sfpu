@@ -13,5 +13,5 @@ pytest_suite(
         "sweep_utils/**/*.py",
         "framework/**/*.py",
     ]),
-    tags = ["sweep_framework"],
+    tags = ["sweep_framework", "requires_wormhole_b0"],
 )

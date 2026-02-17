@@ -9,5 +9,5 @@ pytest_suite(
         "//ttnn/ttnn:ttnn_py",
         "@pip//torch",
     ],
-    tags = ["ttnn", "statistical"],
+    tags = ["ttnn", "statistical", "requires_wormhole_b0"],
 )

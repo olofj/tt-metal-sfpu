@@ -10,5 +10,5 @@ pytest_suite(
         "@pip//torch",
     ],
     markers = ["slow"],
-    tags = ["ttnn", "nightly", "rand"],
+    tags = ["ttnn", "nightly", "rand", "requires_wormhole_b0"],
 )

@@ -35,6 +35,14 @@ _MARKER_TO_TAGS = {
     "model_perf_t3000": ["perf_t3000"],
     "model_perf_tg": ["perf_tg"],
     "requires_fast_runtime_mode_off": ["requires_fast_runtime_mode_off"],
+    # Hardware requirement tags — used by affected-target CI to classify tests
+    # as host-only vs device tests and route them to the correct runner.
+    "requires_wormhole_b0": ["requires_wormhole_b0"],
+    "requires_blackhole": ["requires_blackhole"],
+    "requires_galaxy": ["requires_galaxy"],
+    "requires_N150": ["requires_N150"],
+    "requires_N300": ["requires_N300"],
+    "requires_T3000": ["requires_T3000"],
 }
 
 def pytest_test(

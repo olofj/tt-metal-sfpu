@@ -10,5 +10,5 @@ pytest_suite(
         "@pip//torch",
     ],
     data = glob(["sweeps/**/*.py"]),
-    tags = ["ttnn", "sweep"],
+    tags = ["ttnn", "sweep", "requires_wormhole_b0"],
 )

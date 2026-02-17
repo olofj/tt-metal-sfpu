@@ -11,5 +11,5 @@ pytest_suite(
         "//ttnn/ttnn:ttnn_py",
         "@pip//torch",
     ],
-    tags = ["scale_out", "ccl"],
+    tags = ["scale_out", "ccl", "requires_wormhole_b0"],
 )

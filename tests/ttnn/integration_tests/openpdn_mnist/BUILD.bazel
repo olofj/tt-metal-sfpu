@@ -10,5 +10,5 @@ pytest_suite(
         "//ttnn/ttnn:ttnn_py",
         "@pip//loguru",
     ],
-    tags = ["ttnn", "integration", "openpdn_mnist"],
+    tags = ["ttnn", "integration", "openpdn_mnist", "requires_wormhole_b0"],
 )

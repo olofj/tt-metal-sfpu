@@ -14,5 +14,5 @@ pytest_suite(
         "@pip//loguru",
         "@pip//torch",
     ],
-    tags = ["ttnn", "non_working", "wormhole"],
+    tags = ["ttnn", "non_working", "wormhole", "requires_wormhole_b0"],
 )

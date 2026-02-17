@@ -13,5 +13,5 @@ pytest_suite(
         "@pip//numpy",
         "@pip//loguru",
     ],
-    tags = ["tt_eager", "sweep"],
+    tags = ["tt_eager", "sweep", "requires_wormhole_b0"],
 )

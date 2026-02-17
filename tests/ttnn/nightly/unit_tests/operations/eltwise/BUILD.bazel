@@ -18,5 +18,5 @@ pytest_suite(
         "@pip//numpy",
     ],
     markers = ["slow"],
-    tags = ["ttnn", "nightly", "eltwise"],
+    tags = ["ttnn", "nightly", "eltwise", "requires_wormhole_b0"],
 )

@@ -8,5 +8,5 @@ pytest_suite(
     deps = [
         "//ttnn/ttnn:ttnn_py",
     ],
-    tags = ["microbenchmark", "tensix"],
+    tags = ["microbenchmark", "tensix", "requires_wormhole_b0"],
 )

@@ -10,5 +10,5 @@ pytest_suite(
         "@pip//torch",
     ],
     markers = ["models_performance_bare_metal"],
-    tags = ["ttnn", "unit", "benchmark"],
+    tags = ["ttnn", "unit", "benchmark", "requires_wormhole_b0"],
 )

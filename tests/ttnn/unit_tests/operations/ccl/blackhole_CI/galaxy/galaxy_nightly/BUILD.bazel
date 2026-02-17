@@ -14,5 +14,5 @@ pytest_suite(
         "@pip//numpy",
         "@pip//loguru",
     ],
-    tags = ["ttnn", "unit", "ccl", "slow"],
+    tags = ["ttnn", "unit", "ccl", "slow", "requires_blackhole", "requires_galaxy"],
 )

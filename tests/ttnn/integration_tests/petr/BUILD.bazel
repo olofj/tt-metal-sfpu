@@ -13,5 +13,5 @@ pytest_suite(
         "@pip//numpy",
         "@pip//torch",
     ],
-    tags = ["ttnn", "integration", "petr"],
+    tags = ["ttnn", "integration", "petr", "requires_wormhole_b0"],
 )

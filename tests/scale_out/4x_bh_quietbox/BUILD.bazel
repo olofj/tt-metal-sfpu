@@ -10,5 +10,5 @@ pytest_suite(
         "//ttnn/ttnn:ttnn_py",
         "@pip//torch",
     ],
-    tags = ["scale_out", "blackhole"],
+    tags = ["scale_out", "blackhole", "requires_blackhole"],
 )

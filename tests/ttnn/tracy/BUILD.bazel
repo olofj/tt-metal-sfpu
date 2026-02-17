@@ -10,5 +10,5 @@ pytest_suite(
         "@pip//loguru",
         "@pip//torch",
     ],
-    tags = ["ttnn", "tracy", "profiling"],
+    tags = ["ttnn", "tracy", "profiling", "requires_wormhole_b0"],
 )

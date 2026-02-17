@@ -12,5 +12,5 @@ pytest_suite(
         "@pip//torch",
         "@pip//torchvision",
     ],
-    tags = ["ttnn", "integration", "vgg"],
+    tags = ["ttnn", "integration", "vgg", "requires_wormhole_b0"],
 )

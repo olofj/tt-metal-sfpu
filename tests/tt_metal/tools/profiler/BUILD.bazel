@@ -11,7 +11,7 @@ pytest_suite(
         "@pip//loguru",
         "@pip//pandas",
     ],
-    tags = ["tt_metal", "profiler"],
+    tags = ["tt_metal", "profiler", "requires_wormhole_b0"],
 )
 
 # C++ profiler tests — mirrors CMake profiler_test_full_buffer / profiler_test_timestamped_events.

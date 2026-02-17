@@ -44,7 +44,7 @@ filegroup(
         "//tests/tt_metal:test_utils",
         "//tests:test_metal_common_libs",
     ],
-    tags = ["unit", "tt_metal", "legacy"],
+    tags = ["unit", "tt_metal", "legacy", "requires_wormhole_b0"],
 ) for src in [
     "test_add_two_ints.cpp",
     "test_bcast.cpp",
@@ -90,7 +90,7 @@ cc_test(
         "//tests/tt_metal:test_utils",
         "//tt_metal:tt_metal",
     ],
-    tags = ["unit", "tt_metal"],
+    tags = ["unit", "tt_metal", "requires_wormhole_b0"],
 )
 
 # --------------------------------------------------------------------------
@@ -107,7 +107,7 @@ cc_test(
         "//tests:test_metal_common_libs",
         "@boost.smart_ptr",
     ],
-    tags = ["unit", "tt_metal", "api"],
+    tags = ["unit", "tt_metal", "api", "requires_wormhole_b0"],
 ) for src in [
     "allocator/test_free_list_opt_allocator.cpp",
     "allocator/test_l1_banking_allocator.cpp",
@@ -172,7 +172,7 @@ cc_test(
         "//tests/tt_metal:test_utils",
         "//tests:test_metal_common_libs",
     ],
-    tags = ["smoke", "tt_metal", "dispatch"],
+    tags = ["smoke", "tt_metal", "dispatch", "requires_wormhole_b0"],
 ) for src in [
     "dispatch_device/test_enqueue_read_write_core.cpp",
     "dispatch_event/test_EnqueueWaitForEvent.cpp",
@@ -193,7 +193,7 @@ cc_test(
         "//tests/tt_metal:test_utils",
         "//tests:test_metal_common_libs",
     ],
-    tags = ["basic", "tt_metal", "dispatch"],
+    tags = ["basic", "tt_metal", "dispatch", "requires_wormhole_b0"],
 ) for src in [
     "dispatch_buffer/test_sub_device.cpp",
     "dispatch_buffer/test_BufferCorePageMapping_Iterator.cpp",
@@ -214,7 +214,7 @@ cc_test(
         "//tests:test_metal_common_libs",
     ],
     size = "large",
-    tags = ["slow", "tt_metal", "dispatch"],
+    tags = ["slow", "tt_metal", "dispatch", "requires_wormhole_b0"],
 ) for src in [
     "dispatch_buffer/test_EnqueueWriteBuffer_and_EnqueueReadBuffer.cpp",
     "dispatch_buffer/test_large_mesh_buffer.cpp",
@@ -235,7 +235,7 @@ cc_test(
         "//tests/tt_metal:test_utils",
         "//tests:test_metal_common_libs",
     ],
-    tags = ["smoke", "tt_metal", "device"],
+    tags = ["smoke", "tt_metal", "device", "requires_wormhole_b0"],
 ) for src in [
     "test_device_init_and_teardown.cpp",
     "test_device_cluster_api.cpp",
@@ -273,7 +273,7 @@ cc_library(
         "//tests/tt_metal:test_utils",
         "//tests:test_metal_common_libs",
     ],
-    tags = ["unit", "tt_metal", "data_movement"],
+    tags = ["unit", "tt_metal", "data_movement", "requires_wormhole_b0"],
 ) for src in [
     "dram_unary/test_unary_dram.cpp",
     "one_to_all/test_one_to_all.cpp",
@@ -314,7 +314,7 @@ cc_library(
         "//tests/tt_metal:test_utils",
         "//tests:test_metal_common_libs",
     ],
-    tags = ["unit", "tt_metal", "debug_tools"],
+    tags = ["unit", "tt_metal", "debug_tools", "requires_wormhole_b0"],
 ) for src in [
     "dprint/test_eth_cores.cpp",
     "dprint/test_invalid_print_core.cpp",
@@ -372,7 +372,7 @@ cc_library(
         "//tests/tt_metal:test_utils",
         "//tests:test_metal_common_libs",
     ],
-    tags = ["unit", "tt_metal", "ethernet", "requires_multi_device"],
+    tags = ["unit", "tt_metal", "ethernet", "requires_multi_device", "requires_wormhole_b0"],
 ) for src in [
     "test_basic_eth.cpp",
     "test_buffer_movement_kernels.cpp",
@@ -394,7 +394,7 @@ cc_library(
         "//tests/tt_metal:test_utils",
         "//tests:test_metal_common_libs",
     ],
-    tags = ["unit", "tt_metal", "integration"],
+    tags = ["unit", "tt_metal", "integration", "requires_wormhole_b0"],
 ) for src in [
     "test_basic_pipeline.cpp",
     "test_flatten.cpp",
@@ -421,7 +421,7 @@ cc_library(
         "//tests/tt_metal:test_utils",
         "//tests:test_metal_common_libs",
     ],
-    tags = ["unit", "tt_metal", "llk"],
+    tags = ["unit", "tt_metal", "llk", "requires_wormhole_b0"],
 ) for src in [
     "test_broadcast.cpp",
     "test_compute_kernel_sentinel.cpp",
@@ -456,7 +456,7 @@ cc_test(
         "//tests/tt_metal:test_utils",
         "//tests:test_metal_common_libs",
     ],
-    tags = ["unit", "tt_metal", "noc"],
+    tags = ["unit", "tt_metal", "noc", "requires_wormhole_b0"],
 )
 
 # --------------------------------------------------------------------------
@@ -472,7 +472,7 @@ cc_test(
         "//tests/tt_metal:test_utils",
         "//tests:test_metal_common_libs",
     ],
-    tags = ["unit", "tt_metal", "noc_debugging"],
+    tags = ["unit", "tt_metal", "noc_debugging", "requires_wormhole_b0"],
 )
 
 # --------------------------------------------------------------------------
@@ -489,7 +489,7 @@ cc_test(
         "//tests:test_metal_common_libs",
         "@flatbuffers//:flatbuffers",
     ],
-    tags = ["unit", "tt_metal", "lightmetal"],
+    tags = ["unit", "tt_metal", "lightmetal", "requires_wormhole_b0"],
 )
 
 # --------------------------------------------------------------------------
@@ -505,7 +505,7 @@ cc_test(
         "//tests/tt_metal:test_utils",
         "//tests:test_metal_common_libs",
     ],
-    tags = ["unit", "tt_metal", "sfpi"],
+    tags = ["unit", "tt_metal", "sfpi", "requires_wormhole_b0"],
 )
 
 # --------------------------------------------------------------------------
@@ -522,7 +522,7 @@ cc_test(
         "//tests:test_metal_common_libs",
         "@boost.smart_ptr",
     ],
-    tags = ["unit", "tt_metal", "misc"],
+    tags = ["unit", "tt_metal", "misc", "requires_wormhole_b0"],
 )
 
 # --------------------------------------------------------------------------
@@ -538,7 +538,7 @@ cc_test(
         "//tests/tt_metal:test_utils",
         "//tests:test_metal_common_libs",
     ],
-    tags = ["unit", "tt_metal", "jit_build"],
+    tags = ["unit", "tt_metal", "jit_build", "requires_wormhole_b0"],
 )
 
 # --------------------------------------------------------------------------

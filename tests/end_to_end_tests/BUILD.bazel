@@ -13,5 +13,5 @@ pytest_suite(
         "//ttnn/ttnn:ttnn_py",
         "@pip//torch",
     ],
-    tags = ["end_to_end"],
+    tags = ["end_to_end", "requires_wormhole_b0"],
 )

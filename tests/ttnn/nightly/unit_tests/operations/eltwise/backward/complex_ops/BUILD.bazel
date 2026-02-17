@@ -27,5 +27,5 @@ pytest_suite(
         "@pip//torch",
     ],
     markers = ["slow"],
-    tags = ["ttnn", "nightly", "eltwise", "backward", "complex"],
+    tags = ["ttnn", "nightly", "eltwise", "backward", "complex", "requires_wormhole_b0"],
 )

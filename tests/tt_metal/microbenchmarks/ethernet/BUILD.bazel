@@ -29,5 +29,5 @@ pytest_suite(
         "//ttnn/ttnn:ttnn_py",
         "@pip//loguru",
     ],
-    tags = ["microbenchmark", "ethernet"],
+    tags = ["microbenchmark", "ethernet", "requires_wormhole_b0"],
 )

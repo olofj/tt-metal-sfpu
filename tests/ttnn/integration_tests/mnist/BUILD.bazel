@@ -11,5 +11,5 @@ pytest_suite(
         "@pip//torch",
         "@pip//torchvision",
     ],
-    tags = ["ttnn", "integration", "mnist"],
+    tags = ["ttnn", "integration", "mnist", "requires_wormhole_b0"],
 )
