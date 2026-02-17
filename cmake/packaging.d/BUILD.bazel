@@ -1,0 +1,4 @@
+exports_files([
+    "tt-metalium-config.cmake.in",
+    "tt-nn-config.cmake.in",
+])
