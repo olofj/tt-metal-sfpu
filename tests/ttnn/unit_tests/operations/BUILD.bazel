@@ -1,0 +1,30 @@
+# TTNN operations unit tests.
+#
+# This package contains shared test utilities; subdirectories contain the
+# actual py_test targets organized by operation category.
+
+load("@rules_python//python:py_library.bzl", "py_library")
+
+package(default_visibility = ["//tests:__subpackages__"])
+
+py_library(
+    name = "test_utils",
+    testonly = True,
+    srcs = ["test_utils.py"],
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//pytest",
+        "@pip//torch",
+    ],
+)
+
+py_library(
+    name = "prefetcher_common",
+    testonly = True,
+    srcs = ["prefetcher_common.py"],
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//torch",
+        "@pip//loguru",
+    ],
+)

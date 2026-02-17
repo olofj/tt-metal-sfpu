@@ -1,0 +1,19 @@
+# Shared exponent precision testing utilities.
+#
+# This directory contains runner/utility code, not test_*.py files.
+# It is used by other test suites for precision testing.
+
+load("@rules_python//python:py_library.bzl", "py_library")
+
+package(default_visibility = ["//tests:__subpackages__"])
+
+py_library(
+    name = "precision_testing_suite",
+    testonly = True,
+    srcs = glob(["*.py"]),
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//torch",
+        "@pip//numpy",
+    ],
+)

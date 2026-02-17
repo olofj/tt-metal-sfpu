@@ -1,0 +1,3 @@
+# Intermediate package for Blackhole galaxy CCL tests.
+
+package(default_visibility = ["//tests:__subpackages__"])

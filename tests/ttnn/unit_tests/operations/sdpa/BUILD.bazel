@@ -1,0 +1,40 @@
+# TTNN scaled dot-product attention unit tests (4 test files).
+
+load("@rules_python//python:py_library.bzl", "py_library")
+load("//bazel:pytest.bzl", "pytest_suite")
+
+py_library(
+    name = "sdpa_test_utils",
+    testonly = True,
+    srcs = ["sdpa_test_utils.py"],
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//torch",
+    ],
+)
+
+py_library(
+    name = "mla_test_utils",
+    testonly = True,
+    srcs = ["mla_test_utils.py"],
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//torch",
+    ],
+)
+
+pytest_suite(
+    name = "sdpa_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "//tests/ttnn:test_utils",
+        "//tests/ttnn/unit_tests/operations/sdpa:sdpa_test_utils",
+        "//tests/ttnn/unit_tests/operations/sdpa:mla_test_utils",
+        "//models/common:utility_functions",
+        "@pip//torch",
+        "@pip//numpy",
+        "@pip//loguru",
+    ],
+    tags = ["ttnn", "unit"],
+)

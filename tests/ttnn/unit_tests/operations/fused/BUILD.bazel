@@ -1,0 +1,43 @@
+# TTNN fused operation unit tests (13 test files).
+
+load("@rules_python//python:py_library.bzl", "py_library")
+load("//bazel:pytest.bzl", "pytest_suite")
+
+py_library(
+    name = "distributed_norm_test_utils",
+    testonly = True,
+    srcs = ["distributed_norm_test_utils.py"],
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//torch",
+        "@pip//loguru",
+    ],
+)
+
+py_library(
+    name = "sharded_test_utils",
+    testonly = True,
+    srcs = ["sharded_test_utils.py"],
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "//models/common:utility_functions",
+        "@pip//torch",
+    ],
+)
+
+pytest_suite(
+    name = "fused_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "//tests/ttnn:test_utils",
+        "//tests/ttnn/unit_tests/operations:test_utils",
+        "//tests/ttnn/unit_tests/operations/fused:distributed_norm_test_utils",
+        "//tests/ttnn/unit_tests/operations/fused:sharded_test_utils",
+        "//models/common:utility_functions",
+        "@pip//torch",
+        "@pip//numpy",
+        "@pip//loguru",
+    ],
+    tags = ["ttnn", "unit"],
+)

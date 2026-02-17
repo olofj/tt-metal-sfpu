@@ -1,0 +1,16 @@
+# TTNN point-to-point operation unit tests (1 test file).
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "point_to_point_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "//tests/ttnn:test_utils",
+        "@pip//torch",
+        "@pip//numpy",
+        "@pip//loguru",
+    ],
+    tags = ["ttnn", "unit"],
+)

@@ -1,0 +1,17 @@
+# TTNN data movement operation unit tests (33 test files).
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "data_movement_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "//tests/ttnn:test_utils",
+        "//models/common:utility_functions",
+        "@pip//torch",
+        "@pip//numpy",
+        "@pip//loguru",
+    ],
+    tags = ["ttnn", "unit"],
+)
