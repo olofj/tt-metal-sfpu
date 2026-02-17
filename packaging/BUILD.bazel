@@ -292,11 +292,22 @@ cmake_package_version(
     version = ":deb_version",
 )
 
+# CMake imported targets file for TT::Metalium, TT::tt_stl, etc.
+# The config template includes this via include("${CMAKE_CURRENT_LIST_DIR}/Metalium.cmake").
+# This is the Bazel equivalent of CMake's install(EXPORT Metalium ...) output.
+genrule(
+    name = "metalium_cmake_targets",
+    srcs = ["//cmake/packaging.d:Metalium.cmake.in"],
+    outs = ["Metalium.cmake"],
+    cmd = "cp $< $@",
+)
+
 pkg_files(
     name = "metalium_dev_cmake",
     srcs = [
         ":metalium_cmake_config",
         ":metalium_cmake_config_version",
+        ":metalium_cmake_targets",
     ],
     prefix = "usr/lib/cmake/tt-metalium",
 )
@@ -540,11 +551,22 @@ cmake_package_version(
     version = ":deb_version",
 )
 
+# CMake imported targets file for TTNN::TTNN.
+# The config template includes this via include("${CMAKE_CURRENT_LIST_DIR}/TT-NN.cmake").
+# This is the Bazel equivalent of CMake's install(EXPORT TT-NN ...) output.
+genrule(
+    name = "nn_cmake_targets",
+    srcs = ["//cmake/packaging.d:TT-NN.cmake.in"],
+    outs = ["TT-NN.cmake"],
+    cmd = "cp $< $@",
+)
+
 pkg_files(
     name = "nn_dev_cmake",
     srcs = [
         ":nn_cmake_config",
         ":nn_cmake_config_version",
+        ":nn_cmake_targets",
     ],
     prefix = "usr/lib/cmake/tt-nn",
 )
@@ -635,4 +657,21 @@ tt_deb(
     description = "TT-NN validation tools",
     package = "tt-nn-validation",
     section = "utils",
+)
+
+# ===========================================================================
+# Tests
+# ===========================================================================
+
+sh_test(
+    name = "cmake_config_test",
+    srcs = ["cmake_config_test.sh"],
+    data = [
+        ":metalium_cmake_config",
+        ":metalium_cmake_config_version",
+        ":metalium_cmake_targets",
+        ":nn_cmake_config",
+        ":nn_cmake_config_version",
+        ":nn_cmake_targets",
+    ],
 )

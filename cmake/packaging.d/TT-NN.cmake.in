@@ -1,0 +1,70 @@
+# Imported targets for find_package(TT-NN).
+#
+# Hand-maintained equivalent of CMake's install(EXPORT TT-NN ...) output.
+# Source of truth: ttnn/CMakeLists.txt install rules.
+# When the public API surface changes (new exported targets, renamed libraries),
+# update this file to match.
+
+cmake_policy(PUSH)
+cmake_policy(VERSION 2.8.12...3.29)
+
+set(CMAKE_IMPORT_FILE_VERSION 1)
+
+# Compute the installation prefix relative to this file.
+# This file lives at <prefix>/lib/cmake/tt-nn/TT-NN.cmake,
+# so we go up 4 directories to reach <prefix>.
+get_filename_component(_IMPORT_PREFIX "${CMAKE_CURRENT_LIST_FILE}" PATH)
+get_filename_component(_IMPORT_PREFIX "${_IMPORT_PREFIX}" PATH)
+get_filename_component(_IMPORT_PREFIX "${_IMPORT_PREFIX}" PATH)
+get_filename_component(_IMPORT_PREFIX "${_IMPORT_PREFIX}" PATH)
+if(_IMPORT_PREFIX STREQUAL "/")
+  set(_IMPORT_PREFIX "")
+endif()
+
+# ---------------------------------------------------------------------------
+# TTNN::TTNN — main TT-NN shared library
+# ---------------------------------------------------------------------------
+if(NOT TARGET TTNN::TTNN)
+  add_library(TTNN::TTNN SHARED IMPORTED)
+  set_target_properties(TTNN::TTNN PROPERTIES
+    INTERFACE_LINK_LIBRARIES "TT::Metalium;xtensor"
+    IMPORTED_LOCATION "${_IMPORT_PREFIX}/lib/_ttnncpp.so"
+    IMPORTED_SONAME "_ttnncpp.so"
+  )
+  if(NOT CMAKE_VERSION VERSION_LESS "3.23.0")
+    target_sources(TTNN::TTNN INTERFACE
+      FILE_SET "api" TYPE "HEADERS"
+      BASE_DIRS "${_IMPORT_PREFIX}/include"
+    )
+  else()
+    set_property(TARGET TTNN::TTNN APPEND PROPERTY
+      INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include"
+    )
+  endif()
+endif()
+
+# Verify required external targets exist.
+unset(${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE_targets)
+foreach(_target "TT::Metalium" "xtensor")
+  if(NOT TARGET "${_target}")
+    set(${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE_targets
+      "${${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE_targets} ${_target}")
+  endif()
+endforeach()
+
+if(DEFINED ${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE_targets)
+  if(CMAKE_FIND_PACKAGE_NAME)
+    set(${CMAKE_FIND_PACKAGE_NAME}_FOUND FALSE)
+    set(${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE
+      "The following imported targets are referenced, but are missing: ${${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE_targets}")
+  else()
+    message(FATAL_ERROR
+      "The following imported targets are referenced, but are missing: ${${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE_targets}")
+  endif()
+endif()
+unset(${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE_targets)
+
+# Cleanup.
+set(_IMPORT_PREFIX)
+set(CMAKE_IMPORT_FILE_VERSION)
+cmake_policy(POP)

@@ -1,0 +1,159 @@
+# Imported targets for find_package(TT-Metalium).
+#
+# Hand-maintained equivalent of CMake's install(EXPORT Metalium ...) output.
+# Source of truth: tt_metal/CMakeLists.txt install rules.
+# When the public API surface changes (new exported targets, renamed libraries),
+# update this file to match.
+
+cmake_policy(PUSH)
+cmake_policy(VERSION 3.0.0...3.29)
+
+set(CMAKE_IMPORT_FILE_VERSION 1)
+
+# Compute the installation prefix relative to this file.
+# This file lives at <prefix>/lib/cmake/tt-metalium/Metalium.cmake,
+# so we go up 4 directories to reach <prefix>.
+get_filename_component(_IMPORT_PREFIX "${CMAKE_CURRENT_LIST_FILE}" PATH)
+get_filename_component(_IMPORT_PREFIX "${_IMPORT_PREFIX}" PATH)
+get_filename_component(_IMPORT_PREFIX "${_IMPORT_PREFIX}" PATH)
+get_filename_component(_IMPORT_PREFIX "${_IMPORT_PREFIX}" PATH)
+if(_IMPORT_PREFIX STREQUAL "/")
+  set(_IMPORT_PREFIX "")
+endif()
+
+# ---------------------------------------------------------------------------
+# TT::reflect — header-only reflection library
+# ---------------------------------------------------------------------------
+if(NOT TARGET TT::reflect)
+  add_library(TT::reflect INTERFACE IMPORTED)
+  if(NOT CMAKE_VERSION VERSION_LESS "3.23.0")
+    target_sources(TT::reflect INTERFACE
+      FILE_SET "api" TYPE "HEADERS"
+      BASE_DIRS "${_IMPORT_PREFIX}/include/metalium-thirdparty"
+    )
+  else()
+    set_property(TARGET TT::reflect APPEND PROPERTY
+      INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include/metalium-thirdparty"
+    )
+  endif()
+endif()
+
+# ---------------------------------------------------------------------------
+# TT::enchantum — header-only enum library
+# ---------------------------------------------------------------------------
+if(NOT TARGET TT::enchantum)
+  add_library(TT::enchantum INTERFACE IMPORTED)
+  set_target_properties(TT::enchantum PROPERTIES
+    INTERFACE_COMPILE_FEATURES "cxx_std_17"
+    INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include"
+  )
+endif()
+
+# ---------------------------------------------------------------------------
+# TT::tt-logger — header-only logging library
+# ---------------------------------------------------------------------------
+if(NOT TARGET TT::tt-logger)
+  add_library(TT::tt-logger INTERFACE IMPORTED)
+  set_target_properties(TT::tt-logger PROPERTIES
+    INTERFACE_LINK_LIBRARIES "spdlog::spdlog_header_only;fmt::fmt-header-only"
+  )
+  if(NOT CMAKE_VERSION VERSION_LESS "3.23.0")
+    target_sources(TT::tt-logger INTERFACE
+      FILE_SET "api" TYPE "HEADERS"
+      BASE_DIRS "${_IMPORT_PREFIX}/include/metalium-thirdparty"
+    )
+  else()
+    set_property(TARGET TT::tt-logger APPEND PROPERTY
+      INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include/metalium-thirdparty"
+    )
+  endif()
+endif()
+
+# ---------------------------------------------------------------------------
+# TT::TracyClient — profiling library
+# ---------------------------------------------------------------------------
+if(NOT TARGET TT::TracyClient)
+  add_library(TT::TracyClient SHARED IMPORTED)
+  set_target_properties(TT::TracyClient PROPERTIES
+    INTERFACE_COMPILE_DEFINITIONS "TRACY_ENABLE;TRACY_TIMER_FALLBACK;TRACY_IMPORTS"
+    INTERFACE_COMPILE_FEATURES "cxx_std_11"
+    INTERFACE_COMPILE_OPTIONS "-fno-omit-frame-pointer"
+    INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include"
+    INTERFACE_LINK_LIBRARIES "Threads::Threads;dl"
+    INTERFACE_LINK_OPTIONS "-rdynamic"
+    IMPORTED_LOCATION "${_IMPORT_PREFIX}/lib/libTracyClient.so"
+    IMPORTED_SONAME "libTracyClient.so"
+  )
+endif()
+
+# ---------------------------------------------------------------------------
+# TT::tt_stl — shared utility library
+# ---------------------------------------------------------------------------
+if(NOT TARGET TT::tt_stl)
+  add_library(TT::tt_stl SHARED IMPORTED)
+  set_target_properties(TT::tt_stl PROPERTIES
+    INTERFACE_COMPILE_FEATURES "cxx_std_20"
+    INTERFACE_LINK_LIBRARIES "TT::reflect;TT::enchantum;nlohmann_json::nlohmann_json;fmt::fmt-header-only;TT::tt-logger"
+    IMPORTED_LOCATION "${_IMPORT_PREFIX}/lib/libtt_stl.so"
+    IMPORTED_SONAME "libtt_stl.so"
+  )
+  if(NOT CMAKE_VERSION VERSION_LESS "3.23.0")
+    target_sources(TT::tt_stl INTERFACE
+      FILE_SET "api" TYPE "HEADERS"
+      BASE_DIRS "${_IMPORT_PREFIX}/include"
+    )
+  else()
+    set_property(TARGET TT::tt_stl APPEND PROPERTY
+      INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include"
+    )
+  endif()
+endif()
+
+# ---------------------------------------------------------------------------
+# TT::Metalium — main TT-Metalium shared library
+# ---------------------------------------------------------------------------
+if(NOT TARGET TT::Metalium)
+  add_library(TT::Metalium SHARED IMPORTED)
+  set_target_properties(TT::Metalium PROPERTIES
+    INTERFACE_COMPILE_OPTIONS "-Wno-int-to-pointer-cast"
+    INTERFACE_LINK_LIBRARIES "umd::device;TT::enchantum;fmt::fmt-header-only;TT::TracyClient;nlohmann_json::nlohmann_json;TT::reflect;TT::tt_stl;TT::tt-logger"
+    IMPORTED_LOCATION "${_IMPORT_PREFIX}/lib/libtt_metal.so"
+    IMPORTED_SONAME "libtt_metal.so"
+  )
+  if(NOT CMAKE_VERSION VERSION_LESS "3.23.0")
+    target_sources(TT::Metalium INTERFACE
+      FILE_SET "api" TYPE "HEADERS"
+      BASE_DIRS "${_IMPORT_PREFIX}/include"
+    )
+  else()
+    set_property(TARGET TT::Metalium APPEND PROPERTY
+      INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include"
+    )
+  endif()
+endif()
+
+# Verify required external targets exist.
+unset(${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE_targets)
+foreach(_target "nlohmann_json::nlohmann_json" "fmt::fmt-header-only" "umd::device" "spdlog::spdlog_header_only")
+  if(NOT TARGET "${_target}")
+    set(${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE_targets
+      "${${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE_targets} ${_target}")
+  endif()
+endforeach()
+
+if(DEFINED ${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE_targets)
+  if(CMAKE_FIND_PACKAGE_NAME)
+    set(${CMAKE_FIND_PACKAGE_NAME}_FOUND FALSE)
+    set(${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE
+      "The following imported targets are referenced, but are missing: ${${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE_targets}")
+  else()
+    message(FATAL_ERROR
+      "The following imported targets are referenced, but are missing: ${${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE_targets}")
+  endif()
+endif()
+unset(${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE_targets)
+
+# Cleanup.
+set(_IMPORT_PREFIX)
+set(CMAKE_IMPORT_FILE_VERSION)
+cmake_policy(POP)
