@@ -133,3 +133,15 @@ filegroup(
     ],
     visibility = ["//visibility:public"],
 )
+
+# All public API headers for .deb packaging (metalium-dev).
+# Mirrors CMake FILE_SET api on the tt_metal target.
+filegroup(
+    name = "deb_headers",
+    srcs = glob([
+        "tt-metalium/**/*.hpp",
+        "tt-metalium/**/*.h",
+        "tt-metalium/**/*.tpp",
+    ]),
+    visibility = ["//packaging:__pkg__"],
+)

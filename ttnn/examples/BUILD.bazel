@@ -1,0 +1,19 @@
+# TT-NN example programs for .deb packaging.
+#
+# Source files are shipped in the nn-examples .deb package
+# (CMake component: ttnn-examples).
+
+package(default_visibility = ["//packaging:__pkg__"])
+
+# Example source files (host code, docs).
+# Installed to /usr/share/tt-nn/examples/.
+filegroup(
+    name = "example_sources",
+    srcs = glob(
+        ["add/**"],
+        exclude = [
+            "**/BUILD*",
+            "**/CMakeLists.txt",
+        ],
+    ),
+)

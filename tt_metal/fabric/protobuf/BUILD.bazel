@@ -13,6 +13,20 @@ cc_proto_library(
     visibility = ["//tt_metal/fabric:__pkg__"],
 )
 
+# Proto schema source files for .deb packaging (metalium-dev).
+# External consumers can compile these with their own protoc toolchain.
+filegroup(
+    name = "proto_schemas",
+    srcs = [
+        "intermesh_connection_table.proto",
+        "mesh_graph_descriptor.proto",
+        "physical_system_descriptor.proto",
+        "port_descriptor_table.proto",
+        "router_port_directions.proto",
+    ],
+    visibility = ["//packaging:__pkg__"],
+)
+
 cc_test(
     name = "proto_compile_test",
     srcs = ["proto_compile_test.cpp"],

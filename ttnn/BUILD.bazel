@@ -304,3 +304,23 @@ filegroup(
     ],
     visibility = ["//visibility:public"],
 )
+
+# TTNN public API headers for .deb packaging (nn-dev).
+# Mirrors CMake FILE_SET api on the ttnncpp target.
+filegroup(
+    name = "deb_headers",
+    srcs = glob(
+        [
+            "api/**/*.hpp",
+            "api/**/*.h",
+            "cpp/ttnn/**/*.hpp",
+            "cpp/ttnn/**/*.h",
+        ],
+        exclude = [
+            # Kernel sources are runtime data, not dev headers.
+            "cpp/ttnn/kernel/**",
+        ],
+        allow_empty = True,
+    ),
+    visibility = ["//packaging:__pkg__"],
+)

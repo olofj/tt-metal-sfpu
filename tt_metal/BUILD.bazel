@@ -98,3 +98,14 @@ filegroup(
         "//tt_metal/tools:wheel_data",
     ],
 )
+
+# SoC and core descriptor YAML files for .deb packaging (metalium runtime).
+# These are loaded at runtime by the device driver to configure chip topology.
+filegroup(
+    name = "deb_descriptors",
+    srcs = glob([
+        "core_descriptors/*.yaml",
+        "soc_descriptors/*.yaml",
+    ]),
+    visibility = ["//packaging:__pkg__"],
+)

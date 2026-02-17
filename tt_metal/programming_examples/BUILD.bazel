@@ -1,0 +1,53 @@
+# Programming examples for TT-Metalium kernel development.
+#
+# Source files are shipped in the metalium-examples .deb package
+# (CMake component: metalium-examples). Two filegroups split the
+# content as CMake does: non-kernel sources (docs, host code) and
+# kernel sources (device code under kernels/ directories).
+
+package(default_visibility = ["//packaging:__pkg__"])
+
+# Example directories shipped by CMake (see CMakeLists.txt install rules).
+_EXAMPLE_DIRS = [
+    "add_2_integers_in_compute",
+    "add_2_integers_in_riscv",
+    "eltwise_binary",
+    "eltwise_sfpu",
+    "hello_world_compute_kernel",
+    "hello_world_datamovement_kernel",
+    "hello_world_datatypes_kernel",
+    "loopback",
+    "matmul",
+    "shard_data_rm",
+    "NoC_tile_transfer",
+    "sfpu_eltwise_chain",
+    "custom_sfpi_add",
+    "custom_sfpi_smoothstep",
+    "tests",
+]
+
+# Host-side sources and documentation (excludes kernels/ subdirectories).
+# Installed to /usr/share/tt-metalium/examples/.
+filegroup(
+    name = "example_sources",
+    srcs = glob(
+        [d + "/**" for d in _EXAMPLE_DIRS],
+        exclude = [
+            "**/kernels/**",
+            "**/BUILD*",
+            "**/CMakeLists.txt",
+        ],
+        allow_empty = True,
+    ),
+)
+
+# Device kernel sources from the examples.
+# Installed to /usr/share/tenstorrent/kernels/.
+filegroup(
+    name = "example_kernels",
+    srcs = glob(
+        [d + "/kernels/**" for d in _EXAMPLE_DIRS],
+        exclude = ["**/BUILD*"],
+        allow_empty = True,
+    ),
+)

@@ -25,6 +25,17 @@ cc_library(
     ],
 )
 
+# All tt_stl headers for .deb packaging (metalium-dev).
+# Mirrors CMake FILE_SET api on the tt_stl target.
+filegroup(
+    name = "deb_headers",
+    srcs = glob([
+        "tt_stl/*.hpp",
+        "tt_stl/llvm/*.hpp",
+    ]),
+    visibility = ["//packaging:__pkg__"],
+)
+
 # Unit tests for tt_stl — mirrors CMake unit_tests_stl / unit_tests_stl_smoke.
 cc_test(
     name = "unit_tests_stl",
