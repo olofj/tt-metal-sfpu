@@ -565,22 +565,42 @@ cc_test(
 
 # --------------------------------------------------------------------------
 # HAL codegen tests
-#
-# NOTE: This test requires a code generation step (codegen.py on test_msgs.h)
-# that is not yet converted to Bazel genrule. The CMake build runs:
-#   codegen.py --driver_ns tt::tt_metal::hal_structs ... test_msgs.h intf.h impl.h
-# TODO: Add genrule for codegen step and enable this test.
 # --------------------------------------------------------------------------
 
-# cc_test(
-#     name = "hal_codegen_test",
-#     srcs = ["hal_codegen/codegen_test.cpp"],
-#     deps = [
-#         "//tests:test_common_libs",
-#         "@enchantum//:enchantum",
-#     ],
-#     tags = ["unit", "tt_metal", "hal_codegen"],
-# )
+genrule(
+    name = "hal_codegen_test_gen",
+    srcs = [
+        "//tt_metal/llrt/hal:codegen/codegen.py",
+        "hal_codegen/test_msgs.h",
+    ],
+    outs = [
+        "hal_codegen/test_msgs_intf.h",
+        "hal_codegen/test_msgs_impl.h",
+    ],
+    cmd = " ".join([
+        "python3 $(location //tt_metal/llrt/hal:codegen/codegen.py)",
+        "--driver_ns tt::tt_metal::hal_structs",
+        "--driver_include_path llrt/struct_view_driver.hpp",
+        "$(location hal_codegen/test_msgs.h)",
+        "$(location hal_codegen/test_msgs_intf.h)",
+        "$(location hal_codegen/test_msgs_impl.h)",
+    ]),
+)
+
+cc_test(
+    name = "hal_codegen_test",
+    srcs = [
+        "hal_codegen/codegen_test.cpp",
+        "hal_codegen/test_msgs.h",
+        ":hal_codegen_test_gen",
+    ],
+    includes = ["hal_codegen"],
+    deps = [
+        "//tests:test_common_libs",
+        "@enchantum//:enchantum",
+    ],
+    tags = ["unit", "tt_metal", "hal_codegen"],
+)
 
 # --------------------------------------------------------------------------
 # Validation object libraries — compiled test sources for monolithic

@@ -11,6 +11,12 @@ load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
 package(default_visibility = ["//tt_metal:__subpackages__"])
 
+# Export codegen script so tests can generate their own struct accessors.
+exports_files(
+    ["codegen/codegen.py"],
+    visibility = ["//tests:__subpackages__"],
+)
+
 genrule(
     name = "hal_dev_msgs_gen",
     srcs = [

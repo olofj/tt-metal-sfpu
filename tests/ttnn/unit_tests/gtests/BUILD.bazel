@@ -22,8 +22,10 @@ cc_library(
         "common_test_utils.hpp",
         "ttnn_test_fixtures.hpp",
     ],
+    includes = ["."],
     deps = [
         "//tests:test_common_libs",
+        "//tests/tt_metal:test_utils",
         "//ttnn:ttnn_core",
     ],
 )
@@ -213,22 +215,19 @@ cc_library(
 
 # --------------------------------------------------------------------------
 # Multi-CQ multi-device test
-#
-# NOTE: Disabled because @boost.asio has an unresolved @openssl dependency
-# in the current Bazel workspace. Re-enable when openssl is added to MODULE.bazel.
 # --------------------------------------------------------------------------
 
-# cc_test(
-#     name = "test_ccl_multi_cq_multi_device",
-#     srcs = ["multi_thread/test_ccl_multi_cq_multi_device.cpp"],
-#     deps = [
-#         ":test_common_utils",
-#         "//tests:test_common_libs",
-#         "//ttnn:ttnn_core",
-#         "@boost.asio",
-#     ],
-#     tags = ["unit", "ttnn", "ccl", "requires_multi_device"],
-# )
+cc_test(
+    name = "test_ccl_multi_cq_multi_device",
+    srcs = ["multi_thread/test_ccl_multi_cq_multi_device.cpp"],
+    deps = [
+        ":test_common_utils",
+        "//tests:test_common_libs",
+        "//ttnn:ttnn_core",
+        "@boost.asio",
+    ],
+    tags = ["unit", "ttnn", "ccl", "requires_multi_device"],
+)
 
 # --------------------------------------------------------------------------
 # EmitC test
