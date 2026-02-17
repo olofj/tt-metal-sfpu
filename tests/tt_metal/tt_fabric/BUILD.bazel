@@ -1,0 +1,327 @@
+# tt_fabric tests — gtest-based test targets for fabric routing, data movement,
+# physical discovery, system health, and benchmarks.
+#
+# Mirrors the CMake test executables from tests/tt_metal/tt_fabric/CMakeLists.txt.
+# Each test suite gets its own cc_test target for fine-grained affected-target analysis.
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+
+package(default_visibility = ["//tests:__subpackages__"])
+
+# --------------------------------------------------------------------------
+# Test data files (mesh descriptors, cluster descriptors, golden files)
+# --------------------------------------------------------------------------
+
+filegroup(
+    name = "test_data",
+    srcs = glob([
+        "custom_mesh_descriptors/**",
+        "custom_mock_cluster_descriptors/**",
+        "custom_mock_PSDs/**",
+        "golden_mapping_files/**",
+    ]),
+)
+
+# Kernel source files used at runtime via JIT compilation.
+filegroup(
+    name = "test_kernels",
+    srcs = glob([
+        "fabric_data_movement/kernels/**",
+        "feature_bringup/kernels/**",
+        "benchmark/collectives/unicast/kernels/**",
+        "fabric_data_movement/addrgen_write/kernels/**",
+    ]),
+)
+
+# --------------------------------------------------------------------------
+# Shared test utilities (common/)
+# --------------------------------------------------------------------------
+
+cc_library(
+    name = "fabric_test_common",
+    testonly = True,
+    srcs = [
+        "common/fabric_command_interface.cpp",
+        "common/fabric_worker_kernel_helpers.cpp",
+        "common/utils.cpp",
+    ],
+    hdrs = glob(["common/*.hpp"]),
+    deps = [
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+        "@yaml-cpp",
+    ],
+)
+
+# --------------------------------------------------------------------------
+# Benchmark / perf helpers library
+# --------------------------------------------------------------------------
+
+cc_library(
+    name = "bench_perf_helpers",
+    testonly = True,
+    srcs = [
+        "benchmark/collectives/common/perf_helpers.cpp",
+        "benchmark/collectives/unicast/run_unicast_once.cpp",
+    ],
+    hdrs = ["benchmark/collectives/common/perf_helpers.hpp"],
+    deps = [
+        ":fabric_test_common",
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+        "//tests/tt_metal/tt_metal:test_fixtures",
+    ],
+)
+
+# --------------------------------------------------------------------------
+# Fabric router unit tests (pure-software, mock cluster descriptors)
+#
+# CMake builds these as a single monolithic "fabric_unit_tests" executable.
+# In Bazel, each test file gets its own cc_test for fine-grained analysis.
+# --------------------------------------------------------------------------
+
+[cc_test(
+    name = "fabric_router_" + src.replace(".cpp", ""),
+    srcs = ["fabric_router/" + src],
+    data = [
+        ":test_data",
+        ":test_kernels",
+    ],
+    deps = [
+        ":fabric_test_common",
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+        "@yaml-cpp",
+    ],
+    tags = ["unit", "tt_fabric", "fabric_router", "requires_wormhole_b0"],
+) for src in [
+    "test_routing_tables.cpp",
+    "test_mesh_graph_descriptor.cpp",
+    "test_topology_mapper.cpp",
+    "test_topology_mapper_utils.cpp",
+    "test_topology_solver.cpp",
+    "test_custom_routing_tables.cpp",
+    "test_multi_host.cpp",
+    "test_connection_registry.cpp",
+    "test_router_channel_mapping.cpp",
+    "test_router_connections.cpp",
+    "test_router_connection_mapping.cpp",
+    "test_router_archetypes.cpp",
+    "test_builder_connection_mapping.cpp",
+    "test_connection_mapping_logic.cpp",
+    "test_fabric_builder_local_connections.cpp",
+    "test_fabric_topology_helpers.cpp",
+    "test_control_plane_logical_to_physical.cpp",
+]]
+
+# Router integration and device detection tests — these initialize real hardware
+# and are placed in a separate group for CI scheduling.
+[cc_test(
+    name = "fabric_router_" + src.replace(".cpp", ""),
+    srcs = ["fabric_router/" + src],
+    data = [
+        ":test_data",
+        ":test_kernels",
+    ],
+    deps = [
+        ":fabric_test_common",
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+        "@yaml-cpp",
+    ],
+    size = "large",
+    tags = ["integration", "tt_fabric", "fabric_router", "requires_wormhole_b0"],
+) for src in [
+    "test_z_router_integration.cpp",
+    "test_z_router_device_detection.cpp",
+]]
+
+# --------------------------------------------------------------------------
+# Fabric data movement tests (requires hardware)
+#
+# CMake includes these in the monolithic "fabric_unit_tests" executable.
+# --------------------------------------------------------------------------
+
+[cc_test(
+    name = "fabric_data_movement_" + src.replace(".cpp", ""),
+    srcs = ["fabric_data_movement/" + src],
+    data = [
+        ":test_data",
+        ":test_kernels",
+        "//tests/tt_metal/tt_metal:perf_routing_kernels",
+    ],
+    deps = [
+        ":fabric_test_common",
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+    ],
+    tags = ["unit", "tt_fabric", "fabric_data_movement", "requires_multi_device", "requires_wormhole_b0"],
+) for src in [
+    "test_basic_fabric_apis.cpp",
+    "test_basic_1d_fabric.cpp",
+    "test_basic_fabric_mux.cpp",
+    "test_fabric_traffic_generator_kernel.cpp",
+]]
+
+# Fabric smoke test (standalone, CMake target: fabric_smoke_tests)
+cc_test(
+    name = "fabric_data_movement_test_basic_fabric_smoke",
+    srcs = ["fabric_data_movement/test_basic_fabric_smoke.cpp"],
+    data = [
+        ":test_data",
+        ":test_kernels",
+        "//tests/tt_metal/tt_metal:perf_routing_kernels",
+    ],
+    deps = [
+        ":fabric_test_common",
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+    ],
+    tags = ["smoke", "tt_fabric", "fabric_data_movement", "requires_multi_device", "requires_wormhole_b0"],
+)
+
+# --------------------------------------------------------------------------
+# Physical discovery test (CMake target: test_physical_discovery)
+# --------------------------------------------------------------------------
+
+cc_test(
+    name = "physical_discovery_test_physical_system_descriptor",
+    srcs = ["physical_discovery/test_physical_system_descriptor.cpp"],
+    data = [":test_data"],
+    deps = [
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+        "@yaml-cpp",
+    ],
+    tags = ["unit", "tt_fabric", "physical_discovery", "requires_wormhole_b0"],
+)
+
+# --------------------------------------------------------------------------
+# System health test (CMake target: test_system_health)
+# --------------------------------------------------------------------------
+
+cc_test(
+    name = "system_health_test_system_health",
+    srcs = ["system_health/test_system_health.cpp"],
+    data = [":test_data"],
+    deps = [
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+    ],
+    tags = ["unit", "tt_fabric", "system_health", "requires_wormhole_b0"],
+)
+
+# --------------------------------------------------------------------------
+# Fabric elastic channels host test (CMake target: fabric_elastic_channels_host_test)
+# Non-gtest standalone binary with main().
+# --------------------------------------------------------------------------
+
+cc_binary(
+    name = "fabric_elastic_channels_host_test",
+    testonly = True,
+    srcs = ["feature_bringup/fabric_elastic_channels_host_test.cpp"],
+    data = [
+        ":test_data",
+        ":test_kernels",
+    ],
+    deps = [
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+    ],
+)
+
+# --------------------------------------------------------------------------
+# Addrgen write tests (CMake target: test_addrgen_write)
+# --------------------------------------------------------------------------
+
+cc_test(
+    name = "test_addrgen_write",
+    srcs = [
+        "fabric_data_movement/addrgen_write/test_main.cpp",
+        "fabric_data_movement/addrgen_write/unicast_runner.cpp",
+        "fabric_data_movement/addrgen_write/multicast_runner.cpp",
+        "fabric_data_movement/addrgen_write/test_common.hpp",
+        "fabric_data_movement/addrgen_write/kernels/kernel_common.hpp",
+    ],
+    data = [
+        ":test_data",
+        ":test_kernels",
+    ],
+    deps = [
+        ":bench_perf_helpers",
+        ":fabric_test_common",
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+        "//tests/tt_metal/tt_metal:test_fixtures",
+    ],
+    tags = ["unit", "tt_fabric", "addrgen_write", "requires_multi_device", "requires_wormhole_b0"],
+)
+
+# --------------------------------------------------------------------------
+# Bandwidth telemetry validation test
+# (CMake target: test_bandwidth_telemetry_validation)
+# --------------------------------------------------------------------------
+
+cc_test(
+    name = "test_bandwidth_telemetry_validation",
+    srcs = ["test_bandwidth_telemetry_validation.cpp"],
+    data = [
+        ":test_data",
+        ":test_kernels",
+    ],
+    deps = [
+        ":bench_perf_helpers",
+        ":fabric_test_common",
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+        "//tests/tt_metal/tt_metal:test_fixtures",
+    ],
+    tags = ["unit", "tt_fabric", "telemetry", "requires_multi_device", "requires_wormhole_b0"],
+)
+
+# --------------------------------------------------------------------------
+# Benchmark: unicast (CMake target: bench_unicast)
+# --------------------------------------------------------------------------
+
+cc_test(
+    name = "bench_unicast",
+    srcs = ["benchmark/collectives/unicast/bench_unicast_main.cpp"],
+    data = [
+        ":test_data",
+        ":test_kernels",
+    ],
+    deps = [
+        ":bench_perf_helpers",
+        ":fabric_test_common",
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+        "//tests/tt_metal/tt_metal:test_fixtures",
+    ],
+    tags = ["benchmark", "tt_fabric", "requires_multi_device", "requires_wormhole_b0"],
+)
+
+# --------------------------------------------------------------------------
+# Test suites for backward compatibility with CMake test groupings
+# --------------------------------------------------------------------------
+
+test_suite(
+    name = "fabric_router_tests",
+    tags = ["fabric_router", "tt_fabric"],
+)
+
+test_suite(
+    name = "fabric_data_movement_tests",
+    tags = ["fabric_data_movement", "tt_fabric"],
+)
+
+test_suite(
+    name = "fabric_unit_tests",
+    tags = ["unit", "tt_fabric"],
+)
+
+test_suite(
+    name = "fabric_smoke_tests",
+    tags = ["smoke", "tt_fabric"],
+)

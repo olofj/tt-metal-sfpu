@@ -29,6 +29,12 @@ filegroup(
     srcs = glob(["test_kernels/**"]),
 )
 
+# Perf microbenchmark routing kernels — JIT-compiled at runtime by fabric tests.
+filegroup(
+    name = "perf_routing_kernels",
+    srcs = glob(["perf_microbenchmark/routing/kernels/**"]),
+)
+
 # Test utilities are in //tests/tt_metal:test_utils (parent package).
 
 # --------------------------------------------------------------------------
