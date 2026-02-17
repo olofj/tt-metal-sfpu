@@ -45,6 +45,8 @@ jobs:
       needs_blackhole: ${{ steps.classify.outputs.needs_blackhole }}
       needs_galaxy_wh: ${{ steps.classify.outputs.needs_galaxy_wh }}
       needs_galaxy_bh: ${{ steps.classify.outputs.needs_galaxy_bh }}
+      needs_perf_t3000: ${{ steps.classify.outputs.needs_perf_t3000 }}
+      needs_perf_tg: ${{ steps.classify.outputs.needs_perf_tg }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -98,6 +100,8 @@ jobs:
             echo "needs_blackhole=true" >> "$GITHUB_OUTPUT"
             echo "needs_galaxy_wh=true" >> "$GITHUB_OUTPUT"
             echo "needs_galaxy_bh=true" >> "$GITHUB_OUTPUT"
+            echo "needs_perf_t3000=true" >> "$GITHUB_OUTPUT"
+            echo "needs_perf_tg=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -112,6 +116,8 @@ jobs:
           NEEDS_BH="false"
           NEEDS_GALAXY_WH="false"
           NEEDS_GALAXY_BH="false"
+          NEEDS_PERF_T3000="false"
+          NEEDS_PERF_TG="false"
 
           for target in $TARGETS; do
             TAGS=$(bazel query "attr(tags, '', $target)" --output=xml 2>/dev/null \
@@ -155,6 +161,15 @@ jobs:
               fi
             fi
 
+            # Performance tests need dedicated perf runners for bare-metal isolation.
+            # perf_bare_metal/perf_t3000 → T3000 perf runner, perf_tg → Galaxy perf runner.
+            if echo "$TAGS" | grep -qE "perf_bare_metal|perf_device_bare_metal|perf_t3000"; then
+              NEEDS_PERF_T3000="true"
+            fi
+            if echo "$TAGS" | grep -q "perf_tg"; then
+              NEEDS_PERF_TG="true"
+            fi
+
             if [ "$IS_HW" = "false" ]; then
               HAS_HOST="true"
             fi
@@ -167,6 +182,8 @@ jobs:
           echo "needs_blackhole=$NEEDS_BH" >> "$GITHUB_OUTPUT"
           echo "needs_galaxy_wh=$NEEDS_GALAXY_WH" >> "$GITHUB_OUTPUT"
           echo "needs_galaxy_bh=$NEEDS_GALAXY_BH" >> "$GITHUB_OUTPUT"
+          echo "needs_perf_t3000=$NEEDS_PERF_T3000" >> "$GITHUB_OUTPUT"
+          echo "needs_perf_tg=$NEEDS_PERF_TG" >> "$GITHUB_OUTPUT"
 
       - name: Summary
         run: |
@@ -183,6 +200,8 @@ jobs:
           echo "| Blackhole (P150) | ${{ steps.classify.outputs.needs_blackhole }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Galaxy WH | ${{ steps.classify.outputs.needs_galaxy_wh }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Galaxy BH | ${{ steps.classify.outputs.needs_galaxy_bh }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Perf T3000 | ${{ steps.classify.outputs.needs_perf_t3000 }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Perf Galaxy | ${{ steps.classify.outputs.needs_perf_tg }} |" >> "$GITHUB_STEP_SUMMARY"
 
           if [ "${{ steps.query.outputs.mode }}" = "AFFECTED" ]; then
             echo "" >> "$GITHUB_STEP_SUMMARY"
@@ -413,13 +432,15 @@ jobs:
           TAG_EXCLUDE="-frequently_hangs,-slow"
           # T3000 runs Wormhole tests that aren't specific to other topologies.
           # This includes tests tagged requires_T3000 and generic requires_wormhole_b0.
+          # Perf tests are excluded here — they run on dedicated pipeline-perf runners.
           HW_INCLUDE="requires_wormhole_b0"
           HW_EXCLUDE="-requires_N150,-requires_N300,-requires_galaxy,-requires_blackhole"
+          PERF_EXCLUDE="-perf_bare_metal,-perf_device_bare_metal,-perf_t3000"
 
           if [ "${{ needs.determine-targets.outputs.mode }}" = "FULL_CI" ]; then
             echo "Running FULL CI (T3000 device tests)"
             bazel test //tests/... \
-              --test_tag_filters="${TAG_FILTER},${HW_INCLUDE},${HW_EXCLUDE},${TAG_EXCLUDE}" \
+              --test_tag_filters="${TAG_FILTER},${HW_INCLUDE},${HW_EXCLUDE},${TAG_EXCLUDE},${PERF_EXCLUDE}" \
               --test_output=errors \
               --jobs=auto \
               --build_tests_only \
@@ -430,7 +451,7 @@ jobs:
             echo "Running affected T3000 device tests"
             # shellcheck disable=SC2086
             bazel test $TARGETS \
-              --test_tag_filters="${TAG_FILTER},${HW_INCLUDE},${HW_EXCLUDE},${TAG_EXCLUDE}" \
+              --test_tag_filters="${TAG_FILTER},${HW_INCLUDE},${HW_EXCLUDE},${TAG_EXCLUDE},${PERF_EXCLUDE}" \
               --test_output=errors \
               --jobs=auto \
               --build_tests_only \
@@ -544,14 +565,16 @@ jobs:
 
           TAG_FILTER="${{ inputs.test-tag-filter || 'post_commit' }}"
           TAG_EXCLUDE="-frequently_hangs,-slow"
-          # requires_galaxy selects Galaxy tests; exclude Blackhole to keep only WH Galaxy
+          # requires_galaxy selects Galaxy tests; exclude Blackhole to keep only WH Galaxy.
+          # Perf tests are excluded here — they run on dedicated pipeline-perf runners.
           HW_INCLUDE="requires_galaxy"
           HW_EXCLUDE="-requires_blackhole"
+          PERF_EXCLUDE="-perf_tg"
 
           if [ "${{ needs.determine-targets.outputs.mode }}" = "FULL_CI" ]; then
             echo "Running FULL CI (Galaxy Wormhole device tests)"
             bazel test //tests/... \
-              --test_tag_filters="${TAG_FILTER},${HW_INCLUDE},${HW_EXCLUDE},${TAG_EXCLUDE}" \
+              --test_tag_filters="${TAG_FILTER},${HW_INCLUDE},${HW_EXCLUDE},${TAG_EXCLUDE},${PERF_EXCLUDE}" \
               --test_output=errors \
               --jobs=auto \
               --build_tests_only \
@@ -562,7 +585,7 @@ jobs:
             echo "Running affected Galaxy Wormhole device tests"
             # shellcheck disable=SC2086
             bazel test $TARGETS \
-              --test_tag_filters="${TAG_FILTER},${HW_INCLUDE},${HW_EXCLUDE},${TAG_EXCLUDE}" \
+              --test_tag_filters="${TAG_FILTER},${HW_INCLUDE},${HW_EXCLUDE},${TAG_EXCLUDE},${PERF_EXCLUDE}" \
               --test_output=errors \
               --jobs=auto \
               --build_tests_only \
@@ -647,3 +670,252 @@ jobs:
             bazel-testlogs/**/test.xml
             bazel-testlogs/**/test.log
           retention-days: 14
+
+  # -------------------------------------------------------------------------
+  # Phase 4: Performance tests on dedicated pipeline-perf runners
+  #
+  # Perf tests require bare-metal isolation (no co-tenancy), Tracy profiler
+  # builds, and CPU governor pinned to "performance" to produce stable,
+  # regression-trackable numbers. These mirror the CMake CI perf pipelines
+  # (t3000-perf-tests, galaxy-perf-tests) but use Bazel's affected-target
+  # analysis to only run the perf tests that are actually affected.
+  # -------------------------------------------------------------------------
+
+  # T3000 Performance — Wormhole B0 8-card (pipeline-perf runner)
+  perf-tests-t3000:
+    needs: determine-targets
+    if: >-
+      needs.determine-targets.outputs.mode != 'SKIP' &&
+      needs.determine-targets.outputs.needs_perf_t3000 == 'true'
+    runs-on:
+      - arch-wormhole_b0
+      - config-t3000
+      - pipeline-perf
+      - in-service
+    timeout-minutes: 120
+    container:
+      options: "--device /dev/tenstorrent --privileged -v /sys:/sys"
+      volumes:
+        - /dev/hugepages-1G:/dev/hugepages-1G
+        - /mnt/MLPerf:/mnt/MLPerf:ro
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Enable performance CPU governor
+        uses: ./.github/actions/set-cpu-governor
+        with:
+          governor: performance
+
+      - name: Run T3000 perf tests (Tracy-enabled)
+        env:
+          ARCH_NAME: wormhole_b0
+          TT_METAL_ENABLE_ERISC_IRAM: "1"
+          LOGURU_LEVEL: INFO
+          TRACY_NO_INVARIANT_CHECK: "1"
+          GTEST_OUTPUT: xml:${{ github.workspace }}/generated/test_reports/
+          HF_HUB_CACHE: /mnt/MLPerf/huggingface/hub
+        run: |
+          set -euo pipefail
+
+          # Perf tags that route to the T3000 perf runner.
+          PERF_INCLUDE="perf_bare_metal,perf_device_bare_metal,perf_t3000"
+          HW_INCLUDE="requires_wormhole_b0"
+          HW_EXCLUDE="-requires_N150,-requires_N300,-requires_galaxy,-requires_blackhole"
+          TAG_EXCLUDE="-frequently_hangs"
+
+          if [ "${{ needs.determine-targets.outputs.mode }}" = "FULL_CI" ]; then
+            echo "Running FULL CI (T3000 perf tests with Tracy)"
+            bazel test //tests/... \
+              --config=tracy \
+              --test_tag_filters="${PERF_INCLUDE},${HW_INCLUDE},${HW_EXCLUDE},${TAG_EXCLUDE}" \
+              --test_output=errors \
+              --jobs=auto \
+              --build_tests_only \
+              || true
+          else
+            TARGETS="${{ needs.determine-targets.outputs.affected_tests }}"
+            echo "Running affected T3000 perf tests with Tracy"
+            # shellcheck disable=SC2086
+            bazel test $TARGETS \
+              --config=tracy \
+              --test_tag_filters="${PERF_INCLUDE},${HW_INCLUDE},${HW_EXCLUDE},${TAG_EXCLUDE}" \
+              --test_output=errors \
+              --jobs=auto \
+              --build_tests_only \
+              || true
+          fi
+
+      - name: Collect perf reports
+        if: always()
+        run: |
+          # Merge perf result CSVs if the merge script exists
+          if [ -f models/perf/merge_perf_results.py ]; then
+            python3 models/perf/merge_perf_results.py || true
+          fi
+
+      - name: Save benchmark data
+        id: save-benchmark-data
+        if: ${{ !cancelled() }}
+        run: |
+          if [ -d "generated/benchmark_data" ]; then
+            echo "has_benchmark_data=true" >> "$GITHUB_OUTPUT"
+            python3 .github/scripts/data_analysis/create_benchmark_with_environment_json.py || true
+          else
+            echo "has_benchmark_data=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload benchmark data via SFTP
+        if: ${{ !cancelled() && steps.save-benchmark-data.outputs.has_benchmark_data == 'true' }}
+        uses: ./.github/actions/upload-data-via-sftp
+        with:
+          ssh-private-key: ${{ secrets.SFTP_BENCHMARK_WRITER_KEY }}
+          sftp-batchfile: .github/actions/upload-data-via-sftp/benchmark_data_batchfile.txt
+          username: ${{ secrets.SFTP_BENCHMARK_WRITER_USERNAME }}
+          hostname: ${{ secrets.SFTP_BENCHMARK_WRITER_HOSTNAME }}
+
+      - name: Upload perf report CSV
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bazel-perf-report-t3000
+          path: |
+            Models_Perf_*.csv
+            Models_Device_Perf_*.csv
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bazel-test-results-perf-t3000
+          path: |
+            bazel-testlogs/**/test.xml
+            bazel-testlogs/**/test.log
+          retention-days: 14
+
+      - name: Restore CPU governor
+        if: always()
+        uses: ./.github/actions/set-cpu-governor
+        with:
+          governor: ondemand
+
+  # Galaxy Performance — Wormhole B0 32-card (pipeline-perf runner)
+  perf-tests-galaxy:
+    needs: determine-targets
+    if: >-
+      needs.determine-targets.outputs.mode != 'SKIP' &&
+      needs.determine-targets.outputs.needs_perf_tg == 'true'
+    runs-on:
+      - arch-wormhole_b0
+      - pipeline-perf
+      - topology-6u
+      - in-service
+    timeout-minutes: 180
+    container:
+      options: "--device /dev/tenstorrent --privileged -v /sys:/sys"
+      volumes:
+        - /dev/hugepages-1G:/dev/hugepages-1G
+        - /mnt/MLPerf:/mnt/MLPerf:ro
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Enable performance CPU governor
+        uses: ./.github/actions/set-cpu-governor
+        with:
+          governor: performance
+
+      - name: Run Galaxy perf tests (Tracy-enabled)
+        env:
+          ARCH_NAME: wormhole_b0
+          TT_METAL_ENABLE_ERISC_IRAM: "1"
+          LOGURU_LEVEL: INFO
+          TRACY_NO_INVARIANT_CHECK: "1"
+          GTEST_OUTPUT: xml:${{ github.workspace }}/generated/test_reports/
+          HF_HUB_CACHE: /mnt/MLPerf/huggingface/hub
+        run: |
+          set -euo pipefail
+
+          PERF_INCLUDE="perf_tg"
+          HW_INCLUDE="requires_galaxy"
+          HW_EXCLUDE="-requires_blackhole"
+          TAG_EXCLUDE="-frequently_hangs"
+
+          if [ "${{ needs.determine-targets.outputs.mode }}" = "FULL_CI" ]; then
+            echo "Running FULL CI (Galaxy perf tests with Tracy)"
+            bazel test //tests/... \
+              --config=tracy \
+              --test_tag_filters="${PERF_INCLUDE},${HW_INCLUDE},${HW_EXCLUDE},${TAG_EXCLUDE}" \
+              --test_output=errors \
+              --jobs=auto \
+              --build_tests_only \
+              || true
+          else
+            TARGETS="${{ needs.determine-targets.outputs.affected_tests }}"
+            echo "Running affected Galaxy perf tests with Tracy"
+            # shellcheck disable=SC2086
+            bazel test $TARGETS \
+              --config=tracy \
+              --test_tag_filters="${PERF_INCLUDE},${HW_INCLUDE},${HW_EXCLUDE},${TAG_EXCLUDE}" \
+              --test_output=errors \
+              --jobs=auto \
+              --build_tests_only \
+              || true
+          fi
+
+      - name: Collect perf reports
+        if: always()
+        run: |
+          if [ -f models/perf/merge_perf_results.py ]; then
+            python3 models/perf/merge_perf_results.py || true
+          fi
+
+      - name: Save benchmark data
+        id: save-benchmark-data
+        if: ${{ !cancelled() }}
+        run: |
+          if [ -d "generated/benchmark_data" ]; then
+            echo "has_benchmark_data=true" >> "$GITHUB_OUTPUT"
+            python3 .github/scripts/data_analysis/create_benchmark_with_environment_json.py || true
+          else
+            echo "has_benchmark_data=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload benchmark data via SFTP
+        if: ${{ !cancelled() && steps.save-benchmark-data.outputs.has_benchmark_data == 'true' }}
+        uses: ./.github/actions/upload-data-via-sftp
+        with:
+          ssh-private-key: ${{ secrets.SFTP_BENCHMARK_WRITER_KEY }}
+          sftp-batchfile: .github/actions/upload-data-via-sftp/benchmark_data_batchfile.txt
+          username: ${{ secrets.SFTP_BENCHMARK_WRITER_USERNAME }}
+          hostname: ${{ secrets.SFTP_BENCHMARK_WRITER_HOSTNAME }}
+
+      - name: Upload perf report CSV
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bazel-perf-report-galaxy
+          path: |
+            Models_Perf_*.csv
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bazel-test-results-perf-galaxy
+          path: |
+            bazel-testlogs/**/test.xml
+            bazel-testlogs/**/test.log
+          retention-days: 14
+
+      - name: Restore CPU governor
+        if: always()
+        uses: ./.github/actions/set-cpu-governor
+        with:
+          governor: ondemand
