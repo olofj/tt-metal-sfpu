@@ -24,6 +24,7 @@ Debug symbol packages (.ddeb) are gated behind the :enable_debuginfo setting
 and excluded by default (matching CPack behavior for non-Release builds).
 """
 
+load("@rules_cc//cc:cc_shared_library.bzl", "cc_shared_library")
 load("@rules_pkg//pkg:deb.bzl", "pkg_deb")
 load("@rules_pkg//pkg:mappings.bzl", "pkg_files", "pkg_mkdirs")
 load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
@@ -31,6 +32,100 @@ load("//bazel:stamp_version.bzl", "stamp_version")
 load("//packaging:deb.bzl", "tt_deb")
 
 package(default_visibility = ["//visibility:public"])
+
+# ===========================================================================
+# Shared library targets for .deb and SDK packaging
+#
+# These cc_shared_library targets produce the .so files shipped in the
+# .deb packages. They live here (not alongside their cc_library sources)
+# because cc_library implicitly generates lib<name>.so, which would
+# conflict with a same-named target in the same Bazel package.
+#
+# Dependency chain (dynamic_deps):
+#   libtt_stl.so          — independent leaf (owns fmt, spdlog, tt_logger)
+#   libumd.so             — depends on libtt_stl.so (shared external deps)
+#   libTracyClient.so     — independent leaf (no shared deps)
+#   libtt_metal.so        — depends on all three above
+#   _ttnncpp.so           — depends on libtt_metal.so
+# ===========================================================================
+
+# Mirrors CMake: libtt_stl.so (TT::STL SHARED)
+# exports_filter includes external deps shared with other shared libraries
+# (UMD also uses fmt, spdlog, tt_logger). By exporting these from tt_stl,
+# other shared libraries can reference them via dynamic_deps.
+cc_shared_library(
+    name = "libtt_stl.so",
+    deps = ["//tt_stl"],
+    exports_filter = [
+        "//tt_stl:__pkg__",
+        "@fmt//:__pkg__",
+        "@spdlog//:__pkg__",
+        "@tt_logger//:__pkg__",
+    ],
+    shared_lib_name = "libtt_stl.so",
+)
+
+# Mirrors CMake: libumd.so (umd::device SHARED)
+# UMD shares external deps (fmt, spdlog, tt_logger) with tt_stl; the
+# dynamic_dep on libtt_stl.so tells Bazel those are already provided.
+# UMD-owned external deps (yaml-cpp, asio, picosha2) are exported so
+# libtt_metal.so can use them via dynamic_deps.
+cc_shared_library(
+    name = "libumd.so",
+    deps = ["//tt_metal/third_party/umd/device"],
+    dynamic_deps = [":libtt_stl.so"],
+    exports_filter = [
+        "//tt_metal/third_party/umd/device:__subpackages__",
+        "//tt_metal/third_party/umd/src:__subpackages__",
+        "@yaml-cpp//:__pkg__",
+        "@asio//:__pkg__",
+        "@picosha2//:__pkg__",
+    ],
+    shared_lib_name = "libumd.so",
+    user_link_flags = ["-lrt"],
+)
+
+# Mirrors CMake: libTracyClient.so (TracyClient SHARED, OUTPUT_NAME tracy)
+cc_shared_library(
+    name = "libTracyClient.so",
+    deps = ["//tt_metal/third_party:tracy_client"],
+    exports_filter = [
+        "//tt_metal/third_party:__pkg__",
+    ],
+    shared_lib_name = "libTracyClient.so",
+)
+
+# Mirrors CMake: libtt_metal.so (TT::Metalium SHARED)
+# External deps are exported so downstream shared libraries
+# (_ttnncpp.so) can reference them via dynamic_deps.
+cc_shared_library(
+    name = "libtt_metal.so",
+    deps = ["//tt_metal"],
+    dynamic_deps = [
+        ":libtt_stl.so",
+        ":libumd.so",
+        ":libTracyClient.so",
+    ],
+    exports_filter = [
+        "//tt_metal:__subpackages__",
+        "//tools/scaleout:__subpackages__",
+        "//third_party/system:__pkg__",
+        "@enchantum//:__pkg__",
+        "@flatbuffers//:__pkg__",
+        "@nlohmann_json//:__pkg__",
+        "@reflect//:__pkg__",
+        "@protobuf//:__subpackages__",
+        "@capnproto//:__subpackages__",
+        "@taskflow//:__pkg__",
+        "@boost.algorithm//:__subpackages__",
+        "@boost.container//:__subpackages__",
+        "@boost.core//:__subpackages__",
+        "@boost.interprocess//:__subpackages__",
+        "@boost.smart_ptr//:__subpackages__",
+    ],
+    shared_lib_name = "libtt_metal.so",
+)
+
 
 # ===========================================================================
 # Version stamping
@@ -61,12 +156,10 @@ stamp_version(
 pkg_files(
     name = "metalium_runtime_libs",
     srcs = [
-        # Placeholder for shared library outputs.
-        # When cc_shared_library targets are added, reference them here:
-        #   "//tt_metal:libtt_metal.so",
-        #   "//tt_stl:libtt_stl.so",
-        #   "//tt_metal/third_party/umd/device:libumd.so",
-        #   "//tt_metal/third_party:libTracyClient.so",
+        ":libtt_metal.so",
+        ":libtt_stl.so",
+        ":libumd.so",
+        ":libTracyClient.so",
     ],
     prefix = "usr/lib",
 )
@@ -285,10 +378,7 @@ tt_deb(
 pkg_files(
     name = "nn_runtime_libs",
     srcs = [
-        # Placeholder for TTNN shared libraries:
-        #   "//ttnn:libttnncpp.so",
-        #   "//ttnn:_ttnn.so",
-        #   "//ttnn:libttnn_core.so",
+        "//ttnn:ttnncpp_shared",
     ],
     prefix = "usr/lib",
 )

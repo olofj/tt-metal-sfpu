@@ -22,6 +22,32 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
+# TracyClient compiled library — used when TRACY_ENABLE is defined.
+# This target compiles TracyClient.cpp (the single-translation-unit profiler
+# implementation). Without --config=tracy the source is compiled but profiling
+# macros expand to no-ops. The shared library is still produced for packaging
+# consistency with CMake's libTracyClient.so.
+cc_library(
+    name = "tracy_client",
+    # TracyClient.cpp is a unity-build file that #includes all other .cpp
+    # files (common/TracySystem.cpp, client/TracyProfiler.cpp, etc.) using
+    # paths relative to tracy/public/. Those .cpp files are listed as hdrs
+    # (not srcs) so they are available in the sandbox for textual inclusion
+    # without being compiled as separate translation units.
+    srcs = ["tracy/public/TracyClient.cpp"],
+    hdrs = glob([
+        "tracy/public/common/*.cpp",
+        "tracy/public/client/*.cpp",
+    ]),
+    copts = [
+        "-Wno-error",
+        "-DTRACY_TIMER_FALLBACK=1",
+        "-Itt_metal/third_party/tracy/public",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [":tracy"],
+)
+
 # TT LLK (Low-Level Kernel) headers bundled in the ttnn wheel.
 # Exclude dotfiles: Python's glob.glob() (used by setup.py) skips dotfiles
 # by default, so Bazel must explicitly exclude them to match.

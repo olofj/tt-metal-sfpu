@@ -8,6 +8,7 @@
 
 load("//bazel:nanobind_extension.bzl", "nanobind_extension")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_shared_library.bzl", "cc_shared_library")
 load("@rules_python//python:py_library.bzl", "py_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -237,6 +238,32 @@ nanobind_extension(
         # External deps (matches CMake: target_link_libraries(ttnn PRIVATE Boost::algorithm)).
         "@boost.algorithm",
     ] + _TTNN_NANOBIND_OPS + _TTNN_LINK_ONLY_OPS,
+    visibility = ["//visibility:public"],
+)
+
+# ===========================================================================
+# _ttnncpp.so — C++ shared library for SDK consumers and .deb packaging
+#
+# Mirrors the CMake target: ttnncpp (SHARED), installed as _ttnncpp.so.
+# Aggregates ttnn_core and all operation libraries, linking against
+# libtt_metal.so (and its transitive dynamic deps) at runtime.
+# CMake uses PREFIX="_" producing "_ttnncpp.so" for Python interop.
+#
+# Defined here (not in //packaging) because the operation targets have
+# package-private visibility (//ttnn:__subpackages__).
+# ===========================================================================
+
+cc_shared_library(
+    name = "ttnncpp_shared",
+    deps = [
+        ":ttnn_core",
+        "//ttnn/cpp/ttnn/operations/core",
+    ] + _TTNN_NANOBIND_OPS + _TTNN_LINK_ONLY_OPS,
+    dynamic_deps = ["//packaging:libtt_metal.so"],
+    exports_filter = [
+        "//ttnn:__subpackages__",
+    ],
+    shared_lib_name = "_ttnncpp.so",
     visibility = ["//visibility:public"],
 )
 
