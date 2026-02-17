@@ -1,0 +1,14 @@
+# TTNN sweep tests runner.
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "sweep_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//torch",
+    ],
+    data = glob(["sweeps/**/*.py"]),
+    tags = ["ttnn", "sweep"],
+)

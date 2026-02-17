@@ -1,0 +1,16 @@
+# BERT-Tiny integration test.
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "bert_tiny_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//models/common:utility_functions",
+        "//tests/ttnn:test_utils",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//torch",
+        "@pip//transformers",
+    ],
+    tags = ["ttnn", "integration", "bert_tiny"],
+)

@@ -1,0 +1,17 @@
+# Falcon-7B integration tests (3 test files).
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "falcon7b_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//models/common:utility_functions",
+        "//tests/ttnn:test_utils",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//transformers",
+    ],
+    tags = ["ttnn", "integration", "falcon7b"],
+)

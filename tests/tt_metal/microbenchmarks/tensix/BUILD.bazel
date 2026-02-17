@@ -1,0 +1,12 @@
+# Tensix microbenchmark test.
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "tensix_microbenchmarks",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+    ],
+    tags = ["microbenchmark", "tensix"],
+)

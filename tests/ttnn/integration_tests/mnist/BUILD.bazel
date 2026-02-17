@@ -1,0 +1,15 @@
+# MNIST integration test.
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "mnist_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//tests/ttnn:test_utils",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//torch",
+        "@pip//torchvision",
+    ],
+    tags = ["ttnn", "integration", "mnist"],
+)

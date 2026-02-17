@@ -1,0 +1,17 @@
+# PETR (Position Embedding Transformation) integration tests (8 test files).
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "petr_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//models/common:utility_functions",
+        "//tests/ttnn:test_utils",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//numpy",
+        "@pip//torch",
+    ],
+    tags = ["ttnn", "integration", "petr"],
+)

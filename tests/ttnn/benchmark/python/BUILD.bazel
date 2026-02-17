@@ -1,0 +1,13 @@
+# TTNN Python benchmark tests.
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "benchmark_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//torch",
+    ],
+    tags = ["ttnn", "benchmark"],
+)

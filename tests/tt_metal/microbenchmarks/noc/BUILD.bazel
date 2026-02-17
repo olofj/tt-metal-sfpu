@@ -1,0 +1,12 @@
+# NOC microbenchmark test.
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "noc_microbenchmarks",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+    ],
+    tags = ["microbenchmark", "noc"],
+)

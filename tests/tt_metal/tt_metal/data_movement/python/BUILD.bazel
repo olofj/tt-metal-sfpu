@@ -1,0 +1,34 @@
+# TT-Metal data movement Python tests and analysis utilities.
+
+exports_files(["conftest.py"])
+
+load("@rules_python//python:py_library.bzl", "py_library")
+load("//bazel:pytest.bzl", "pytest_suite")
+
+py_library(
+    name = "data_movement_utils",
+    testonly = True,
+    srcs = glob(
+        ["*.py"],
+        exclude = ["test_*.py", "conftest.py"],
+    ),
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//numpy",
+        "@pip//pyyaml",
+    ],
+)
+
+pytest_suite(
+    name = "data_movement_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        ":data_movement_utils",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//numpy",
+        "@pip//pyyaml",
+    ],
+    tags = ["tt_metal", "data_movement"],
+)

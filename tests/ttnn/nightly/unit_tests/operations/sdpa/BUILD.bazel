@@ -1,0 +1,20 @@
+# Nightly SDPA (Scaled Dot-Product Attention) tests (10 test files).
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "nightly_sdpa_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//models/common:utility_functions",
+        "//tests/ttnn:test_utils",
+        "//tests/ttnn/unit_tests/operations/sdpa:mla_test_utils",
+        "//tests/ttnn/unit_tests/operations/sdpa:sdpa_test_utils",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//numpy",
+        "@pip//torch",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "sdpa"],
+)

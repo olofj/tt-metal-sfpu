@@ -8,13 +8,19 @@ load("@rules_python//python:py_library.bzl", "py_library")
 
 package(default_visibility = ["//tests:__subpackages__"])
 
-# All conftest.py files in the TTNN test tree, collected as a single
-# filegroup for easy inclusion in py_test data deps.
+# All conftest.py files across the test tree, collected as a single
+# filegroup for easy inclusion in py_test data deps. The pytest_test
+# macro automatically includes this in every test target's data.
 filegroup(
     name = "conftest_files",
     srcs = glob(["**/conftest.py"]) + [
         # Root conftest.py defines device fixtures, arch parametrization, etc.
         "//:conftest.py",
+        # conftest.py files outside the TTNN test tree.
+        "//tests/end_to_end_tests:conftest.py",
+        "//tests/tt_metal/microbenchmarks:conftest.py",
+        "//tests/tt_metal/microbenchmarks/ethernet:conftest.py",
+        "//tests/tt_metal/tt_metal/data_movement/python:conftest.py",
     ],
     visibility = ["//visibility:public"],
 )

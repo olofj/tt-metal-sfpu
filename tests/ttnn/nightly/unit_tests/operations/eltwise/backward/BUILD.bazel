@@ -1,0 +1,33 @@
+# Nightly backward eltwise operation tests (98 test files).
+#
+# These test backward pass implementations for unary and binary eltwise
+# operations. Each test verifies that the TT-NN backward kernel matches
+# the PyTorch golden reference within PCC tolerance.
+
+load("@rules_python//python:py_library.bzl", "py_library")
+load("//bazel:pytest.bzl", "pytest_suite")
+
+py_library(
+    name = "utility_funcs",
+    testonly = True,
+    srcs = ["utility_funcs.py"],
+    deps = [
+        "//tests/tt_eager:sweep_test_utils",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+    ],
+    visibility = ["//tests:__subpackages__"],
+)
+
+pytest_suite(
+    name = "backward_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        ":utility_funcs",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//torch",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "eltwise", "backward"],
+)

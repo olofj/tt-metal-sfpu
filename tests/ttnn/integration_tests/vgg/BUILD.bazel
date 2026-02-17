@@ -1,0 +1,16 @@
+# VGG integration tests (2 test files).
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "vgg_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//tests/ttnn:test_utils",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//torchvision",
+    ],
+    tags = ["ttnn", "integration", "vgg"],
+)

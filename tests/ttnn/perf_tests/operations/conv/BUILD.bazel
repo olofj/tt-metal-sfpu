@@ -1,0 +1,14 @@
+# TTNN conv2d device performance test.
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "conv_perf_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//torch",
+    ],
+    markers = ["models_device_performance_bare_metal"],
+    tags = ["ttnn", "perf", "conv"],
+)

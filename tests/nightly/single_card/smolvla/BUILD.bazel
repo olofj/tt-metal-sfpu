@@ -1,0 +1,16 @@
+# Nightly SmolVLA model test.
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "smolvla_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//numpy",
+        "@pip//torch",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "models", "single_card"],
+)

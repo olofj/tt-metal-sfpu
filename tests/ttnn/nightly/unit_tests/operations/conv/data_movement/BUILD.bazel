@@ -1,0 +1,14 @@
+# Nightly conv data movement tests (1 test file).
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "nightly_conv_data_movement_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//torch",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "conv", "data_movement"],
+)

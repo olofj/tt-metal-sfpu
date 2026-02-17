@@ -1,0 +1,15 @@
+# Scale-out tests for multi-host and fabric configurations.
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "scale_out_tests",
+    srcs = ["test_ccl_fabric_manager.py"],
+    deps = [
+        "//tests/nightly/t3000/ccl:ccl_test_modules",
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//torch",
+    ],
+    tags = ["scale_out", "ccl"],
+)

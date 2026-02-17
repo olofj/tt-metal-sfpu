@@ -1,0 +1,13 @@
+# TTNN statistical tests for operations.
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "statistical_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//torch",
+    ],
+    tags = ["ttnn", "statistical"],
+)

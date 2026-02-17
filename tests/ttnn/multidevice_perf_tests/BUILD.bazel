@@ -1,0 +1,31 @@
+# TTNN multi-device performance tests (6 test files).
+
+load("@rules_python//python:py_library.bzl", "py_library")
+load("//bazel:pytest.bzl", "pytest_suite")
+
+py_library(
+    name = "sweep_helpers",
+    testonly = True,
+    srcs = glob(
+        ["*.py"],
+        exclude = ["test_*.py"],
+    ),
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+    ],
+)
+
+pytest_suite(
+    name = "multidevice_perf_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        ":sweep_helpers",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+    ],
+    markers = ["models_device_performance_bare_metal"],
+    tags = ["ttnn", "perf", "multidevice"],
+)

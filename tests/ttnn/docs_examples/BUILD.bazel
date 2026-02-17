@@ -1,0 +1,30 @@
+# TTNN documentation example tests (14 test files).
+#
+# Verifies that code examples in the TTNN documentation execute correctly.
+
+load("@rules_python//python:py_library.bzl", "py_library")
+load("//bazel:pytest.bzl", "pytest_suite")
+
+py_library(
+    name = "examples_mapping",
+    testonly = True,
+    srcs = [
+        "__init__.py",
+        "examples_mapping.py",
+    ],
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+    ],
+)
+
+pytest_suite(
+    name = "docs_examples_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        ":examples_mapping",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+    ],
+    tags = ["ttnn", "docs"],
+)

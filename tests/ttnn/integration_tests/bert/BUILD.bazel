@@ -1,0 +1,17 @@
+# BERT integration tests (5 test files).
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "bert_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//models/common:utility_functions",
+        "//tests/ttnn:test_utils",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//transformers",
+    ],
+    tags = ["ttnn", "integration", "bert"],
+)

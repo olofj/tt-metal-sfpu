@@ -1,0 +1,3 @@
+# TT-Metal microbenchmarks package.
+
+exports_files(["conftest.py"])

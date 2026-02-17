@@ -1,0 +1,27 @@
+# Nightly complex eltwise operation tests (2 test files).
+
+load("@rules_python//python:py_library.bzl", "py_library")
+load("//bazel:pytest.bzl", "pytest_suite")
+
+py_library(
+    name = "utility_funcs",
+    testonly = True,
+    srcs = ["utility_funcs.py"],
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//torch",
+    ],
+    visibility = ["//tests:__subpackages__"],
+)
+
+pytest_suite(
+    name = "complex_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        ":utility_funcs",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//torch",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "eltwise", "complex"],
+)

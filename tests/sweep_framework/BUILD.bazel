@@ -1,0 +1,17 @@
+# Sweep framework integration test.
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "sweep_framework_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//torch",
+    ],
+    data = glob([
+        "sweep_utils/**/*.py",
+        "framework/**/*.py",
+    ]),
+    tags = ["sweep_framework"],
+)

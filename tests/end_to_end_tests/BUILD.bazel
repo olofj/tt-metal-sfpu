@@ -1,0 +1,17 @@
+# End-to-end API tests (3 test files).
+#
+# Verifies the host-side API, TTNN operations, and unit ops work end-to-end.
+
+exports_files(["conftest.py"])
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "end_to_end_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//torch",
+    ],
+    tags = ["end_to_end"],
+)

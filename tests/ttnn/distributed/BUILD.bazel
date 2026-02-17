@@ -1,0 +1,19 @@
+# TTNN distributed tests (9 test files).
+#
+# Tests for data parallelism, tensor parallelism, multi-mesh, and
+# distributed layernorm across T3000 and TG hardware configurations.
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "distributed_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//models/common:utility_functions",
+        "//tests/ttnn:test_utils",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//torch",
+        "@pip//transformers",
+    ],
+    tags = ["ttnn", "distributed"],
+)

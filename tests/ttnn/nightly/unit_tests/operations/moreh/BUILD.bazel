@@ -1,0 +1,22 @@
+# Nightly Moreh operation tests (24 test files).
+#
+# Covers Adam, AdamW, arange, BMM, clip_grad_norm, cumsum, dot, fold, full,
+# getitem, group_norm, layer_norm, linear, logsoftmax, matmul, mean,
+# nll_loss, norm, SGD, softmax, softmin, sum, and more.
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "nightly_moreh_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//models/common:utility_functions",
+        "//tests/ttnn/unit_tests/operations:test_utils",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//numpy",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "moreh"],
+)

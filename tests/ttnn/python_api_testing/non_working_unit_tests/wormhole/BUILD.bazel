@@ -1,0 +1,18 @@
+# Non-working Wormhole unit tests (28 test files).
+#
+# Tests that are known to fail on Wormhole B0 hardware.
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "wormhole_non_working_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//tests/tt_eager:sweep_test_utils",
+        "//tests/ttnn:test_utils",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+    ],
+    tags = ["ttnn", "non_working", "wormhole"],
+)

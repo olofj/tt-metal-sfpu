@@ -1,0 +1,28 @@
+# TTNN profiling tests (2 test files).
+
+load("@rules_python//python:py_library.bzl", "py_library")
+load("//bazel:pytest.bzl", "pytest_suite")
+
+py_library(
+    name = "profiling_utils",
+    testonly = True,
+    srcs = [
+        "ops_for_profiling.py",
+        "profile_host_overhead.py",
+    ],
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//torch",
+    ],
+)
+
+pytest_suite(
+    name = "profiling_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        ":profiling_utils",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//torch",
+    ],
+    tags = ["ttnn", "profiling"],
+)

@@ -1,0 +1,14 @@
+# OpenPDN MNIST integration test.
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "openpdn_mnist_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//tests/ttnn:test_utils",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+    ],
+    tags = ["ttnn", "integration", "openpdn_mnist"],
+)

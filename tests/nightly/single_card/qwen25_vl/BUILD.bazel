@@ -1,0 +1,17 @@
+# Nightly qwen25_vl model test.
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "qwen25_vl_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//transformers",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "models", "single_card"],
+)

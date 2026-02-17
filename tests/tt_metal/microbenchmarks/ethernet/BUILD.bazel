@@ -1,0 +1,33 @@
+# Ethernet microbenchmark tests (6 test files).
+
+exports_files(["conftest.py"])
+
+load("@rules_python//python:py_library.bzl", "py_library")
+load("//bazel:pytest.bzl", "pytest_suite")
+
+py_library(
+    name = "ethernet_common",
+    testonly = True,
+    srcs = ["test_all_ethernet_links_common.py"],
+    deps = [
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+    ],
+    visibility = ["//tests:__subpackages__"],
+)
+
+pytest_suite(
+    name = "ethernet_microbenchmarks",
+    srcs = glob(
+        ["test_*.py"],
+        exclude = ["test_all_ethernet_links_common.py"],
+    ),
+    deps = [
+        ":ethernet_common",
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+    ],
+    tags = ["microbenchmark", "ethernet"],
+)

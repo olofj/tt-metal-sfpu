@@ -1,0 +1,18 @@
+# Nightly pool operation tests (9 test files).
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "nightly_pool_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//models/common:utility_functions",
+        "//tests/ttnn:test_utils",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//numpy",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "pool"],
+)

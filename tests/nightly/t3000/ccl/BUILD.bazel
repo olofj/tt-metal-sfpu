@@ -1,0 +1,44 @@
+# Nightly T3000 CCL (Collective Communication Library) tests.
+#
+# Many test files export helper functions imported by tests/nightly/tg/ccl/
+# and tests/nightly/t3000/2d_ccl/. The ccl_test_modules py_library exposes
+# these for cross-directory imports.
+
+load("@rules_python//python:py_library.bzl", "py_library")
+load("//bazel:pytest.bzl", "pytest_suite")
+
+# Test modules imported by tg/ccl, 2d_ccl, and stress tests.
+py_library(
+    name = "ccl_test_modules",
+    testonly = True,
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//tests/nightly/tg/ccl:all_reduce_async_lib",
+        "//tests/tt_eager:sweep_test_utils",
+        "//tests/ttnn:test_utils",
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//numpy",
+        "@pip//torch",
+    ],
+    visibility = ["//tests:__subpackages__"],
+)
+
+pytest_suite(
+    name = "t3000_ccl_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        ":ccl_test_modules",
+        "//tests/nightly/tg/ccl:all_reduce_async_lib",
+        "//tests/tt_eager:sweep_test_utils",
+        "//tests/ttnn:test_utils",
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//numpy",
+        "@pip//torch",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "ccl", "t3000"],
+)

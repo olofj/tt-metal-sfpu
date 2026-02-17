@@ -1,0 +1,38 @@
+# Nightly TG (Galaxy) CCL tests.
+#
+# test_all_reduce_async.py is also imported by t3000/ccl/test_all_reduce.py,
+# so it is exposed as a separate py_library to avoid circular dependencies.
+
+load("@rules_python//python:py_library.bzl", "py_library")
+load("//bazel:pytest.bzl", "pytest_suite")
+
+# Shared module imported by both t3000/ccl and tg/ccl tests.
+py_library(
+    name = "all_reduce_async_lib",
+    testonly = True,
+    srcs = ["test_all_reduce_async.py"],
+    deps = [
+        "//tests/tt_eager:sweep_test_utils",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+    ],
+    visibility = ["//tests:__subpackages__"],
+)
+
+pytest_suite(
+    name = "tg_ccl_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        ":all_reduce_async_lib",
+        "//tests/nightly/t3000/ccl:ccl_test_modules",
+        "//tests/tt_eager:sweep_test_utils",
+        "//tests/ttnn:test_utils",
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "ccl", "tg"],
+)

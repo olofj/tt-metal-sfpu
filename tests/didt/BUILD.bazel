@@ -1,0 +1,37 @@
+# DIDT (Dynamic Instruction Detection & Tracing) power measurement tests.
+#
+# These tests measure power consumption of Blackhole chips under various
+# workloads (matmul, conv, eltwise). They rely on profiler output analysis.
+
+load("@rules_python//python:py_library.bzl", "py_library")
+load("//bazel:pytest.bzl", "pytest_suite")
+
+py_library(
+    name = "op_test_base",
+    testonly = True,
+    srcs = [
+        "op_test_base.py",
+        "process_profiler_output.py",
+        "sync_analysis.py",
+    ],
+    deps = [
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+    ],
+    visibility = ["//tests:__subpackages__"],
+)
+
+pytest_suite(
+    name = "didt_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        ":op_test_base",
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+    ],
+    tags = ["didt"],
+)

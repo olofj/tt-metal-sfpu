@@ -1,0 +1,34 @@
+# TTNN Python API sweep test runner.
+
+load("@rules_python//python:py_library.bzl", "py_library")
+load("//bazel:pytest.bzl", "pytest_suite")
+
+py_library(
+    name = "op_map",
+    testonly = True,
+    srcs = [
+        "op_map.py",
+        "run_sweep_test.py",
+        "run_sweep_tests.py",
+        "ttnn_ops.py",
+        "ttnn_pytorch_ops.py",
+    ],
+    deps = [
+        "//tests/tt_eager:sweep_test_utils",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//torch",
+    ],
+    visibility = ["//tests:__subpackages__"],
+)
+
+pytest_suite(
+    name = "sweep_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        ":op_map",
+        "//tests/tt_eager:sweep_test_utils",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//torch",
+    ],
+    tags = ["ttnn", "sweep"],
+)

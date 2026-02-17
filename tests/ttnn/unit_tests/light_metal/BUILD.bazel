@@ -1,0 +1,15 @@
+# TTNN light metal trace test.
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "light_metal_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//tests/ttnn:test_utils",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+    ],
+    tags = ["ttnn", "unit", "light_metal"],
+)

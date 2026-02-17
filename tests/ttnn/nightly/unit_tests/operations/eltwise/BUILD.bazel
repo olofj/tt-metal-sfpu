@@ -1,0 +1,22 @@
+# Nightly eltwise operation tests (14 test files at this level).
+#
+# Covers binary broadcast, lerp, losses, quantization, sharding, and other
+# eltwise operations that run in the nightly CI cadence.
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "nightly_eltwise_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//tests/ttnn:test_utils",
+        "//tests/ttnn/nightly/unit_tests/operations/eltwise/backward:utility_funcs",
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//numpy",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "eltwise"],
+)

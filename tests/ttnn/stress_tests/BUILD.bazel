@@ -1,0 +1,19 @@
+# TTNN stress tests (5 test files).
+#
+# Long-running tests that stress-test CCL, data movement, eltwise, and
+# matmul operations under sustained load.
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "stress_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//tests/nightly/t3000/ccl:ccl_test_modules",
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//torch",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "stress"],
+)

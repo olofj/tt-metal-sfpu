@@ -1,0 +1,36 @@
+# TT-Metal device profiler tests.
+
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "profiler_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//pandas",
+    ],
+    tags = ["tt_metal", "profiler"],
+)
+
+# C++ profiler tests — mirrors CMake profiler_test_full_buffer / profiler_test_timestamped_events.
+filegroup(
+    name = "profiler_test_kernels",
+    srcs = glob(["kernels/**"]),
+)
+
+[cc_test(
+    name = "profiler_" + src.replace(".cpp", ""),
+    srcs = [src],
+    copts = ["-isystem", "."],
+    data = [":profiler_test_kernels"],
+    deps = [
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+    ],
+    tags = ["profiler", "requires_wormhole_b0", "requires_blackhole"],
+) for src in [
+    "test_full_buffer.cpp",
+    "test_timestamped_events.cpp",
+]]

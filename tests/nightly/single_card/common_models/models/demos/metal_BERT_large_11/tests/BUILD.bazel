@@ -1,0 +1,18 @@
+# Nightly BERT Large tests (2 test files).
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "bert_large_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//models/common:utility_functions",
+        "//tests/ttnn:test_utils",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//transformers",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "models", "single_card"],
+)
