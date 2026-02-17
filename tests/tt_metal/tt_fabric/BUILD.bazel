@@ -98,7 +98,7 @@ cc_library(
         "//tests/tt_metal:test_utils",
         "@yaml-cpp",
     ],
-    tags = ["unit", "tt_fabric", "fabric_router", "requires_wormhole_b0"],
+    tags = ["unit", "tt_fabric", "fabric_router", "requires_wormhole_b0", "requires_blackhole"],
 ) for src in [
     "test_routing_tables.cpp",
     "test_mesh_graph_descriptor.cpp",
@@ -135,7 +135,7 @@ cc_library(
         "@yaml-cpp",
     ],
     size = "large",
-    tags = ["integration", "tt_fabric", "fabric_router", "requires_wormhole_b0"],
+    tags = ["integration", "tt_fabric", "fabric_router", "requires_wormhole_b0", "requires_blackhole"],
 ) for src in [
     "test_z_router_integration.cpp",
     "test_z_router_device_detection.cpp",
@@ -160,7 +160,7 @@ cc_library(
         "//tests:test_metal_common_libs",
         "//tests/tt_metal:test_utils",
     ],
-    tags = ["unit", "tt_fabric", "fabric_data_movement", "requires_multi_device", "requires_wormhole_b0"],
+    tags = ["unit", "tt_fabric", "fabric_data_movement", "requires_multi_device", "requires_wormhole_b0", "requires_blackhole"],
 ) for src in [
     "test_basic_fabric_apis.cpp",
     "test_basic_1d_fabric.cpp",
@@ -182,7 +182,7 @@ cc_test(
         "//tests:test_metal_common_libs",
         "//tests/tt_metal:test_utils",
     ],
-    tags = ["smoke", "tt_fabric", "fabric_data_movement", "requires_multi_device", "requires_wormhole_b0"],
+    tags = ["smoke", "tt_fabric", "fabric_data_movement", "requires_multi_device", "requires_wormhole_b0", "requires_blackhole"],
 )
 
 # --------------------------------------------------------------------------
@@ -198,7 +198,7 @@ cc_test(
         "//tests/tt_metal:test_utils",
         "@yaml-cpp",
     ],
-    tags = ["unit", "tt_fabric", "physical_discovery", "requires_wormhole_b0"],
+    tags = ["unit", "tt_fabric", "physical_discovery", "requires_wormhole_b0", "requires_blackhole"],
 )
 
 # --------------------------------------------------------------------------
@@ -213,7 +213,7 @@ cc_test(
         "//tests:test_metal_common_libs",
         "//tests/tt_metal:test_utils",
     ],
-    tags = ["unit", "tt_fabric", "system_health", "requires_wormhole_b0"],
+    tags = ["unit", "tt_fabric", "system_health", "requires_wormhole_b0", "requires_blackhole"],
 )
 
 # --------------------------------------------------------------------------
@@ -259,7 +259,7 @@ cc_test(
         "//tests/tt_metal:test_utils",
         "//tests/tt_metal/tt_metal:test_fixtures",
     ],
-    tags = ["unit", "tt_fabric", "addrgen_write", "requires_multi_device", "requires_wormhole_b0"],
+    tags = ["unit", "tt_fabric", "addrgen_write", "requires_multi_device", "requires_wormhole_b0", "requires_blackhole"],
 )
 
 # --------------------------------------------------------------------------
@@ -281,7 +281,7 @@ cc_test(
         "//tests/tt_metal:test_utils",
         "//tests/tt_metal/tt_metal:test_fixtures",
     ],
-    tags = ["unit", "tt_fabric", "telemetry", "requires_multi_device", "requires_wormhole_b0"],
+    tags = ["unit", "tt_fabric", "telemetry", "requires_multi_device", "requires_wormhole_b0", "requires_blackhole"],
 )
 
 # --------------------------------------------------------------------------
@@ -302,7 +302,7 @@ cc_test(
         "//tests/tt_metal:test_utils",
         "//tests/tt_metal/tt_metal:test_fixtures",
     ],
-    tags = ["benchmark", "tt_fabric", "requires_multi_device", "requires_wormhole_b0"],
+    tags = ["benchmark", "tt_fabric", "requires_multi_device", "requires_wormhole_b0", "requires_blackhole"],
 )
 
 # --------------------------------------------------------------------------

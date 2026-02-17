@@ -42,7 +42,7 @@ cc_library(
         "//tests:test_common_libs",
         "//ttnn:ttnn_core",
     ],
-    tags = ["smoke", "ttnn", "requires_wormhole_b0"],
+    tags = ["smoke", "ttnn", "requires_wormhole_b0", "requires_blackhole"],
 ) for src in [
     "test_reflect.cpp",
     "test_to_and_from_json.cpp",
@@ -64,7 +64,7 @@ cc_library(
         "//tests:test_common_libs",
         "//ttnn:ttnn_core",
     ],
-    tags = ["basic", "ttnn", "requires_wormhole_b0"],
+    tags = ["basic", "ttnn", "requires_wormhole_b0", "requires_blackhole"],
 ) for src in [
     "test_add.cpp",
     "test_add_int.cpp",
@@ -95,7 +95,7 @@ cc_library(
         "//tests:test_common_libs",
         "//ttnn:ttnn_core",
     ],
-    tags = ["unit", "ttnn", "ccl", "requires_multi_device", "requires_wormhole_b0"],
+    tags = ["unit", "ttnn", "ccl", "requires_multi_device", "requires_wormhole_b0", "requires_blackhole"],
 ) for src in [
     "ccl/test_ccl_commands.cpp",
     "ccl/test_ccl_helpers.cpp",
@@ -118,7 +118,7 @@ cc_library(
         "//tests:test_common_libs",
         "//ttnn:ttnn_core",
     ],
-    tags = ["unit", "ttnn", "ccl", "requires_multi_device", "requires_wormhole_b0"],
+    tags = ["unit", "ttnn", "ccl", "requires_multi_device", "requires_wormhole_b0", "requires_blackhole"],
 ) for src in [
     "ccl/test_persistent_fabric_ccl_ops.cpp",
     "ccl/test_send_recv_ops.cpp",
@@ -135,7 +135,7 @@ cc_test(
         "//tests:test_common_libs",
         "//ttnn:ttnn_core",
     ],
-    tags = ["unit", "ttnn", "ccl", "requires_multi_device", "requires_wormhole_b0"],
+    tags = ["unit", "ttnn", "ccl", "requires_multi_device", "requires_wormhole_b0", "requires_blackhole"],
 )
 
 # --------------------------------------------------------------------------
@@ -163,7 +163,7 @@ cc_library(
         "//ttnn:ttnn_core",
         "//tt_metal/hw",
     ],
-    tags = ["unit", "ttnn", "accessor", "requires_wormhole_b0"],
+    tags = ["unit", "ttnn", "accessor", "requires_wormhole_b0", "requires_blackhole"],
 ) for src in [
     "accessor/test_accessor_benchmarks.cpp",
     "accessor/test_tensor_accessor.cpp",
@@ -195,7 +195,7 @@ cc_library(
         "//ttnn:ttnn_core",
         "@xtensor//:xtensor",
     ],
-    tags = ["unit", "ttnn", "tensor", "requires_wormhole_b0"],
+    tags = ["unit", "ttnn", "tensor", "requires_wormhole_b0", "requires_blackhole"],
 ) for src in [
     "test_create_tensor.cpp",
     "test_create_tensor_multi_device.cpp",
@@ -240,7 +240,7 @@ cc_test(
         "//tests:test_common_libs",
         "//ttnn:ttnn_core",
     ],
-    tags = ["unit", "ttnn", "emitc", "requires_wormhole_b0"],
+    tags = ["unit", "ttnn", "emitc", "requires_wormhole_b0", "requires_blackhole"],
 )
 
 # --------------------------------------------------------------------------

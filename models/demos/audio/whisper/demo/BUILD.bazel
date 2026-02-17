@@ -14,6 +14,6 @@ pytest_test(
         "@pip//transformers",
     ],
     markers = ["slow"],
-    tags = ["ttnn", "nightly", "models", "requires_wormhole_b0"],
+    tags = ["ttnn", "nightly", "models", "requires_wormhole_b0", "requires_blackhole"],
     timeout_seconds = 600,
 )

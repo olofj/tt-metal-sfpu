@@ -38,5 +38,5 @@ pytest_suite(
         "@pip//numpy",
         "@pip//loguru",
     ],
-    tags = ["ttnn", "unit", "ccl", "requires_wormhole_b0"],
+    tags = ["ttnn", "unit", "ccl", "requires_wormhole_b0", "requires_blackhole"],
 )

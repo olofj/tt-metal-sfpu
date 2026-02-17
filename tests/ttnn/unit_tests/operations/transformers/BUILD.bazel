@@ -15,5 +15,5 @@ pytest_suite(
         "@pip//loguru",
     ],
     markers = ["post_commit"],
-    tags = ["ttnn", "unit", "requires_wormhole_b0", "ttsim"],
+    tags = ["ttnn", "unit", "requires_wormhole_b0", "requires_blackhole", "ttsim"],
 )

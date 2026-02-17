@@ -107,7 +107,7 @@ cc_test(
         "//tests/tt_metal/tt_metal:test_fixtures",
         "@google_benchmark//:benchmark",
     ],
-    tags = ["perf_microbenchmark", "dispatch", "requires_wormhole_b0"],
+    tags = ["perf_microbenchmark", "dispatch", "requires_wormhole_b0", "requires_blackhole"],
 )
 
 cc_test(
@@ -120,7 +120,7 @@ cc_test(
         "//tests/tt_metal:test_utils",
         "@google_benchmark//:benchmark",
     ],
-    tags = ["perf_microbenchmark", "dispatch", "requires_wormhole_b0"],
+    tags = ["perf_microbenchmark", "dispatch", "requires_wormhole_b0", "requires_blackhole"],
 )
 
 # --------------------------------------------------------------------------
@@ -139,7 +139,7 @@ cc_test(
         "//tests/tt_metal/tt_metal:test_fixtures",
     ],
     target_compatible_with = ["@platforms//cpu:x86_64"],
-    tags = ["perf_microbenchmark", "dispatch", "requires_wormhole_b0"],
+    tags = ["perf_microbenchmark", "dispatch", "requires_wormhole_b0", "requires_blackhole"],
 )
 
 cc_test(
@@ -152,7 +152,7 @@ cc_test(
         "//tests/tt_metal:test_utils",
     ],
     target_compatible_with = ["@platforms//cpu:x86_64"],
-    tags = ["perf_microbenchmark", "dispatch", "requires_wormhole_b0"],
+    tags = ["perf_microbenchmark", "dispatch", "requires_wormhole_b0", "requires_blackhole"],
 )
 
 cc_test(
@@ -167,7 +167,7 @@ cc_test(
         "//tests/tt_metal/tt_metal:test_fixtures",
     ],
     target_compatible_with = ["@platforms//cpu:x86_64"],
-    tags = ["perf_microbenchmark", "dispatch", "requires_wormhole_b0"],
+    tags = ["perf_microbenchmark", "dispatch", "requires_wormhole_b0", "requires_blackhole"],
 )
 
 # --------------------------------------------------------------------------
@@ -183,7 +183,7 @@ cc_test(
         "//tests:test_metal_common_libs",
         "//tests/tt_metal:test_utils",
     ],
-    tags = ["perf_microbenchmark", "ethernet", "requires_multi_device", "requires_wormhole_b0"],
+    tags = ["perf_microbenchmark", "ethernet", "requires_multi_device", "requires_wormhole_b0", "requires_blackhole"],
 ) for src in [
     "test_ethernet_bidirectional_bandwidth_no_edm.cpp",
     "test_ethernet_link_ping_latency_no_edm.cpp",
@@ -207,7 +207,7 @@ cc_test(
         "//tests:test_metal_common_libs",
         "//tests/tt_metal:test_utils",
     ],
-    tags = ["perf_microbenchmark", "routing", "requires_multi_device", "requires_wormhole_b0"],
+    tags = ["perf_microbenchmark", "routing", "requires_multi_device", "requires_wormhole_b0", "requires_blackhole"],
 )
 
 cc_test(
@@ -224,7 +224,7 @@ cc_test(
         "//tests/tt_metal:test_utils",
         "@yaml-cpp",
     ],
-    tags = ["perf_microbenchmark", "routing", "requires_multi_device", "requires_wormhole_b0"],
+    tags = ["perf_microbenchmark", "routing", "requires_multi_device", "requires_wormhole_b0", "requires_blackhole"],
 )
 
 # --------------------------------------------------------------------------
@@ -240,7 +240,7 @@ cc_test(
         "//tests:test_metal_common_libs",
         "//tests/tt_metal:test_utils",
     ],
-    tags = ["perf_microbenchmark", "noc", "requires_wormhole_b0"],
+    tags = ["perf_microbenchmark", "noc", "requires_wormhole_b0", "requires_blackhole"],
 )
 
 # --------------------------------------------------------------------------
@@ -256,7 +256,7 @@ cc_test(
         "//tests:test_metal_common_libs",
         "//tests/tt_metal:test_utils",
     ],
-    tags = ["perf_microbenchmark", "tensix", "requires_wormhole_b0"],
+    tags = ["perf_microbenchmark", "tensix", "requires_wormhole_b0", "requires_blackhole"],
 )
 
 # --------------------------------------------------------------------------
@@ -272,7 +272,7 @@ cc_test(
         "//tests:test_metal_common_libs",
         "//tests/tt_metal:test_utils",
     ],
-    tags = ["perf_microbenchmark", "old", "requires_wormhole_b0"],
+    tags = ["perf_microbenchmark", "old", "requires_wormhole_b0", "requires_blackhole"],
 ) for src in [
     "matmul/matmul_global_l1.cpp",
     "matmul/matmul_local_l1.cpp",
@@ -294,7 +294,7 @@ cc_test(
         "//tests:test_metal_common_libs",
         "//tests/tt_metal:test_utils",
     ],
-    tags = ["perf_microbenchmark", "old", "requires_wormhole_b0"],
+    tags = ["perf_microbenchmark", "old", "requires_wormhole_b0", "requires_blackhole"],
 )
 
 # --------------------------------------------------------------------------
@@ -310,7 +310,7 @@ cc_test(
         "//tests:test_metal_common_libs",
         "//tests/tt_metal:test_utils",
     ],
-    tags = ["perf_microbenchmark", "requires_wormhole_b0"],
+    tags = ["perf_microbenchmark", "requires_wormhole_b0", "requires_blackhole"],
 ) for src in [
     "1_compute_mm/test_compute_mm.cpp",
     "2_noc_adjacent/test_noc_adjacent.cpp",
@@ -335,7 +335,7 @@ cc_test(
         "//tests/tt_metal:test_utils",
     ],
     target_compatible_with = ["@platforms//cpu:x86_64"],
-    tags = ["perf_microbenchmark", "requires_wormhole_b0"],
+    tags = ["perf_microbenchmark", "requires_wormhole_b0", "requires_blackhole"],
 )
 
 # --------------------------------------------------------------------------

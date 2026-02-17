@@ -18,5 +18,5 @@ pytest_suite(
         "@pip//transformers",
     ],
     markers = ["slow"],
-    tags = ["ttnn", "nightly", "models", "requires_wormhole_b0"],
+    tags = ["ttnn", "nightly", "models", "requires_wormhole_b0", "requires_blackhole"],
 )

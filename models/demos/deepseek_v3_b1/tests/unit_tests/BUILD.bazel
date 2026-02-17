@@ -1,0 +1,18 @@
+# DeepSeek v3 B1 unit tests (Blackhole-only).
+# Referenced by: ops-post-commit (blackhole deepseek blitz op tests).
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "deepseek_v3_b1_unit_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//models/common:utility_functions",
+        "//tests/tt_eager:sweep_test_utils",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//numpy",
+        "@pip//torch",
+    ],
+    tags = ["ttnn", "unit", "models", "post_commit", "requires_blackhole"],
+)
