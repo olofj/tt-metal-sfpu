@@ -367,21 +367,21 @@ tt_deb(
 #
 # CMake components: metalium-validation, gtest
 # Depends on: metalium
-# NOTE: Validation binaries (tt-metalium-validation-smoke,
-# tt-metalium-validation-basic) require cc_binary targets in
-# //tt_metal/test. Those are not yet ported to Bazel — the CMake build
-# links many OBJECT library test suites into monolithic executables.
-# Tracked as a follow-up task.
 # ===========================================================================
 
 pkg_files(
     name = "metalium_validation_bins",
-    srcs = [],
+    testonly = True,
+    srcs = [
+        "//tt_metal/test:tt-metalium-validation-basic",
+        "//tt_metal/test:tt-metalium-validation-smoke",
+    ],
     prefix = "usr/bin",
 )
 
 pkg_tar(
     name = "metalium_validation_data",
+    testonly = True,
     srcs = [
         ":metalium_validation_bins",
     ],
@@ -389,6 +389,7 @@ pkg_tar(
 
 tt_deb(
     name = "tt-metalium-validation",
+    testonly = True,
     data_tar = ":metalium_validation_data",
     depends = [
         "tt-metalium (= @VERSION@)",
@@ -540,20 +541,21 @@ tt_deb(
 #
 # CMake components: nn-validation, ttnn-validation
 # Depends on: nn, metalium
-# NOTE: Validation binaries (tt-nn-validation-smoke, tt-nn-validation-basic)
-# require cc_binary targets in //ttnn/test. Those are not yet ported to
-# Bazel — the CMake build links many OBJECT library test suites into
-# monolithic executables. Tracked as a follow-up task.
 # ===========================================================================
 
 pkg_files(
     name = "nn_validation_bins",
-    srcs = [],
+    testonly = True,
+    srcs = [
+        "//ttnn/test:tt-nn-validation-basic",
+        "//ttnn/test:tt-nn-validation-smoke",
+    ],
     prefix = "usr/bin",
 )
 
 pkg_tar(
     name = "nn_validation_data",
+    testonly = True,
     srcs = [
         ":nn_validation_bins",
     ],
@@ -561,6 +563,7 @@ pkg_tar(
 
 tt_deb(
     name = "tt-nn-validation",
+    testonly = True,
     data_tar = ":nn_validation_data",
     depends = [
         "tt-metalium (= @VERSION@)",

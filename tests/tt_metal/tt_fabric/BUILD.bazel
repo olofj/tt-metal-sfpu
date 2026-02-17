@@ -8,7 +8,10 @@ load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 
-package(default_visibility = ["//tests:__subpackages__"])
+package(default_visibility = [
+    "//tests:__subpackages__",
+    "//tt_metal/test:__pkg__",
+])
 
 # --------------------------------------------------------------------------
 # Test data files (mesh descriptors, cluster descriptors, golden files)
@@ -300,6 +303,40 @@ cc_test(
         "//tests/tt_metal/tt_metal:test_fixtures",
     ],
     tags = ["benchmark", "tt_fabric", "requires_multi_device", "requires_wormhole_b0"],
+)
+
+# --------------------------------------------------------------------------
+# Validation object libraries — for monolithic validation binaries.
+# Mirrors CMake OBJECT libraries TT::SystemHealth::Smoke and
+# TT::Metalium::Test::Fabric::Smoke.
+# --------------------------------------------------------------------------
+
+cc_library(
+    name = "validation_system_health_smoke",
+    testonly = True,
+    srcs = ["system_health/test_system_health.cpp"],
+    deps = [
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+    ],
+    alwayslink = True,
+)
+
+cc_library(
+    name = "validation_fabric_smoke",
+    testonly = True,
+    srcs = ["fabric_data_movement/test_basic_fabric_smoke.cpp"],
+    data = [
+        ":test_data",
+        ":test_kernels",
+        "//tests/tt_metal/tt_metal:perf_routing_kernels",
+    ],
+    deps = [
+        ":fabric_test_common",
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+    ],
+    alwayslink = True,
 )
 
 # --------------------------------------------------------------------------

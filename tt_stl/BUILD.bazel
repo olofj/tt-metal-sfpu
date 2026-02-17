@@ -46,3 +46,18 @@ cc_test(
         "@com_google_googletest//:gtest_main",
     ],
 )
+
+# Validation object library — compiled STL test sources for the monolithic
+# tt-metalium-validation-smoke binary. Mirrors CMake TT::Metalium::Test::STL::Smoke.
+cc_library(
+    name = "validation_stl_smoke",
+    testonly = True,
+    srcs = glob(["tests/test_*.cpp"]),
+    visibility = ["//tt_metal/test:__pkg__"],
+    deps = [
+        ":tt_stl",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+    alwayslink = True,
+)

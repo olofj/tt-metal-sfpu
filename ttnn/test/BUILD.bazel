@@ -1,0 +1,54 @@
+# TT-NN validation binaries — monolithic gtest executables for .deb packaging.
+#
+# Mirrors the CMake targets in ttnn/test/CMakeLists.txt:
+#   tt-nn-validation-smoke — fast validation (TTNN smoke + CCL ops)
+#   tt-nn-validation-basic — more thorough validation (basic + tensor + CCL)
+#
+# CMake builds these by linking OBJECT libraries into a single executable.
+# Bazel equivalents use cc_library targets with alwayslink=True (defined in
+# //tests/ttnn/unit_tests/gtests) linked into cc_binary.
+#
+# The individual cc_test targets in //tests/ttnn/unit_tests/gtests remain the
+# primary way to run tests during development (fine-grained affected-target
+# analysis). These monolithic binaries exist solely for .deb package
+# distribution.
+
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+
+package(default_visibility = ["//packaging:__pkg__"])
+
+# --------------------------------------------------------------------------
+# tt-nn-validation-smoke
+#
+# CMake OBJECT libraries linked:
+#   TTNN::Test::Smoke    → //tests/ttnn/unit_tests/gtests:validation_smoke
+#   TTNN::Test::CCL::Ops → //tests/ttnn/unit_tests/gtests:validation_ccl_ops
+# --------------------------------------------------------------------------
+
+cc_binary(
+    name = "tt-nn-validation-smoke",
+    testonly = True,
+    deps = [
+        "//tests/ttnn/unit_tests/gtests:validation_ccl_ops",
+        "//tests/ttnn/unit_tests/gtests:validation_smoke",
+    ],
+)
+
+# --------------------------------------------------------------------------
+# tt-nn-validation-basic
+#
+# CMake OBJECT libraries linked:
+#   TTNN::Test::Basic         → //tests/ttnn/unit_tests/gtests:validation_basic
+#   TTNN::Test::Basic::Tensor → //tests/ttnn/unit_tests/gtests:validation_basic_tensor
+#   TTNN::Test::CCL           → //tests/ttnn/unit_tests/gtests:validation_ccl
+# --------------------------------------------------------------------------
+
+cc_binary(
+    name = "tt-nn-validation-basic",
+    testonly = True,
+    deps = [
+        "//tests/ttnn/unit_tests/gtests:validation_basic",
+        "//tests/ttnn/unit_tests/gtests:validation_basic_tensor",
+        "//tests/ttnn/unit_tests/gtests:validation_ccl",
+    ],
+)

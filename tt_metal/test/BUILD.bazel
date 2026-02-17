@@ -1,0 +1,68 @@
+# TT-Metalium validation binaries — monolithic gtest executables for .deb packaging.
+#
+# Mirrors the CMake targets in tt_metal/test/CMakeLists.txt:
+#   tt-metalium-validation-smoke  — fast validation (API, device, dispatch, fabric, SFPI, STL)
+#   tt-metalium-validation-basic  — more thorough validation (dispatch basic tier)
+#
+# CMake builds these by linking OBJECT libraries (each containing many test
+# sources) into a single executable. Bazel equivalents use cc_library targets
+# with alwayslink=True (defined in the test packages) linked into cc_binary.
+#
+# The individual cc_test targets in //tests/tt_metal/tt_metal and siblings
+# remain the primary way to run tests during development (fine-grained
+# affected-target analysis). These monolithic binaries exist solely for
+# .deb package distribution.
+
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+
+package(default_visibility = ["//packaging:__pkg__"])
+
+# --------------------------------------------------------------------------
+# tt-metalium-validation-smoke
+#
+# CMake OBJECT libraries linked:
+#   TT::SystemHealth::Smoke            → //tests/tt_metal/tt_fabric:validation_system_health_smoke
+#   TT::Metalium::Test::Fabric::Smoke  → //tests/tt_metal/tt_fabric:validation_fabric_smoke
+#   TT::Metalium::Test::API            → //tests/tt_metal/tt_metal:validation_api
+#   TT::Metalium::Test::Device::Smoke  → //tests/tt_metal/tt_metal:validation_device_smoke
+#   TT::Metalium::Test::Dispatch::Smoke→ //tests/tt_metal/tt_metal:validation_dispatch_smoke
+#   TT::Metalium::Test::SFPI           → //tests/tt_metal/tt_metal:validation_sfpi
+#   TT::Metalium::Test::STL::Smoke     → //tt_stl:validation_stl_smoke
+# --------------------------------------------------------------------------
+
+cc_binary(
+    name = "tt-metalium-validation-smoke",
+    testonly = True,
+    data = [
+        "//tests/tt_metal/tt_fabric:test_data",
+        "//tests/tt_metal/tt_fabric:test_kernels",
+        "//tests/tt_metal/tt_metal:test_kernels",
+    ],
+    deps = [
+        "//tests/tt_metal/tt_fabric:validation_fabric_smoke",
+        "//tests/tt_metal/tt_fabric:validation_system_health_smoke",
+        "//tests/tt_metal/tt_metal:validation_api",
+        "//tests/tt_metal/tt_metal:validation_device_smoke",
+        "//tests/tt_metal/tt_metal:validation_dispatch_smoke",
+        "//tests/tt_metal/tt_metal:validation_sfpi",
+        "//tt_stl:validation_stl_smoke",
+    ],
+)
+
+# --------------------------------------------------------------------------
+# tt-metalium-validation-basic
+#
+# CMake OBJECT libraries linked:
+#   TT::Metalium::Test::Dispatch::Basic → //tests/tt_metal/tt_metal:validation_dispatch_basic
+# --------------------------------------------------------------------------
+
+cc_binary(
+    name = "tt-metalium-validation-basic",
+    testonly = True,
+    data = [
+        "//tests/tt_metal/tt_metal:test_kernels",
+    ],
+    deps = [
+        "//tests/tt_metal/tt_metal:validation_dispatch_basic",
+    ],
+)
