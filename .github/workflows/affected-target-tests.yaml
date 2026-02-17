@@ -38,8 +38,13 @@ jobs:
       mode: ${{ steps.query.outputs.mode }}
       affected_tests: ${{ steps.query.outputs.affected_tests }}
       test_count: ${{ steps.query.outputs.test_count }}
-      needs_hardware: ${{ steps.classify.outputs.needs_hardware }}
       has_host_tests: ${{ steps.classify.outputs.has_host_tests }}
+      needs_n150: ${{ steps.classify.outputs.needs_n150 }}
+      needs_n300: ${{ steps.classify.outputs.needs_n300 }}
+      needs_t3000: ${{ steps.classify.outputs.needs_t3000 }}
+      needs_blackhole: ${{ steps.classify.outputs.needs_blackhole }}
+      needs_galaxy_wh: ${{ steps.classify.outputs.needs_galaxy_wh }}
+      needs_galaxy_bh: ${{ steps.classify.outputs.needs_galaxy_bh }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -87,32 +92,81 @@ jobs:
 
           if [ "$MODE" = "FULL_CI" ]; then
             echo "has_host_tests=true" >> "$GITHUB_OUTPUT"
-            echo "needs_hardware=true" >> "$GITHUB_OUTPUT"
+            echo "needs_n150=true" >> "$GITHUB_OUTPUT"
+            echo "needs_n300=true" >> "$GITHUB_OUTPUT"
+            echo "needs_t3000=true" >> "$GITHUB_OUTPUT"
+            echo "needs_blackhole=true" >> "$GITHUB_OUTPUT"
+            echo "needs_galaxy_wh=true" >> "$GITHUB_OUTPUT"
+            echo "needs_galaxy_bh=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           TARGETS="${{ steps.query.outputs.affected_tests }}"
 
-          # Check if any targets require hardware by querying their tags.
-          # Host-only tests can run on standard runners without TT devices.
-          HW_TAGS="requires_wormhole_b0|requires_blackhole|requires_galaxy|requires_N150|requires_N300|requires_T3000"
-
+          # Classify each target by its hardware requirement tags.
+          # A target may match multiple SKUs (e.g., requires_wormhole_b0 + requires_galaxy).
           HAS_HOST="false"
-          NEEDS_HW="false"
+          NEEDS_N150="false"
+          NEEDS_N300="false"
+          NEEDS_T3000="false"
+          NEEDS_BH="false"
+          NEEDS_GALAXY_WH="false"
+          NEEDS_GALAXY_BH="false"
 
           for target in $TARGETS; do
             TAGS=$(bazel query "attr(tags, '', $target)" --output=xml 2>/dev/null \
               | grep -oP 'value="\K[^"]+' || echo "")
 
-            if echo "$TAGS" | grep -qE "$HW_TAGS"; then
-              NEEDS_HW="true"
-            else
+            IS_HW="false"
+
+            if echo "$TAGS" | grep -q "requires_N150"; then
+              NEEDS_N150="true"; IS_HW="true"
+            fi
+            if echo "$TAGS" | grep -q "requires_N300"; then
+              NEEDS_N300="true"; IS_HW="true"
+            fi
+            if echo "$TAGS" | grep -q "requires_T3000"; then
+              NEEDS_T3000="true"; IS_HW="true"
+            fi
+
+            # Galaxy tests carry requires_galaxy plus an arch tag
+            if echo "$TAGS" | grep -q "requires_galaxy"; then
+              if echo "$TAGS" | grep -q "requires_blackhole"; then
+                NEEDS_GALAXY_BH="true"
+              else
+                NEEDS_GALAXY_WH="true"
+              fi
+              IS_HW="true"
+            fi
+
+            # Blackhole non-Galaxy tests
+            if echo "$TAGS" | grep -q "requires_blackhole"; then
+              if ! echo "$TAGS" | grep -q "requires_galaxy"; then
+                NEEDS_BH="true"
+              fi
+              IS_HW="true"
+            fi
+
+            # Wormhole tests without a specific topology tag default to T3000
+            if echo "$TAGS" | grep -q "requires_wormhole_b0"; then
+              IS_HW="true"
+              if ! echo "$TAGS" | grep -qE "requires_N150|requires_N300|requires_T3000|requires_galaxy"; then
+                NEEDS_T3000="true"
+              fi
+            fi
+
+            if [ "$IS_HW" = "false" ]; then
               HAS_HOST="true"
             fi
           done
 
           echo "has_host_tests=$HAS_HOST" >> "$GITHUB_OUTPUT"
-          echo "needs_hardware=$NEEDS_HW" >> "$GITHUB_OUTPUT"
+          echo "needs_n150=$NEEDS_N150" >> "$GITHUB_OUTPUT"
+          echo "needs_n300=$NEEDS_N300" >> "$GITHUB_OUTPUT"
+          echo "needs_t3000=$NEEDS_T3000" >> "$GITHUB_OUTPUT"
+          echo "needs_blackhole=$NEEDS_BH" >> "$GITHUB_OUTPUT"
+          echo "needs_galaxy_wh=$NEEDS_GALAXY_WH" >> "$GITHUB_OUTPUT"
+          echo "needs_galaxy_bh=$NEEDS_GALAXY_BH" >> "$GITHUB_OUTPUT"
 
       - name: Summary
         run: |
@@ -123,7 +177,12 @@ jobs:
           echo "| Mode | \`${{ steps.query.outputs.mode }}\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Test count | ${{ steps.query.outputs.test_count }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Host tests | ${{ steps.classify.outputs.has_host_tests }} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Hardware tests | ${{ steps.classify.outputs.needs_hardware }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| N150 (WH single) | ${{ steps.classify.outputs.needs_n150 }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| N300 (WH dual) | ${{ steps.classify.outputs.needs_n300 }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| T3000 (WH 8-card) | ${{ steps.classify.outputs.needs_t3000 }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Blackhole (P150) | ${{ steps.classify.outputs.needs_blackhole }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Galaxy WH | ${{ steps.classify.outputs.needs_galaxy_wh }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Galaxy BH | ${{ steps.classify.outputs.needs_galaxy_bh }} |" >> "$GITHUB_STEP_SUMMARY"
 
           if [ "${{ steps.query.outputs.mode }}" = "AFFECTED" ]; then
             echo "" >> "$GITHUB_STEP_SUMMARY"
@@ -192,13 +251,136 @@ jobs:
           retention-days: 14
 
   # -------------------------------------------------------------------------
-  # Phase 3: Run device tests (require TT hardware)
+  # Phase 3: Run device tests on per-SKU runners
   # -------------------------------------------------------------------------
-  device-tests:
+
+  # N150 — Wormhole B0 single-chip
+  device-tests-n150:
     needs: determine-targets
     if: >-
       needs.determine-targets.outputs.mode != 'SKIP' &&
-      needs.determine-targets.outputs.needs_hardware == 'true'
+      needs.determine-targets.outputs.needs_n150 == 'true'
+    runs-on:
+      - tt-ubuntu-2204-N150-viommu-stable
+    timeout-minutes: 120
+    container:
+      options: "--device /dev/tenstorrent"
+      volumes:
+        - /dev/hugepages-1G:/dev/hugepages-1G
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Run N150 device tests
+        env:
+          ARCH_NAME: wormhole_b0
+        run: |
+          set -euo pipefail
+
+          TAG_FILTER="${{ inputs.test-tag-filter || 'post_commit' }}"
+          TAG_EXCLUDE="-frequently_hangs,-slow"
+          # Select only tests tagged for N150
+          HW_INCLUDE="requires_N150"
+
+          if [ "${{ needs.determine-targets.outputs.mode }}" = "FULL_CI" ]; then
+            echo "Running FULL CI (N150 device tests)"
+            bazel test //tests/... \
+              --test_tag_filters="${TAG_FILTER},${HW_INCLUDE},${TAG_EXCLUDE}" \
+              --test_output=errors \
+              --jobs=auto \
+              --build_tests_only \
+              --flaky_test_attempts=2 \
+              || true
+          else
+            TARGETS="${{ needs.determine-targets.outputs.affected_tests }}"
+            echo "Running affected N150 device tests"
+            # shellcheck disable=SC2086
+            bazel test $TARGETS \
+              --test_tag_filters="${TAG_FILTER},${HW_INCLUDE},${TAG_EXCLUDE}" \
+              --test_output=errors \
+              --jobs=auto \
+              --build_tests_only \
+              --flaky_test_attempts=2 \
+              || true
+          fi
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bazel-test-results-n150
+          path: |
+            bazel-testlogs/**/test.xml
+            bazel-testlogs/**/test.log
+          retention-days: 14
+
+  # N300 — Wormhole B0 dual-chip
+  device-tests-n300:
+    needs: determine-targets
+    if: >-
+      needs.determine-targets.outputs.mode != 'SKIP' &&
+      needs.determine-targets.outputs.needs_n300 == 'true'
+    runs-on:
+      - tt-ubuntu-2204-N300-viommu-stable
+    timeout-minutes: 120
+    container:
+      options: "--device /dev/tenstorrent"
+      volumes:
+        - /dev/hugepages-1G:/dev/hugepages-1G
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Run N300 device tests
+        env:
+          ARCH_NAME: wormhole_b0
+        run: |
+          set -euo pipefail
+
+          TAG_FILTER="${{ inputs.test-tag-filter || 'post_commit' }}"
+          TAG_EXCLUDE="-frequently_hangs,-slow"
+          HW_INCLUDE="requires_N300"
+
+          if [ "${{ needs.determine-targets.outputs.mode }}" = "FULL_CI" ]; then
+            echo "Running FULL CI (N300 device tests)"
+            bazel test //tests/... \
+              --test_tag_filters="${TAG_FILTER},${HW_INCLUDE},${TAG_EXCLUDE}" \
+              --test_output=errors \
+              --jobs=auto \
+              --build_tests_only \
+              --flaky_test_attempts=2 \
+              || true
+          else
+            TARGETS="${{ needs.determine-targets.outputs.affected_tests }}"
+            echo "Running affected N300 device tests"
+            # shellcheck disable=SC2086
+            bazel test $TARGETS \
+              --test_tag_filters="${TAG_FILTER},${HW_INCLUDE},${TAG_EXCLUDE}" \
+              --test_output=errors \
+              --jobs=auto \
+              --build_tests_only \
+              --flaky_test_attempts=2 \
+              || true
+          fi
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bazel-test-results-n300
+          path: |
+            bazel-testlogs/**/test.xml
+            bazel-testlogs/**/test.log
+          retention-days: 14
+
+  # T3000 — Wormhole B0 8-card
+  device-tests-t3000:
+    needs: determine-targets
+    if: >-
+      needs.determine-targets.outputs.mode != 'SKIP' &&
+      needs.determine-targets.outputs.needs_t3000 == 'true'
     runs-on:
       - arch-wormhole_b0
       - config-t3000
@@ -214,20 +396,23 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Run affected device tests
+      - name: Run T3000 device tests
         env:
           ARCH_NAME: wormhole_b0
         run: |
           set -euo pipefail
 
           TAG_FILTER="${{ inputs.test-tag-filter || 'post_commit' }}"
-          # Exclude tests known to hang or that are too slow for PR CI
           TAG_EXCLUDE="-frequently_hangs,-slow"
+          # T3000 runs Wormhole tests that aren't specific to other topologies.
+          # This includes tests tagged requires_T3000 and generic requires_wormhole_b0.
+          HW_INCLUDE="requires_wormhole_b0"
+          HW_EXCLUDE="-requires_N150,-requires_N300,-requires_galaxy,-requires_blackhole"
 
           if [ "${{ needs.determine-targets.outputs.mode }}" = "FULL_CI" ]; then
-            echo "Running FULL CI (device tests)"
+            echo "Running FULL CI (T3000 device tests)"
             bazel test //tests/... \
-              --test_tag_filters="${TAG_FILTER},${TAG_EXCLUDE}" \
+              --test_tag_filters="${TAG_FILTER},${HW_INCLUDE},${HW_EXCLUDE},${TAG_EXCLUDE}" \
               --test_output=errors \
               --jobs=auto \
               --build_tests_only \
@@ -235,10 +420,10 @@ jobs:
               || true
           else
             TARGETS="${{ needs.determine-targets.outputs.affected_tests }}"
-            echo "Running affected device tests"
+            echo "Running affected T3000 device tests"
             # shellcheck disable=SC2086
             bazel test $TARGETS \
-              --test_tag_filters="${TAG_FILTER},${TAG_EXCLUDE}" \
+              --test_tag_filters="${TAG_FILTER},${HW_INCLUDE},${HW_EXCLUDE},${TAG_EXCLUDE}" \
               --test_output=errors \
               --jobs=auto \
               --build_tests_only \
@@ -250,7 +435,199 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: bazel-test-results-device
+          name: bazel-test-results-t3000
+          path: |
+            bazel-testlogs/**/test.xml
+            bazel-testlogs/**/test.log
+          retention-days: 14
+
+  # Blackhole — P150 single-card
+  device-tests-blackhole:
+    needs: determine-targets
+    if: >-
+      needs.determine-targets.outputs.mode != 'SKIP' &&
+      needs.determine-targets.outputs.needs_blackhole == 'true'
+    runs-on:
+      - tt-ubuntu-2204-P150b-stable
+    timeout-minutes: 120
+    container:
+      options: "--device /dev/tenstorrent"
+      volumes:
+        - /dev/hugepages-1G:/dev/hugepages-1G
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Run Blackhole device tests
+        env:
+          ARCH_NAME: blackhole
+        run: |
+          set -euo pipefail
+
+          TAG_FILTER="${{ inputs.test-tag-filter || 'post_commit' }}"
+          TAG_EXCLUDE="-frequently_hangs,-slow"
+          # Select Blackhole tests that are not Galaxy
+          HW_INCLUDE="requires_blackhole"
+          HW_EXCLUDE="-requires_galaxy"
+
+          if [ "${{ needs.determine-targets.outputs.mode }}" = "FULL_CI" ]; then
+            echo "Running FULL CI (Blackhole device tests)"
+            bazel test //tests/... \
+              --test_tag_filters="${TAG_FILTER},${HW_INCLUDE},${HW_EXCLUDE},${TAG_EXCLUDE}" \
+              --test_output=errors \
+              --jobs=auto \
+              --build_tests_only \
+              --flaky_test_attempts=2 \
+              || true
+          else
+            TARGETS="${{ needs.determine-targets.outputs.affected_tests }}"
+            echo "Running affected Blackhole device tests"
+            # shellcheck disable=SC2086
+            bazel test $TARGETS \
+              --test_tag_filters="${TAG_FILTER},${HW_INCLUDE},${HW_EXCLUDE},${TAG_EXCLUDE}" \
+              --test_output=errors \
+              --jobs=auto \
+              --build_tests_only \
+              --flaky_test_attempts=2 \
+              || true
+          fi
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bazel-test-results-blackhole
+          path: |
+            bazel-testlogs/**/test.xml
+            bazel-testlogs/**/test.log
+          retention-days: 14
+
+  # Galaxy (Wormhole) — 32-card Wormhole B0
+  device-tests-galaxy-wh:
+    needs: determine-targets
+    if: >-
+      needs.determine-targets.outputs.mode != 'SKIP' &&
+      needs.determine-targets.outputs.needs_galaxy_wh == 'true'
+    runs-on:
+      - arch-wormhole_b0
+      - pipeline-functional
+      - topology-6u
+      - in-service
+    timeout-minutes: 180
+    container:
+      options: "--device /dev/tenstorrent"
+      volumes:
+        - /dev/hugepages-1G:/dev/hugepages-1G
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Run Galaxy (Wormhole) device tests
+        env:
+          ARCH_NAME: wormhole_b0
+        run: |
+          set -euo pipefail
+
+          TAG_FILTER="${{ inputs.test-tag-filter || 'post_commit' }}"
+          TAG_EXCLUDE="-frequently_hangs,-slow"
+          # requires_galaxy selects Galaxy tests; exclude Blackhole to keep only WH Galaxy
+          HW_INCLUDE="requires_galaxy"
+          HW_EXCLUDE="-requires_blackhole"
+
+          if [ "${{ needs.determine-targets.outputs.mode }}" = "FULL_CI" ]; then
+            echo "Running FULL CI (Galaxy Wormhole device tests)"
+            bazel test //tests/... \
+              --test_tag_filters="${TAG_FILTER},${HW_INCLUDE},${HW_EXCLUDE},${TAG_EXCLUDE}" \
+              --test_output=errors \
+              --jobs=auto \
+              --build_tests_only \
+              --flaky_test_attempts=2 \
+              || true
+          else
+            TARGETS="${{ needs.determine-targets.outputs.affected_tests }}"
+            echo "Running affected Galaxy Wormhole device tests"
+            # shellcheck disable=SC2086
+            bazel test $TARGETS \
+              --test_tag_filters="${TAG_FILTER},${HW_INCLUDE},${HW_EXCLUDE},${TAG_EXCLUDE}" \
+              --test_output=errors \
+              --jobs=auto \
+              --build_tests_only \
+              --flaky_test_attempts=2 \
+              || true
+          fi
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bazel-test-results-galaxy-wh
+          path: |
+            bazel-testlogs/**/test.xml
+            bazel-testlogs/**/test.log
+          retention-days: 14
+
+  # Galaxy (Blackhole) — 32-card Blackhole
+  device-tests-galaxy-bh:
+    needs: determine-targets
+    if: >-
+      needs.determine-targets.outputs.mode != 'SKIP' &&
+      needs.determine-targets.outputs.needs_galaxy_bh == 'true'
+    runs-on:
+      - arch-blackhole
+      - pipeline-functional
+      - topology-6u
+      - in-service
+    timeout-minutes: 180
+    container:
+      options: "--device /dev/tenstorrent"
+      volumes:
+        - /dev/hugepages-1G:/dev/hugepages-1G
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Run Galaxy (Blackhole) device tests
+        env:
+          ARCH_NAME: blackhole
+        run: |
+          set -euo pipefail
+
+          TAG_FILTER="${{ inputs.test-tag-filter || 'post_commit' }}"
+          TAG_EXCLUDE="-frequently_hangs,-slow"
+          # requires_galaxy selects Galaxy tests; exclude Wormhole to keep only BH Galaxy
+          HW_INCLUDE="requires_galaxy"
+          HW_EXCLUDE="-requires_wormhole_b0"
+
+          if [ "${{ needs.determine-targets.outputs.mode }}" = "FULL_CI" ]; then
+            echo "Running FULL CI (Galaxy Blackhole device tests)"
+            bazel test //tests/... \
+              --test_tag_filters="${TAG_FILTER},${HW_INCLUDE},${HW_EXCLUDE},${TAG_EXCLUDE}" \
+              --test_output=errors \
+              --jobs=auto \
+              --build_tests_only \
+              --flaky_test_attempts=2 \
+              || true
+          else
+            TARGETS="${{ needs.determine-targets.outputs.affected_tests }}"
+            echo "Running affected Galaxy Blackhole device tests"
+            # shellcheck disable=SC2086
+            bazel test $TARGETS \
+              --test_tag_filters="${TAG_FILTER},${HW_INCLUDE},${HW_EXCLUDE},${TAG_EXCLUDE}" \
+              --test_output=errors \
+              --jobs=auto \
+              --build_tests_only \
+              --flaky_test_attempts=2 \
+              || true
+          fi
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bazel-test-results-galaxy-bh
           path: |
             bazel-testlogs/**/test.xml
             bazel-testlogs/**/test.log
