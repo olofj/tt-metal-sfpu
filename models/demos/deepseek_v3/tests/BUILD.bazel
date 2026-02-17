@@ -1,0 +1,3 @@
+# DeepSeek v3 model tests.
+
+package(default_visibility = ["//visibility:public"])

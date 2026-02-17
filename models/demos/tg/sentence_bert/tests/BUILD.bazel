@@ -1,0 +1,18 @@
+# Sentence-BERT Galaxy (TG) tests.
+# Referenced by: galaxy_demo_tests, galaxy_perf_tests.
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "sentence_bert_tg_tests",
+    srcs = glob(["*.py"]),
+    deps = [
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//transformers",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "models", "galaxy", "requires_wormhole_b0", "requires_galaxy"],
+)

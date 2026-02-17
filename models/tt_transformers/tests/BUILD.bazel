@@ -1,0 +1,22 @@
+# TT-Transformers core model tests (Llama, Mistral, Qwen, etc.).
+# Referenced by: t3k_unit_tests (llama3-small, llama3.2-11b, llama3.2-90b, mistral),
+#   t3k_integration_tests (llama3, llama3-70b, llama3-90b, mistral).
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "tt_transformers_tests",
+    srcs = glob(
+        ["test_*.py"],
+        exclude = ["test_utils.py"],
+    ),
+    deps = [
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//transformers",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "models", "requires_wormhole_b0"],
+)

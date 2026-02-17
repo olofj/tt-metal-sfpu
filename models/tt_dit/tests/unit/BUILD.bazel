@@ -1,0 +1,17 @@
+# DiT framework unit tests (shared layers and components).
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "dit_unit_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//transformers",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "models", "dit", "requires_wormhole_b0"],
+)

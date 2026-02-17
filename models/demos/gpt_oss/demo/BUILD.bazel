@@ -1,0 +1,19 @@
+# GPT-OSS demo tests.
+# Referenced by: t3k_demo_tests, galaxy_demo_tests.
+
+load("//bazel:pytest.bzl", "pytest_test")
+
+pytest_test(
+    name = "test_gpt_oss_text_demo",
+    srcs = ["text_demo.py"],
+    deps = [
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//transformers",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "models", "requires_wormhole_b0", "requires_T3000"],
+    timeout_seconds = 900,
+)

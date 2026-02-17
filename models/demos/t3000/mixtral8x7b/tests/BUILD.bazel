@@ -1,0 +1,18 @@
+# Mixtral-8x7B T3000 legacy model tests.
+# Referenced by: t3k_integration_tests.
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "mixtral8x7b_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//transformers",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "models", "t3000", "requires_wormhole_b0", "requires_T3000"],
+)

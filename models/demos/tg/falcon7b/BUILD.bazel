@@ -1,0 +1,23 @@
+# Falcon-7B Galaxy (TG) demo tests.
+# Referenced by: galaxy_demo_tests.
+
+load("//bazel:pytest.bzl", "pytest_test")
+
+pytest_test(
+    name = "test_falcon7b_tg_demo",
+    srcs = ["demo_tg.py"],
+    data = [
+        "input_data_tg.json",
+        "expected_greedy_output.json",
+    ],
+    deps = [
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//transformers",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "models", "galaxy", "requires_wormhole_b0", "requires_galaxy"],
+    timeout_seconds = 600,
+)

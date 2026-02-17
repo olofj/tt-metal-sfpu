@@ -1,0 +1,4 @@
+# GPT-OSS model tests.
+# Referenced by: t3k_demo_tests, galaxy_demo_tests.
+
+package(default_visibility = ["//visibility:public"])

@@ -1,0 +1,19 @@
+# Qwen2.5-VL demo tests.
+# Referenced by: t3k_demo_tests (qwen25_vl demos).
+
+load("//bazel:pytest.bzl", "pytest_test")
+
+pytest_test(
+    name = "test_qwen25_vl_demo",
+    srcs = ["demo.py"],
+    deps = [
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//transformers",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "models", "requires_wormhole_b0", "requires_T3000"],
+    timeout_seconds = 900,
+)

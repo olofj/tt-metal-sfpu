@@ -1,0 +1,18 @@
+# Sentence-BERT T3000 tests.
+# Referenced by: t3k_demo_tests, t3k_perf_tests.
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "sentence_bert_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//transformers",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "models", "t3000", "requires_wormhole_b0", "requires_T3000"],
+)

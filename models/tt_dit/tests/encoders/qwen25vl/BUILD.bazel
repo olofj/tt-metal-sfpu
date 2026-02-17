@@ -1,0 +1,18 @@
+# Qwen2.5-VL encoder tests for DiT models.
+# Referenced by: t3k_integration_tests, galaxy_integration_tests.
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "qwen25vl_encoder_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//transformers",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "models", "dit", "requires_wormhole_b0"],
+)

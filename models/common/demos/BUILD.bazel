@@ -1,0 +1,19 @@
+# Common model demos (TTTv2 framework demos).
+# Referenced by: t3k_e2e_tests (llama31_8B_demo).
+
+load("//bazel:pytest.bzl", "pytest_test")
+
+pytest_test(
+    name = "test_llama31_8B_demo",
+    srcs = ["llama31_8B_demo.py"],
+    deps = [
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//transformers",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "models", "requires_wormhole_b0", "requires_T3000"],
+    timeout_seconds = 900,
+)

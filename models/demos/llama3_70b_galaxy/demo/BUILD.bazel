@@ -1,0 +1,72 @@
+# Llama3 70B Galaxy demo tests (also Qwen3-32B Galaxy demos).
+# Referenced by: galaxy_demo_tests (llama3 demos, qwen3-32b demos).
+
+load("//bazel:pytest.bzl", "pytest_test")
+
+pytest_test(
+    name = "test_demo_decode",
+    srcs = ["demo_decode.py"],
+    deps = [
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//transformers",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "models", "galaxy", "requires_wormhole_b0", "requires_galaxy"],
+    timeout_seconds = 1200,
+)
+
+pytest_test(
+    name = "test_text_demo",
+    srcs = ["text_demo.py"],
+    data = [
+        "outputs_batch_1.json",
+        "text_demo_targets.json",
+    ],
+    deps = [
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//transformers",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "models", "galaxy", "requires_wormhole_b0", "requires_galaxy"],
+    timeout_seconds = 1200,
+)
+
+pytest_test(
+    name = "test_demo_qwen_decode",
+    srcs = ["demo_qwen_decode.py"],
+    deps = [
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//transformers",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "models", "galaxy", "requires_wormhole_b0", "requires_galaxy"],
+    timeout_seconds = 1200,
+)
+
+pytest_test(
+    name = "test_text_qwen_demo",
+    srcs = ["text_qwen_demo.py"],
+    data = [
+        "qwen_outputs_batch_1.json",
+        "qwen_text_demo_targets.json",
+    ],
+    deps = [
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//transformers",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "models", "galaxy", "requires_wormhole_b0", "requires_galaxy"],
+    timeout_seconds = 1200,
+)

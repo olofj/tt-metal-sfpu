@@ -1,0 +1,19 @@
+# Stable Diffusion 3.5 Large model tests.
+# Referenced by: t3k_unit_tests, t3k_demo_tests, t3k_integration_tests,
+#   t3k_perf_tests, galaxy_demo_tests, galaxy_integration_tests, galaxy_perf_tests.
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "sd35_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//transformers",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "models", "dit", "requires_wormhole_b0"],
+)

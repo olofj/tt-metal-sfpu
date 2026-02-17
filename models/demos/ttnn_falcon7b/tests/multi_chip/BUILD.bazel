@@ -1,0 +1,18 @@
+# Falcon-7B multi-chip (T3000) component tests.
+# Referenced by: t3k_unit_tests (falcon7b).
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "falcon7b_multi_chip_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//transformers",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "models", "t3000", "requires_wormhole_b0", "requires_T3000"],
+)

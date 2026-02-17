@@ -1,6 +1,9 @@
-# TT-Transformers demo utilities.
+# TT-Transformers demo tests and utilities.
+# simple_text_demo.py is the most heavily referenced test file in the T3000/Galaxy
+# pipelines — used by Llama3, Mixtral, Mistral, Qwen2.5, Qwen3, and Galaxy demos.
 
 load("@rules_python//python:py_library.bzl", "py_library")
+load("//bazel:pytest.bzl", "pytest_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -13,4 +16,36 @@ py_library(
         "//models/common:utility_functions",
         "@pip//loguru",
     ],
+)
+
+pytest_test(
+    name = "test_simple_text_demo",
+    srcs = ["simple_text_demo.py"],
+    deps = [
+        ":trace_region_config",
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//transformers",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "models", "requires_wormhole_b0"],
+    timeout_seconds = 1800,
+)
+
+pytest_test(
+    name = "test_simple_vision_demo",
+    srcs = ["simple_vision_demo.py"],
+    deps = [
+        ":trace_region_config",
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//transformers",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "models", "requires_wormhole_b0"],
+    timeout_seconds = 900,
 )

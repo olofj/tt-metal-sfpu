@@ -1,0 +1,34 @@
+# Gemma-3 multimodal demo tests.
+# Referenced by: t3k_demo_tests (gemma3 text + vision demos).
+
+load("//bazel:pytest.bzl", "pytest_test")
+
+pytest_test(
+    name = "test_gemma3_text_demo",
+    srcs = ["text_demo.py"],
+    deps = [
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//transformers",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "models", "requires_wormhole_b0", "requires_T3000"],
+    timeout_seconds = 900,
+)
+
+pytest_test(
+    name = "test_gemma3_vision_demo",
+    srcs = ["vision_demo.py"],
+    deps = [
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//transformers",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "models", "requires_wormhole_b0", "requires_T3000"],
+    timeout_seconds = 900,
+)

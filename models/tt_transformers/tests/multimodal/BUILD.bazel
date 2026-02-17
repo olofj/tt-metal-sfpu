@@ -1,0 +1,19 @@
+# Llama 3.2 Vision multimodal component tests.
+# Referenced by: t3k_unit_tests (llama3.2-11b-vision, llama3.2-90b-vision),
+#   t3k_integration_tests (llama3.2-vision freq tests).
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "multimodal_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//transformers",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "models", "requires_wormhole_b0"],
+)

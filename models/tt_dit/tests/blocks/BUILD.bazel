@@ -1,0 +1,19 @@
+# DiT shared block tests (attention, transformer blocks).
+# Referenced by: t3k_integration_tests (flux1, motif blocks),
+#   galaxy_integration_tests (flux1, motif blocks).
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "dit_block_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//transformers",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "models", "dit", "requires_wormhole_b0"],
+)

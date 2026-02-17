@@ -1,0 +1,20 @@
+# Falcon-7B T3000 demo tests.
+# Referenced by: t3k_demo_tests.
+
+load("//bazel:pytest.bzl", "pytest_test")
+
+pytest_test(
+    name = "test_falcon7b_demo_t3000",
+    srcs = ["demo_t3000.py"],
+    data = ["input_data_t3000.json"],
+    deps = [
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//transformers",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "models", "t3000", "requires_wormhole_b0", "requires_T3000"],
+    timeout_seconds = 600,
+)

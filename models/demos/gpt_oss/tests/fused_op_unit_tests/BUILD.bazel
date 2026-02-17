@@ -1,0 +1,18 @@
+# GPT-OSS fused op unit tests.
+# Referenced by: galaxy_perf_tests (gpt-oss fused ops device perf).
+
+load("//bazel:pytest.bzl", "pytest_suite")
+
+pytest_suite(
+    name = "gpt_oss_fused_op_tests",
+    srcs = glob(["test_*.py"]),
+    deps = [
+        "//models/common:utility_functions",
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//loguru",
+        "@pip//torch",
+        "@pip//transformers",
+    ],
+    markers = ["slow"],
+    tags = ["ttnn", "nightly", "models", "requires_wormhole_b0", "requires_galaxy"],
+)
