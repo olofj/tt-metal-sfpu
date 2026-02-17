@@ -1,0 +1,55 @@
+# Community-contributed programming examples.
+#
+# Mirrors the CMake targets created by CREATE_PGM_EXAMPLES_EXE() in
+# contributed/CMakeLists.txt.
+
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+
+package(default_visibility = ["//tt_metal/programming_examples:__pkg__"])
+
+_EXAMPLE_COPTS = [
+    "-Wno-c++11-narrowing",
+    "-Wno-narrowing",
+]
+
+_EXAMPLE_DEFINES = [
+    'OVERRIDE_KERNEL_PREFIX=\\"tt_metal/programming_examples/\\"',
+]
+
+_EXAMPLE_DEPS = [
+    "//tt_metal",
+    "//tt_stl",
+]
+
+# Shared filegroup avoids runfiles collisions between binary name and
+# kernel data subdirectory.
+filegroup(
+    name = "contributed_kernels",
+    srcs = glob(["**/kernels/**"]),
+)
+
+cc_binary(
+    name = "vecadd",
+    srcs = ["vecadd/vecadd.cpp"],
+    copts = _EXAMPLE_COPTS,
+    data = [":contributed_kernels"],
+    defines = _EXAMPLE_DEFINES,
+    deps = _EXAMPLE_DEPS,
+)
+
+cc_binary(
+    name = "multicast",
+    srcs = ["multicast/multicast.cpp"],
+    copts = _EXAMPLE_COPTS,
+    data = [":contributed_kernels"],
+    defines = _EXAMPLE_DEFINES,
+    deps = _EXAMPLE_DEPS,
+)
+
+filegroup(
+    name = "all_contributed_examples",
+    srcs = [
+        ":multicast",
+        ":vecadd",
+    ],
+)

@@ -1,0 +1,65 @@
+# Distributed programming examples.
+#
+# Mirrors the CMake targets in distributed/CMakeLists.txt.
+# These examples demonstrate multi-device programming with tt_metal.
+
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+
+package(default_visibility = ["//tt_metal/programming_examples:__pkg__"])
+
+_EXAMPLE_COPTS = [
+    "-Wno-c++11-narrowing",
+    "-Wno-narrowing",
+]
+
+_EXAMPLE_DEFINES = [
+    'OVERRIDE_KERNEL_PREFIX=\\"tt_metal/programming_examples/\\"',
+]
+
+_EXAMPLE_DEPS = [
+    "//tt_metal",
+    "//tt_stl",
+]
+
+cc_binary(
+    name = "distributed_program_dispatch",
+    srcs = ["1_distributed_program_dispatch/distributed_program_dispatch.cpp"],
+    copts = _EXAMPLE_COPTS,
+    data = glob(["1_distributed_program_dispatch/kernels/**"]),
+    defines = _EXAMPLE_DEFINES,
+    deps = _EXAMPLE_DEPS,
+)
+
+cc_binary(
+    name = "distributed_buffer_rw",
+    srcs = ["2_distributed_buffer_rw/distributed_buffer_rw.cpp"],
+    copts = _EXAMPLE_COPTS,
+    defines = _EXAMPLE_DEFINES,
+    deps = _EXAMPLE_DEPS,
+)
+
+cc_binary(
+    name = "distributed_eltwise_add",
+    srcs = ["3_distributed_eltwise_add/distributed_eltwise_add.cpp"],
+    copts = _EXAMPLE_COPTS,
+    defines = _EXAMPLE_DEFINES,
+    deps = _EXAMPLE_DEPS,
+)
+
+cc_binary(
+    name = "distributed_trace_and_events",
+    srcs = ["4_distributed_trace_and_events/distributed_trace_and_events.cpp"],
+    copts = _EXAMPLE_COPTS,
+    defines = _EXAMPLE_DEFINES,
+    deps = _EXAMPLE_DEPS,
+)
+
+filegroup(
+    name = "all_distributed_examples",
+    srcs = [
+        ":distributed_buffer_rw",
+        ":distributed_eltwise_add",
+        ":distributed_program_dispatch",
+        ":distributed_trace_and_events",
+    ],
+)

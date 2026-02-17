@@ -1,0 +1,58 @@
+# Profiler programming examples.
+#
+# Mirrors the CMake targets created by CREATE_PGM_EXAMPLES_EXE() in
+# profiler/CMakeLists.txt. Each example is a standalone binary that
+# exercises the device profiler infrastructure.
+
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+
+package(default_visibility = ["//tt_metal/programming_examples:__pkg__"])
+
+_EXAMPLE_COPTS = [
+    "-Wno-c++11-narrowing",
+    "-Wno-narrowing",
+]
+
+_EXAMPLE_DEFINES = [
+    'OVERRIDE_KERNEL_PREFIX=\\"tt_metal/programming_examples/\\"',
+]
+
+_EXAMPLE_DEPS = [
+    "//tt_metal",
+    "//tt_stl",
+]
+
+# All profiler kernel files as a single filegroup. Using a shared
+# filegroup avoids runfiles symlink collisions that occur when the
+# binary name matches the data subdirectory name.
+filegroup(
+    name = "profiler_kernels",
+    srcs = glob(["**/kernels/**"]),
+)
+
+# Each entry: (target_name, subdirectory).
+_PROFILER_EXAMPLES = [
+    ("test_custom_cycle_count", "test_custom_cycle_count"),
+    ("test_custom_cycle_count_slow_dispatch", "test_custom_cycle_count_slow_dispatch"),
+    ("test_full_buffer", "test_full_buffer"),
+    ("test_multi_op", "test_multi_op"),
+    ("test_multi_op_buffer_overflow", "test_multi_op_buffer_overflow"),
+    ("test_dispatch_cores", "test_dispatch_cores"),
+    ("test_timestamped_events", "test_timestamped_events"),
+    ("test_noc_event_profiler", "test_noc_event_profiler"),
+    ("test_device_api_debugger", "test_device_api_debugger"),
+]
+
+[cc_binary(
+    name = name,
+    srcs = [subdir + "/" + name + ".cpp"],
+    copts = _EXAMPLE_COPTS,
+    data = [":profiler_kernels"],
+    defines = _EXAMPLE_DEFINES,
+    deps = _EXAMPLE_DEPS,
+) for name, subdir in _PROFILER_EXAMPLES]
+
+filegroup(
+    name = "all_profiler_examples",
+    srcs = [name for name, _ in _PROFILER_EXAMPLES],
+)

@@ -4,8 +4,18 @@
 # (CMake component: metalium-examples). Two filegroups split the
 # content as CMake does: non-kernel sources (docs, host code) and
 # kernel sources (device code under kernels/ directories).
+#
+# cc_binary targets mirror the CMake executables built under
+# BUILD_PROGRAMMING_EXAMPLES. All examples link //tt_metal and define
+# OVERRIDE_KERNEL_PREFIX so kernel paths resolve from the workspace root.
+
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 
 package(default_visibility = ["//packaging:__pkg__"])
+
+# --------------------------------------------------------------------------
+# Packaging filegroups
+# --------------------------------------------------------------------------
 
 # Example directories shipped by CMake (see CMakeLists.txt install rules).
 _EXAMPLE_DIRS = [
@@ -50,4 +60,70 @@ filegroup(
         exclude = ["**/BUILD*"],
         allow_empty = True,
     ),
+)
+
+# --------------------------------------------------------------------------
+# Shared compiler settings
+# --------------------------------------------------------------------------
+
+# Matches CMake: add_compile_definitions(OVERRIDE_KERNEL_PREFIX=...)
+# and add_compile_options(-Wno-{c++11-,}narrowing).
+_EXAMPLE_COPTS = [
+    "-Wno-c++11-narrowing",
+    "-Wno-narrowing",
+]
+
+_EXAMPLE_DEFINES = [
+    'OVERRIDE_KERNEL_PREFIX=\\"tt_metal/programming_examples/\\"',
+]
+
+_EXAMPLE_DEPS = [
+    "//tt_metal",
+    "//tt_stl",
+]
+
+# --------------------------------------------------------------------------
+# Simple single-file examples
+# --------------------------------------------------------------------------
+
+# Each entry: (target_name, directory, source_file).
+# CMake names these metal_example_<name>.
+_SIMPLE_EXAMPLES = [
+    ("metal_example_add_2_integers_in_compute", "add_2_integers_in_compute", "add_2_integers_in_compute.cpp"),
+    ("metal_example_add_2_integers_in_riscv", "add_2_integers_in_riscv", "add_2_integers_in_riscv.cpp"),
+    ("metal_example_eltwise_binary", "eltwise_binary", "eltwise_binary.cpp"),
+    ("metal_example_eltwise_sfpu", "eltwise_sfpu", "eltwise_sfpu.cpp"),
+    ("metal_example_hello_world_compute_kernel", "hello_world_compute_kernel", "hello_world_compute_kernel.cpp"),
+    ("metal_example_hello_world_datamovement_kernel", "hello_world_datamovement_kernel", "hello_world_datamovement_kernel.cpp"),
+    ("metal_example_hello_world_datatypes_kernel", "hello_world_datatypes_kernel", "hello_world_datatypes_kernel.cpp"),
+    ("metal_example_loopback", "loopback", "loopback.cpp"),
+    ("metal_example_noc_tile_transfer", "NoC_tile_transfer", "noc_tile_transfer.cpp"),
+    ("metal_example_pad_multi_core", "pad_multi_core", "pad_multi_core.cpp"),
+    ("metal_example_shard_data_rm", "shard_data_rm", "shard_data_rm.cpp"),
+    ("metal_example_vecadd_multi_core", "vecadd_multi_core", "vecadd_multi_core.cpp"),
+    ("metal_example_vecadd_sharding", "vecadd_sharding", "vecadd_sharding.cpp"),
+    ("metal_example_sfpu_eltwise_chain", "sfpu_eltwise_chain", "sfpu_eltwise_chain.cpp"),
+    ("metal_example_custom_sfpi_add", "custom_sfpi_add", "custom_sfpi_add.cpp"),
+    ("metal_example_custom_smoothstep", "custom_sfpi_smoothstep", "custom_sfpi_smoothstep.cpp"),
+]
+
+[cc_binary(
+    name = name,
+    srcs = [dir + "/" + src],
+    copts = _EXAMPLE_COPTS,
+    data = glob([dir + "/kernels/**"]),
+    defines = _EXAMPLE_DEFINES,
+    deps = _EXAMPLE_DEPS,
+) for name, dir, src in _SIMPLE_EXAMPLES]
+
+# Aggregate target for all simple examples in this package.
+filegroup(
+    name = "programming_examples",
+    srcs = [name for name, _, _ in _SIMPLE_EXAMPLES] + [
+        "//tt_metal/programming_examples/matmul:all_matmul_examples",
+        "//tt_metal/programming_examples/distributed:all_distributed_examples",
+        "//tt_metal/programming_examples/profiler:all_profiler_examples",
+        "//tt_metal/programming_examples/contributed:all_contributed_examples",
+    ],
+    visibility = ["//visibility:public"],
 )

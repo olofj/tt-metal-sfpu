@@ -1,0 +1,52 @@
+# Integration tests for the programming examples / SDK packaging.
+#
+# Mirrors the CMake targets in tests/CMakeLists.txt. These are built
+# as cc_binary (not cc_test) because they are designed to run against
+# installed .deb packages, not inside the Bazel sandbox.
+
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+
+package(default_visibility = ["//tt_metal/programming_examples:__pkg__"])
+
+_EXAMPLE_COPTS = [
+    "-Wno-c++11-narrowing",
+    "-Wno-narrowing",
+]
+
+_EXAMPLE_DEFINES = [
+    'OVERRIDE_KERNEL_PREFIX=\\"tt_metal/programming_examples/\\"',
+]
+
+cc_binary(
+    name = "package_integration_test",
+    srcs = ["package_integration_test.cpp"],
+    copts = _EXAMPLE_COPTS,
+    defines = _EXAMPLE_DEFINES,
+    deps = [
+        "//tt_metal",
+        "//tt_stl",
+        "@protobuf//:protobuf",
+    ],
+)
+
+cc_binary(
+    name = "out_of_tree_test",
+    srcs = ["out_of_tree_test.cpp"],
+    copts = _EXAMPLE_COPTS,
+    defines = _EXAMPLE_DEFINES,
+    deps = [
+        "//tt_metal",
+        "//tt_stl",
+    ],
+)
+
+cc_binary(
+    name = "mesh_device_test",
+    srcs = ["mesh_device_test.cpp"],
+    copts = _EXAMPLE_COPTS,
+    defines = _EXAMPLE_DEFINES,
+    deps = [
+        "//tt_metal",
+        "//tt_stl",
+    ],
+)

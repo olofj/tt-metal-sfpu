@@ -1,0 +1,82 @@
+# Matmul programming examples.
+#
+# Mirrors the CMake targets in matmul/CMakeLists.txt:
+# - matmul_common: INTERFACE library providing bmm_op.hpp
+# - metal_example_matmul_single_core
+# - metal_example_matmul_multi_core
+# - metal_example_matmul_multicore_reuse
+
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+package(default_visibility = ["//tt_metal/programming_examples:__pkg__"])
+
+_EXAMPLE_COPTS = [
+    "-Wno-c++11-narrowing",
+    "-Wno-narrowing",
+]
+
+_EXAMPLE_DEFINES = [
+    'OVERRIDE_KERNEL_PREFIX=\\"tt_metal/programming_examples/\\"',
+]
+
+# Header-only library shared by matmul examples (CMake: Matmul::Common).
+cc_library(
+    name = "matmul_common",
+    hdrs = ["matmul_common/bmm_op.hpp"],
+    strip_include_prefix = "matmul_common",
+)
+
+# Kernel files used by matmul examples at runtime.
+filegroup(
+    name = "matmul_kernels",
+    srcs = glob(["**/kernels/**"]),
+)
+
+cc_binary(
+    name = "metal_example_matmul_single_core",
+    srcs = ["matmul_single_core/matmul_single_core.cpp"],
+    copts = _EXAMPLE_COPTS,
+    data = [":matmul_kernels"],
+    defines = _EXAMPLE_DEFINES,
+    deps = [
+        ":matmul_common",
+        "//tt_metal",
+        "//tt_stl",
+    ],
+)
+
+cc_binary(
+    name = "metal_example_matmul_multi_core",
+    srcs = ["matmul_multi_core/matmul_multi_core.cpp"],
+    copts = _EXAMPLE_COPTS,
+    data = [":matmul_kernels"],
+    defines = _EXAMPLE_DEFINES,
+    deps = [
+        ":matmul_common",
+        "//tt_metal",
+        "//tt_stl",
+    ],
+)
+
+cc_binary(
+    name = "metal_example_matmul_multicore_reuse",
+    srcs = ["matmul_multicore_reuse/matmul_multicore_reuse.cpp"],
+    copts = _EXAMPLE_COPTS,
+    data = [":matmul_kernels"],
+    defines = _EXAMPLE_DEFINES,
+    deps = [
+        ":matmul_common",
+        "//tt_metal",
+        "//tt_stl",
+    ],
+)
+
+filegroup(
+    name = "all_matmul_examples",
+    srcs = [
+        ":metal_example_matmul_multi_core",
+        ":metal_example_matmul_multicore_reuse",
+        ":metal_example_matmul_single_core",
+    ],
+)
