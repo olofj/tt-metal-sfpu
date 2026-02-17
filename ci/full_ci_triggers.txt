@@ -1,0 +1,32 @@
+# Paths that trigger a FULL CI run (no affected-target filtering).
+#
+# Changes to these paths are foundational — they can affect any target in the
+# build graph, so it is not safe to rely on bazel query rdeps() to narrow the
+# test set. When a PR touches any of these paths, the workflow falls back to
+# running all tests for the relevant test stage.
+#
+# Syntax: one path prefix per line. A changed file matches if it starts with
+# any uncommented, non-empty line. Trailing slashes are significant (they
+# restrict matching to directories).
+#
+# Keep this list small — every entry defeats the purpose of affected-target CI.
+
+# Bazel build system files (changing the build graph itself)
+MODULE.bazel
+.bazelrc
+extensions.bzl
+bazel/
+
+# Toolchain definitions (compiler changes affect everything)
+toolchain/
+
+# Hardware abstraction layer and kernel runtime
+tt_metal/hw/
+tt_metal/kernels/
+
+# Third-party build files (dep changes can cascade)
+third_party/
+
+# CI infrastructure itself
+ci/
+.github/workflows/affected-target-tests.yaml

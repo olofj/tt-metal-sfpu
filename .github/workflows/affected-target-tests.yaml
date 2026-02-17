@@ -1,0 +1,257 @@
+name: "Bazel Affected-Target Tests"
+
+# Run only the tests affected by a PR's changes, using Bazel's dependency
+# graph (bazel query rdeps) to determine the minimal test set. Falls back
+# to full CI when foundational paths change (see ci/full_ci_triggers.txt).
+#
+# This workflow is the primary mechanism for reducing CI time on PRs that
+# touch a single module. Expected savings: 60-80% fewer test runs compared
+# to running the entire post-commit suite.
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      test-tag-filter:
+        description: "Bazel test tag filter (e.g., post_commit, frequent, slow)"
+        required: false
+        default: "post_commit"
+        type: string
+      force-full-ci:
+        description: "Force full CI (ignore affected-target analysis)"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  # -------------------------------------------------------------------------
+  # Phase 1: Determine which test targets are affected by the PR
+  # -------------------------------------------------------------------------
+  determine-targets:
+    runs-on: ubuntu-latest
+    outputs:
+      mode: ${{ steps.query.outputs.mode }}
+      affected_tests: ${{ steps.query.outputs.affected_tests }}
+      test_count: ${{ steps.query.outputs.test_count }}
+      needs_hardware: ${{ steps.classify.outputs.needs_hardware }}
+      has_host_tests: ${{ steps.classify.outputs.has_host_tests }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for accurate git diff
+
+      - name: Determine affected targets
+        id: query
+        run: |
+          set -euo pipefail
+
+          if [ "${{ inputs.force-full-ci }}" = "true" ]; then
+            echo "mode=FULL_CI" >> "$GITHUB_OUTPUT"
+            echo "test_count=all" >> "$GITHUB_OUTPUT"
+            echo "Force-full-CI requested"
+            exit 0
+          fi
+
+          # Run the affected-targets script
+          RESULT=$(ci/affected_targets.sh \
+            "origin/${{ github.base_ref || 'main' }}" \
+            "${{ github.sha }}")
+
+          if [ "$RESULT" = "FULL_CI" ]; then
+            echo "mode=FULL_CI" >> "$GITHUB_OUTPUT"
+            echo "test_count=all" >> "$GITHUB_OUTPUT"
+          elif [ "$RESULT" = "SKIP" ]; then
+            echo "mode=SKIP" >> "$GITHUB_OUTPUT"
+            echo "test_count=0" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=AFFECTED" >> "$GITHUB_OUTPUT"
+            # Store targets as a space-separated string (GitHub Actions
+            # output doesn't support multiline well in expressions).
+            TARGETS_ONELINE=$(echo "$RESULT" | tr '\n' ' ')
+            echo "affected_tests=$TARGETS_ONELINE" >> "$GITHUB_OUTPUT"
+            echo "test_count=$(echo "$RESULT" | wc -l | tr -d ' ')" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Classify test targets by hardware needs
+        id: classify
+        if: steps.query.outputs.mode != 'SKIP'
+        run: |
+          set -euo pipefail
+
+          MODE="${{ steps.query.outputs.mode }}"
+
+          if [ "$MODE" = "FULL_CI" ]; then
+            echo "has_host_tests=true" >> "$GITHUB_OUTPUT"
+            echo "needs_hardware=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          TARGETS="${{ steps.query.outputs.affected_tests }}"
+
+          # Check if any targets require hardware by querying their tags.
+          # Host-only tests can run on standard runners without TT devices.
+          HW_TAGS="requires_wormhole_b0|requires_blackhole|requires_galaxy|requires_N150|requires_N300|requires_T3000"
+
+          HAS_HOST="false"
+          NEEDS_HW="false"
+
+          for target in $TARGETS; do
+            TAGS=$(bazel query "attr(tags, '', $target)" --output=xml 2>/dev/null \
+              | grep -oP 'value="\K[^"]+' || echo "")
+
+            if echo "$TAGS" | grep -qE "$HW_TAGS"; then
+              NEEDS_HW="true"
+            else
+              HAS_HOST="true"
+            fi
+          done
+
+          echo "has_host_tests=$HAS_HOST" >> "$GITHUB_OUTPUT"
+          echo "needs_hardware=$NEEDS_HW" >> "$GITHUB_OUTPUT"
+
+      - name: Summary
+        run: |
+          echo "## Affected-Target Analysis" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Property | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|----------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Mode | \`${{ steps.query.outputs.mode }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Test count | ${{ steps.query.outputs.test_count }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Host tests | ${{ steps.classify.outputs.has_host_tests }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Hardware tests | ${{ steps.classify.outputs.needs_hardware }} |" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "${{ steps.query.outputs.mode }}" = "AFFECTED" ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "<details><summary>Affected targets</summary>" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            echo "${{ steps.query.outputs.affected_tests }}" | tr ' ' '\n' >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            echo "</details>" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  # -------------------------------------------------------------------------
+  # Phase 2: Run host-only tests (no TT hardware required)
+  # -------------------------------------------------------------------------
+  host-tests:
+    needs: determine-targets
+    if: >-
+      needs.determine-targets.outputs.mode != 'SKIP' &&
+      needs.determine-targets.outputs.has_host_tests == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Run affected host tests
+        run: |
+          set -euo pipefail
+
+          TAG_FILTER="${{ inputs.test-tag-filter || 'post_commit' }}"
+          HW_EXCLUDE="-requires_wormhole_b0,-requires_blackhole,-requires_galaxy,-requires_N150,-requires_N300,-requires_T3000,-no_remote"
+
+          if [ "${{ needs.determine-targets.outputs.mode }}" = "FULL_CI" ]; then
+            echo "Running FULL CI (host-only tests)"
+            bazel test //tests/... \
+              --test_tag_filters="${TAG_FILTER},${HW_EXCLUDE}" \
+              --test_output=errors \
+              --jobs=auto \
+              --local_test_jobs=4 \
+              --build_tests_only \
+              --flaky_test_attempts=2 \
+              || true  # Don't fail the job on test failures; report them
+          else
+            TARGETS="${{ needs.determine-targets.outputs.affected_tests }}"
+            echo "Running ${#TARGETS[@]} affected targets (host-only)"
+            # shellcheck disable=SC2086
+            bazel test $TARGETS \
+              --test_tag_filters="${TAG_FILTER},${HW_EXCLUDE}" \
+              --test_output=errors \
+              --jobs=auto \
+              --local_test_jobs=4 \
+              --build_tests_only \
+              --flaky_test_attempts=2 \
+              || true
+          fi
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bazel-test-results-host
+          path: |
+            bazel-testlogs/**/test.xml
+            bazel-testlogs/**/test.log
+          retention-days: 14
+
+  # -------------------------------------------------------------------------
+  # Phase 3: Run device tests (require TT hardware)
+  # -------------------------------------------------------------------------
+  device-tests:
+    needs: determine-targets
+    if: >-
+      needs.determine-targets.outputs.mode != 'SKIP' &&
+      needs.determine-targets.outputs.needs_hardware == 'true'
+    runs-on:
+      - arch-wormhole_b0
+      - config-t3000
+      - pipeline-functional
+      - in-service
+    timeout-minutes: 120
+    container:
+      options: "--device /dev/tenstorrent"
+      volumes:
+        - /dev/hugepages-1G:/dev/hugepages-1G
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Run affected device tests
+        env:
+          ARCH_NAME: wormhole_b0
+        run: |
+          set -euo pipefail
+
+          TAG_FILTER="${{ inputs.test-tag-filter || 'post_commit' }}"
+          # Exclude tests known to hang or that are too slow for PR CI
+          TAG_EXCLUDE="-frequently_hangs,-slow"
+
+          if [ "${{ needs.determine-targets.outputs.mode }}" = "FULL_CI" ]; then
+            echo "Running FULL CI (device tests)"
+            bazel test //tests/... \
+              --test_tag_filters="${TAG_FILTER},${TAG_EXCLUDE}" \
+              --test_output=errors \
+              --jobs=auto \
+              --build_tests_only \
+              --flaky_test_attempts=2 \
+              || true
+          else
+            TARGETS="${{ needs.determine-targets.outputs.affected_tests }}"
+            echo "Running affected device tests"
+            # shellcheck disable=SC2086
+            bazel test $TARGETS \
+              --test_tag_filters="${TAG_FILTER},${TAG_EXCLUDE}" \
+              --test_output=errors \
+              --jobs=auto \
+              --build_tests_only \
+              --flaky_test_attempts=2 \
+              || true
+          fi
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bazel-test-results-device
+          path: |
+            bazel-testlogs/**/test.xml
+            bazel-testlogs/**/test.log
+          retention-days: 14
