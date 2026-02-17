@@ -28,8 +28,7 @@ cc_binary(
 
         # Non-BCR dependencies
         "@asio//:asio",
-        # capnproto requires repo_mapping for @capnp-cpp (tracked by Phase 2 codegen issues)
-        # "@capnproto//src/capnp",
+        "@capnproto//src/capnp",
         "@enchantum//:enchantum",
         "@picosha2//:picosha2",
         "@reflect//:reflect_lib",

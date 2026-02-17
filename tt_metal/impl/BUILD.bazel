@@ -12,7 +12,10 @@
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("//bazel:cc_capnp.bzl", "cc_capnp_library")
 
-package(default_visibility = ["//tt_metal:__subpackages__"])
+package(default_visibility = [
+    "//tt_metal:__subpackages__",
+    "//tests:__subpackages__",
+])
 
 # ---------------------------------------------------------------------------
 # Header-only subset — breaks the llrt <-> impl circular dependency.

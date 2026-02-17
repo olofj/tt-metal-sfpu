@@ -4,9 +4,9 @@ These rules use the capnproto compiler tools from @capnproto to generate
 .capnp.h and .capnp.c++ files, matching the CMake build's
 capnp_generate_cpp() function.
 
-Unlike the upstream cc_capnp_library.bzl (which references @capnp-cpp and
-has repo_name mapping issues with Bzlmod), this rule directly references
-@capnproto targets using the repo name from our MODULE.bazel/extensions.bzl.
+This custom rule handles output directory layout and system-schema import
+resolution needed by tt-metal's .capnp files. It references @capnproto
+targets using the repo name from our MODULE.bazel/extensions.bzl.
 """
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")

@@ -364,25 +364,22 @@ cc_library(
     "watcher/test_runtime_args_known_garbage.cpp",
 ]]
 
-# Inspector RPC test — requires //tt_metal/impl visibility to be opened to //tests.
-# Also depends on capnp-rpc and numa. Disabled until impl visibility is updated.
-# TODO: Add //tests to //tt_metal/impl visibility and re-enable.
-# cc_test(
-#     name = "debug_tools_inspector_test_rpc_startup",
-#     srcs = ["debug_tools/inspector/test_rpc_startup.cpp"],
-#     copts = ["-DKJ_NO_EXCEPTIONS=0"],
-#     data = [":test_kernels"],
-#     deps = [
-#         ":test_fixtures",
-#         "//tests/tt_metal:test_utils",
-#         "//tests:test_metal_common_libs",
-#         "//tt_metal/impl",
-#         "@capnproto//src/capnp",
-#         "@capnproto//src/capnp:capnp-rpc",
-#         "//third_party/system:numa",
-#     ],
-#     tags = ["unit", "tt_metal", "debug_tools", "inspector"],
-# )
+cc_test(
+    name = "debug_tools_inspector_test_rpc_startup",
+    srcs = ["debug_tools/inspector/test_rpc_startup.cpp"],
+    copts = ["-DKJ_NO_EXCEPTIONS=0"],
+    data = [":test_kernels"],
+    deps = [
+        ":test_fixtures",
+        "//tests/tt_metal:test_utils",
+        "//tests:test_metal_common_libs",
+        "//tt_metal/impl",
+        "@capnproto//src/capnp",
+        "@capnproto//src/capnp:capnp-rpc",
+        "//third_party/system:numa",
+    ],
+    tags = ["unit", "tt_metal", "debug_tools", "inspector"],
+)
 
 # --------------------------------------------------------------------------
 # Ethernet tests

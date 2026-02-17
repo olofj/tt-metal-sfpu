@@ -19,8 +19,7 @@
 #include <gtest/gtest.h>
 
 // Non-BCR dependencies
-// capnp requires repo_mapping for @capnp-cpp (tracked by Phase 2 codegen issues)
-// #include <capnp/common.h>
+#include <capnp/common.h>
 #include <simde/x86/sse2.h>
 #include <taskflow/taskflow.hpp>
 #include <reflect>
