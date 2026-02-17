@@ -16,7 +16,14 @@ cc_library(
         ],
         allow_empty = True,
     ),
-    includes = ["test_utils"],
+    # Two include roots:
+    #   "test_utils" → allows #include "env_vars.hpp" (direct header name)
+    #   ".."         → allows #include "tt_metal/test_utils/env_vars.hpp"
+    #                  (used by test fixtures in common/)
+    includes = [
+        "..",
+        "test_utils",
+    ],
     deps = [
         "//tests:test_metal_common_libs",
     ],

@@ -1,0 +1,20 @@
+# multihost/multi_host_tests — basic multi-host smoke tests with MPI coordination.
+#
+# Mirrors the CMake targets from tests/tt_metal/multihost/multi_host_tests/CMakeLists.txt:
+#   - multi_host (OBJECT library) → multi_host_tests (executable)
+#
+# Requires --config=distributed (MPI support).
+
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
+package(default_visibility = ["//tests:__subpackages__"])
+
+cc_test(
+    name = "multi_host_tests",
+    srcs = ["main.cpp"],
+    deps = [
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal/multihost:multihost_common",
+    ],
+    tags = ["smoke", "multihost", "requires_multi_device"],
+)

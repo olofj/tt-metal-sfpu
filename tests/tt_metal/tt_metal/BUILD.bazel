@@ -19,6 +19,21 @@ cc_library(
     ]),
     deps = [
         "//tests:test_metal_common_libs",
+        "//tests/tt_metal:test_utils",
+    ],
+)
+
+# Dispatch test utilities — header-only helpers (generate_arange_vector,
+# create_runtime_args, etc.) used by dispatch tests and distributed tests.
+cc_library(
+    name = "dispatch_test_utils",
+    testonly = True,
+    hdrs = glob(["dispatch/*_utils.hpp"]) + [
+        "dispatch/random_program_fixture.hpp",
+    ],
+    deps = [
+        ":test_fixtures",
+        "//tests:test_metal_common_libs",
     ],
 )
 

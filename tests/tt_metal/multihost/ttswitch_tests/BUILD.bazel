@@ -1,0 +1,25 @@
+# multihost/ttswitch_tests — TTSwitch mesh device tests with MPI.
+#
+# Mirrors the CMake targets from tests/tt_metal/multihost/ttswitch_tests/CMakeLists.txt:
+#   - ttswitch_tests (OBJECT library) → multi_host_ttswitch_tests (executable)
+#
+# Tests TTSwitch mesh device operations. Requires TT_MESH_ID env var at runtime.
+# Requires --config=distributed (MPI support) and TTNN C++ library.
+
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
+package(default_visibility = ["//tests:__subpackages__"])
+
+cc_test(
+    name = "multi_host_ttswitch_tests",
+    srcs = [
+        "main.cpp",
+        "test_mesh_device_ttswitch.cpp",
+    ],
+    deps = [
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal/multihost:multihost_common",
+        "//ttnn:ttnn_core",
+    ],
+    tags = ["integration", "multihost", "ttswitch", "requires_multi_device"],
+)

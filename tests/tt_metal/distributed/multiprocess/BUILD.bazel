@@ -1,0 +1,49 @@
+# distributed/multiprocess tests — multi-process distributed tests that use
+# MPI-based multihost_main() for rank-aware test execution.
+#
+# Mirrors the CMake target: distributed_multiprocess_tests
+#
+# These tests require --config=distributed (MPI support) to build and run.
+# Each test file is split into its own cc_test target for fine-grained analysis.
+
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
+package(default_visibility = ["//tests:__subpackages__"])
+
+# --------------------------------------------------------------------------
+# Multiprocess distributed tests
+#
+# CMake builds a single "distributed_multiprocess_tests" executable with a
+# custom main() (multihost_main). In Bazel, each test file is a separate
+# cc_test that links the shared main.cpp.
+# --------------------------------------------------------------------------
+
+[cc_test(
+    name = src.replace(".cpp", ""),
+    srcs = [
+        "main.cpp",
+        src,
+    ],
+    copts = [
+        "-Wno-c++11-narrowing",
+        "-Wno-narrowing",
+    ],
+    deps = [
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal/multihost:multihost_common",
+        "//tests/tt_metal/tt_metal:test_fixtures",
+    ],
+    tags = ["unit", "distributed", "multiprocess", "requires_multi_device"],
+) for src in [
+    "test_visible_devices_mp.cpp",
+    "test_sanity.cpp",
+]]
+
+# --------------------------------------------------------------------------
+# Test suite for backward compatibility with CMake test groupings
+# --------------------------------------------------------------------------
+
+test_suite(
+    name = "distributed_multiprocess_tests",
+    tags = ["distributed", "multiprocess"],
+)

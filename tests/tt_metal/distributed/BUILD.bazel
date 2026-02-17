@@ -1,0 +1,111 @@
+# distributed tests — gtest-based tests for mesh device coordination, distributed
+# host buffers, mesh sockets, and related distributed infrastructure.
+#
+# Mirrors the CMake targets from tests/tt_metal/distributed/CMakeLists.txt:
+#   - distributed_unit_tests (monolithic executable → individual cc_test targets)
+#   - distributed_benchmarks (Google Benchmark executable)
+#
+# In Bazel, each test file gets its own cc_test for fine-grained affected-target
+# analysis. The distributed tests do NOT require MPI/--config=distributed — they
+# exercise single-host mesh device APIs.
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
+package(default_visibility = ["//tests:__subpackages__"])
+
+# --------------------------------------------------------------------------
+# Shared utilities (utils.cpp / utils.hpp)
+# --------------------------------------------------------------------------
+
+cc_library(
+    name = "distributed_test_utils",
+    testonly = True,
+    srcs = ["utils.cpp"],
+    hdrs = ["utils.hpp"],
+    copts = [
+        "-Wno-c++11-narrowing",
+        "-Wno-narrowing",
+    ],
+    deps = [
+        "//tests:test_common_libs",
+        "//tests/tt_metal/tt_metal:dispatch_test_utils",
+    ],
+)
+
+# --------------------------------------------------------------------------
+# Distributed unit tests
+#
+# CMake builds these as a single "distributed_unit_tests" executable.
+# In Bazel, each test file gets its own cc_test target.
+# --------------------------------------------------------------------------
+
+[cc_test(
+    name = src.replace(".cpp", ""),
+    srcs = [src],
+    copts = [
+        "-Wno-c++11-narrowing",
+        "-Wno-narrowing",
+    ],
+    data = ["//tests/tt_metal/tt_metal:test_kernels"],
+    deps = [
+        ":distributed_test_utils",
+        "//tests:test_common_libs",
+        "//tests/tt_metal/tt_metal:test_fixtures",
+    ],
+    tags = ["unit", "distributed", "requires_multi_device"],
+) for src in [
+    "test_auto_mpi_init.cpp",
+    "test_control_plane_local_mesh_binding.cpp",
+    "test_end_to_end_eltwise.cpp",
+    "test_distributed_host_buffer.cpp",
+    "test_maybe_remote.cpp",
+    "test_mesh_buffer.cpp",
+    "test_mesh_coord.cpp",
+    "test_mesh_device.cpp",
+    "test_mesh_device_reshape.cpp",
+    "test_mesh_device_view.cpp",
+    "test_mesh_workload.cpp",
+    "test_mesh_socket.cpp",
+    "test_hd_sockets.cpp",
+    "test_mesh_sub_device.cpp",
+    "test_mesh_allocator.cpp",
+    "test_mesh_events.cpp",
+    "test_mesh_trace.cpp",
+    "test_thread_pool.cpp",
+    "test_dispatch_context.cpp",
+]]
+
+# --------------------------------------------------------------------------
+# Distributed benchmarks (Google Benchmark)
+#
+# CMake target: distributed_benchmarks
+# --------------------------------------------------------------------------
+
+[cc_test(
+    name = src.replace(".cpp", ""),
+    srcs = [src],
+    deps = [
+        ":distributed_test_utils",
+        "//tests:test_common_libs",
+        "@google_benchmark//:benchmark",
+    ],
+    tags = ["benchmark", "distributed", "requires_multi_device"],
+) for src in [
+    "benchmark_thread_pool.cpp",
+    "benchmark_distributed_host_buffer.cpp",
+]]
+
+# --------------------------------------------------------------------------
+# Test suites for backward compatibility with CMake test groupings
+# --------------------------------------------------------------------------
+
+test_suite(
+    name = "distributed_unit_tests",
+    tags = ["unit", "distributed"],
+)
+
+test_suite(
+    name = "distributed_benchmarks",
+    tags = ["benchmark", "distributed"],
+)

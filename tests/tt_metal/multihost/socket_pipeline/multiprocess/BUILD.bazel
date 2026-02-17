@@ -1,0 +1,115 @@
+# socket_pipeline/multiprocess — multi-process socket pipeline tests with MPI.
+#
+# Mirrors the CMake targets from tests/tt_metal/multihost/socket_pipeline/multiprocess/CMakeLists.txt:
+#   - unit_tests_single_host_pipeline (loopback pipeline)
+#   - unit_tests_pipeline (multi-host pipeline)
+#
+# Both targets share common mesh socket send/recv and forward utilities.
+# Requires --config=distributed (MPI support).
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
+package(default_visibility = ["//tests:__subpackages__"])
+
+# Kernel source files used at runtime via JIT compilation.
+filegroup(
+    name = "test_kernels",
+    srcs = glob(["utils/kernels/**"]),
+)
+
+# --------------------------------------------------------------------------
+# Shared pipeline utilities — mesh socket send/recv and forwarding
+# --------------------------------------------------------------------------
+
+cc_library(
+    name = "pipeline_utils",
+    testonly = True,
+    srcs = [
+        "utils/mesh_socket_forward.cpp",
+        "utils/mesh_socket_rate.cpp",
+        "utils/mesh_socket_send_recv.cpp",
+    ],
+    hdrs = [
+        "utils/mesh_socket_forward.hpp",
+        "utils/mesh_socket_rate.hpp",
+        "utils/mesh_socket_send_recv.hpp",
+    ],
+    # Source files use "tt_metal/multihost/..." includes (rooted at tests/).
+    copts = [
+        "-Itests",
+        "-Wno-c++11-narrowing",
+        "-Wno-narrowing",
+    ],
+    deps = [
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal/multihost/fabric_tests:intermesh_routing_test_utils",
+        "//tests/tt_metal/multihost/fabric_tests:socket_send_recv_utils",
+    ],
+)
+
+# --------------------------------------------------------------------------
+# Single-host loopback pipeline test
+#
+# CMake target: unit_tests_single_host_pipeline
+# --------------------------------------------------------------------------
+
+cc_test(
+    name = "unit_tests_single_host_pipeline",
+    srcs = [
+        "main.cpp",
+        "single_host_pipeline_tests.cpp",
+    ],
+    # Source files use "tt_metal/multihost/..." includes (rooted at tests/).
+    copts = [
+        "-Itests",
+        "-Wno-c++11-narrowing",
+        "-Wno-narrowing",
+    ],
+    data = [
+        ":test_kernels",
+        "//tests/tt_metal/multihost/fabric_tests:test_kernels",
+    ],
+    deps = [
+        ":pipeline_utils",
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal/multihost:multihost_common",
+        "//tests/tt_metal/multihost/fabric_tests:intermesh_routing_test_utils",
+        "//tests/tt_metal/multihost/fabric_tests:socket_send_recv_utils",
+        "//tests/tt_metal/tt_metal:test_fixtures",
+    ],
+    tags = ["integration", "multihost", "socket_pipeline", "requires_multi_device"],
+)
+
+# --------------------------------------------------------------------------
+# Multi-host pipeline test
+#
+# CMake target: unit_tests_pipeline
+# --------------------------------------------------------------------------
+
+cc_test(
+    name = "unit_tests_pipeline",
+    srcs = [
+        "main.cpp",
+        "multi_host_pipeline.cpp",
+    ],
+    # Source files use "tt_metal/multihost/..." includes (rooted at tests/).
+    copts = [
+        "-Itests",
+        "-Wno-c++11-narrowing",
+        "-Wno-narrowing",
+    ],
+    data = [
+        ":test_kernels",
+        "//tests/tt_metal/multihost/fabric_tests:test_kernels",
+    ],
+    deps = [
+        ":pipeline_utils",
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal/multihost:multihost_common",
+        "//tests/tt_metal/multihost/fabric_tests:intermesh_routing_test_utils",
+        "//tests/tt_metal/multihost/fabric_tests:socket_send_recv_utils",
+        "//tests/tt_metal/tt_metal:test_fixtures",
+    ],
+    tags = ["integration", "multihost", "socket_pipeline", "requires_multi_device"],
+)

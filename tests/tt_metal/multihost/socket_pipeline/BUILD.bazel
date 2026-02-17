@@ -1,0 +1,4 @@
+# socket_pipeline — parent package for multi-process socket pipeline tests.
+#
+# The actual test targets are in the multiprocess/ subdirectory.
+# This BUILD.bazel exists only for Bazel package structure.

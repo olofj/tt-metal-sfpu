@@ -1,0 +1,32 @@
+# multihost — shared test infrastructure for multi-host and multi-process tests.
+#
+# Provides the multihost_common library containing multihost_test_tools.hpp,
+# which supplies the multihost_main() entry point used by all multihost test
+# executables. This function initializes MPI-based DistributedContext, sets up
+# rank-aware gtest output, and propagates test results across ranks.
+#
+# All multihost tests require --config=distributed (MPI support).
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+package(default_visibility = ["//tests:__subpackages__"])
+
+# --------------------------------------------------------------------------
+# Shared multihost test tools (header-only)
+#
+# Provides multihost_main(), MPI-aware assertions (EXPECT_EQ_ALL_RANKS, etc.),
+# and barrier synchronization for multi-rank tests.
+#
+# CMake equivalent: include directory ${PROJECT_SOURCE_DIR}/tests/tt_metal/multihost
+# --------------------------------------------------------------------------
+
+cc_library(
+    name = "multihost_common",
+    testonly = True,
+    hdrs = ["common/multihost_test_tools.hpp"],
+    includes = ["."],
+    deps = [
+        "//tests:test_metal_common_libs",
+        "@fmt",
+    ],
+)

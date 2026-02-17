@@ -1,0 +1,140 @@
+# multihost/fabric_tests — multi-host fabric routing, inter-mesh communication,
+# and mesh socket send/recv tests.
+#
+# Mirrors the CMake targets from tests/tt_metal/multihost/fabric_tests/CMakeLists.txt:
+#   - multi_host_fabric (OBJECT library) → multi_host_fabric_tests (executable)
+#   - mesh_socket_components (OBJECT library) → test_mesh_socket_main (executable)
+#
+# All targets require --config=distributed (MPI support) and multi-host hardware.
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
+package(default_visibility = ["//tests:__subpackages__"])
+
+# Kernel source files used at runtime via JIT compilation.
+filegroup(
+    name = "test_kernels",
+    srcs = glob(["kernels/**"]),
+)
+
+# --------------------------------------------------------------------------
+# Shared test utilities — intermesh routing helpers and socket send/recv utils
+#
+# CMake equivalents: part of multi_host_fabric OBJECT library, also used by
+# socket_pipeline tests.
+# --------------------------------------------------------------------------
+
+cc_library(
+    name = "intermesh_routing_test_utils",
+    testonly = True,
+    srcs = ["intermesh_routing_test_utils.cpp"],
+    hdrs = ["intermesh_routing_test_utils.hpp"],
+    copts = [
+        "-Wno-c++11-narrowing",
+        "-Wno-narrowing",
+    ],
+    deps = [
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal/tt_fabric:fabric_test_common",
+    ],
+)
+
+cc_library(
+    name = "socket_send_recv_utils",
+    testonly = True,
+    srcs = ["socket_send_recv_utils.cpp"],
+    hdrs = [
+        "multihost_fabric_fixtures.hpp",
+        "socket_send_recv_utils.hpp",
+    ],
+    copts = [
+        "-Wno-c++11-narrowing",
+        "-Wno-narrowing",
+    ],
+    deps = [
+        ":intermesh_routing_test_utils",
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal/tt_fabric:fabric_test_common",
+        "//tests/tt_metal/tt_metal:test_fixtures",
+    ],
+)
+
+# --------------------------------------------------------------------------
+# multi_host_fabric_tests — gtest executable with multihost_main()
+#
+# CMake: multi_host_fabric (OBJECT) → multi_host_fabric_tests (executable)
+# Tests inter-mesh routing and socket send/recv with MPI rank coordination.
+# --------------------------------------------------------------------------
+
+cc_test(
+    name = "multi_host_fabric_tests",
+    srcs = [
+        "main.cpp",
+        "intermesh_routing.cpp",
+        "socket_send_recv.cpp",
+    ],
+    copts = [
+        "-Wno-c++11-narrowing",
+        "-Wno-narrowing",
+    ],
+    data = [":test_kernels"],
+    deps = [
+        ":intermesh_routing_test_utils",
+        ":socket_send_recv_utils",
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal/multihost:multihost_common",
+    ],
+    tags = ["integration", "multihost", "fabric", "requires_multi_device"],
+)
+
+# --------------------------------------------------------------------------
+# Mesh socket components — YAML-driven mesh socket test framework
+#
+# CMake: mesh_socket_components (OBJECT library)
+# --------------------------------------------------------------------------
+
+cc_library(
+    name = "mesh_socket_components",
+    testonly = True,
+    srcs = [
+        "mesh_socket_test_context.cpp",
+        "mesh_socket_yaml_parser.cpp",
+    ],
+    hdrs = [
+        "mesh_socket_test_context.hpp",
+        "mesh_socket_yaml_parser.hpp",
+    ],
+    copts = [
+        "-Wno-c++11-narrowing",
+        "-Wno-narrowing",
+        # mesh_socket_yaml_parser.cpp uses <tt_stl/...> angle-bracket include.
+        "-isystem",
+        ".",
+    ],
+    deps = [
+        ":socket_send_recv_utils",
+        "//tests:test_metal_common_libs",
+        "@yaml-cpp",
+    ],
+)
+
+# --------------------------------------------------------------------------
+# test_mesh_socket_main — standalone (non-gtest) mesh socket test driver
+#
+# CMake target: test_mesh_socket_main
+# Parses YAML configs and runs mesh socket tests via MeshSocketTestContext.
+# --------------------------------------------------------------------------
+
+cc_binary(
+    name = "test_mesh_socket_main",
+    testonly = True,
+    srcs = ["mesh_socket_test_main.cpp"],
+    deps = [
+        ":mesh_socket_components",
+        "//tests:test_metal_common_libs",
+        "@tt_logger//:tt_logger",
+        "@yaml-cpp",
+    ],
+)

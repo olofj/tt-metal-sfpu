@@ -1,0 +1,24 @@
+# multihost/sockets — multi-host socket handshaking tests with MPI.
+#
+# Mirrors the CMake targets from tests/tt_metal/multihost/sockets/CMakeLists.txt:
+#   - multi_host_sockets (OBJECT library) → multi_host_socket_tests (executable)
+#
+# Tests socket handshaking between hosts via MPI-coordinated test execution.
+# Requires --config=distributed (MPI support).
+
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
+package(default_visibility = ["//tests:__subpackages__"])
+
+cc_test(
+    name = "multi_host_socket_tests",
+    srcs = [
+        "main.cpp",
+        "test_handshaking.cpp",
+    ],
+    deps = [
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal/multihost:multihost_common",
+    ],
+    tags = ["integration", "multihost", "sockets", "requires_multi_device"],
+)

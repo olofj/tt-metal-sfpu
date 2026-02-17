@@ -1,0 +1,24 @@
+# multihost/fault_tolerance_tests — ULFM fault tolerance tests with MPI.
+#
+# Mirrors the CMake targets from tests/tt_metal/multihost/fault_tolerance_tests/CMakeLists.txt:
+#   - fault_tolerance (OBJECT library) → fault_tolerance_tests (executable)
+#
+# Tests MPI ULFM (User Level Failure Mitigation) fault tolerance capabilities.
+# Requires --config=distributed (MPI support) and OpenMPI 5.0+ with ULFM.
+
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
+package(default_visibility = ["//tests:__subpackages__"])
+
+cc_test(
+    name = "fault_tolerance_tests",
+    srcs = [
+        "main.cpp",
+        "ulfm_tests.cpp",
+    ],
+    deps = [
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal/multihost:multihost_common",
+    ],
+    tags = ["smoke", "multihost", "fault_tolerance", "requires_multi_device"],
+)

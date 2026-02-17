@@ -1,0 +1,24 @@
+# multihost/single_host_mp_tests — single-host multi-process tests using MPI.
+#
+# Mirrors the CMake targets from tests/tt_metal/multihost/single_host_mp_tests/CMakeLists.txt:
+#   - single_host_mp (OBJECT library) → single_host_mp_tests (executable)
+#
+# Tests MPI distributed context on a single host with multiple processes.
+# Requires --config=distributed (MPI support).
+
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
+package(default_visibility = ["//tests:__subpackages__"])
+
+cc_test(
+    name = "single_host_mp_tests",
+    srcs = [
+        "main.cpp",
+        "test_context.cpp",
+    ],
+    deps = [
+        "//tests:test_metal_common_libs",
+        "//tests/tt_metal/multihost:multihost_common",
+    ],
+    tags = ["smoke", "multihost", "multiprocess", "requires_multi_device"],
+)
