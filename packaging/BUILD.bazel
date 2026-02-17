@@ -1,0 +1,447 @@
+"""Debian packages for tt-metalium and tt-nn.
+
+Mirrors the CPack component-based packaging in cmake/packaging.cmake.
+Each component group produces a separate .deb file, matching the naming
+and file layout of the CMake build.
+
+Component groups (from cmake/packaging.cmake):
+  metalium       → tt-metalium        (runtime: libtt_metal.so, UMD, Tracy)
+  metalium-dev   → tt-metalium-dev    (SDK: headers, CMake configs, 3rd-party)
+  metalium-jit   → tt-metalium-jit    (JIT: SFPI toolchain, kernels)
+  metalium-examples → tt-metalium-examples (kernel programming examples)
+  metalium-validation → tt-metalium-validation (validation test binaries)
+  nn             → tt-nn              (runtime: libttnn.so, _ttnn.so)
+  nn-dev         → tt-nn-dev          (SDK: TTNN headers, CMake configs)
+  nn-examples    → tt-nn-examples     (TTNN example programs)
+  nn-validation  → tt-nn-validation   (TTNN validation test binaries)
+
+Usage:
+  bazel build //packaging:all                              # all packages
+  bazel build //packaging:tt-metalium --stamp              # single package, stamped
+  bazel build //packaging:tt-metalium --config=release     # release build
+
+Debug symbol packages (.ddeb) are gated behind the :enable_debuginfo setting
+and excluded by default (matching CPack behavior for non-Release builds).
+"""
+
+load("@rules_pkg//pkg:deb.bzl", "pkg_deb")
+load("@rules_pkg//pkg:mappings.bzl", "pkg_files", "pkg_mkdirs")
+load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
+load("//bazel:stamp_version.bzl", "stamp_version")
+load("//packaging:deb.bzl", "tt_deb")
+
+package(default_visibility = ["//visibility:public"])
+
+# ===========================================================================
+# Version stamping
+#
+# Extracts STABLE_VERSION from bazel/stamp_version.sh and converts it to
+# Debian version format. The stamp_version.sh already produces PEP 440
+# versions that are close to Debian format; we reuse as-is since the CMake
+# version.cmake also derives from git describe.
+#
+# With --stamp:   real version from git tags (e.g., "0.65.2+1521.a1b2c3d4")
+# With --nostamp: fallback "0.0.0.dev0"
+# ===========================================================================
+
+stamp_version(
+    name = "deb_version",
+    key = "STABLE_VERSION",
+    fallback = "0.0.0~dev0",
+)
+
+# ===========================================================================
+# metalium — TT-Metalium runtime library
+#
+# CMake components: metalium, metalium-runtime, umd-runtime, tracy
+# Contents: libtt_metal.so, libtt_stl.so, libumd.so, libTracyClient.so,
+#           JIT API headers (libexec/), SoC descriptors, core descriptors
+# ===========================================================================
+
+pkg_files(
+    name = "metalium_runtime_libs",
+    srcs = [
+        # Placeholder for shared library outputs.
+        # When cc_shared_library targets are added, reference them here:
+        #   "//tt_metal:libtt_metal.so",
+        #   "//tt_stl:libtt_stl.so",
+        #   "//tt_metal/third_party/umd/device:libumd.so",
+        #   "//tt_metal/third_party:libTracyClient.so",
+    ],
+    prefix = "usr/lib",
+)
+
+# JIT API headers and SoC/core descriptors shipped with the metalium runtime.
+# These are used at runtime for JIT compilation on device.
+pkg_files(
+    name = "metalium_jitapi_files",
+    srcs = [
+        # Placeholder for JIT API headers from tt_metal/hw, tt_metal/fabric, etc.
+        # Populated as the Bazel build adds file_set equivalents:
+        #   "//tt_metal/api:jit_api_hdrs",
+        #   "//tt_metal/hw:jit_api_hdrs",
+        #   "//tt_metal/fabric:jit_api_hdrs",
+    ],
+    prefix = "usr/libexec/tt-metalium/tt_metal",
+)
+
+pkg_tar(
+    name = "metalium_data",
+    srcs = [
+        ":metalium_jitapi_files",
+        ":metalium_runtime_libs",
+    ],
+)
+
+tt_deb(
+    name = "tt-metalium",
+    data_tar = ":metalium_data",
+    description = "TT-Metalium runtime library",
+    package = "tt-metalium",
+    section = "libs",
+)
+
+# ===========================================================================
+# metalium-dev — TT-Metalium SDK (headers, CMake configs, 3rd-party headers)
+#
+# CMake components: metalium-dev, fmt-core, enchantum, umd-dev,
+#                   spdlog-dev, tt-logger-dev
+# Explicit depends: nlohmann-json3-dev (>= 3.10)
+# ===========================================================================
+
+pkg_files(
+    name = "metalium_dev_headers",
+    srcs = [
+        # Placeholder for public API headers.
+        # When Bazel has FILE_SET equivalents:
+        #   "//tt_metal/api:api_hdrs",
+        #   "//tt_stl:api_hdrs",
+    ],
+    prefix = "usr/include",
+)
+
+pkg_files(
+    name = "metalium_dev_thirdparty_headers",
+    srcs = [
+        # 3rd-party headers exported in the public API
+        # (reflect, enchantum, TracyClient, tt-logger headers)
+    ],
+    prefix = "usr/include/metalium-thirdparty",
+)
+
+# CMake package config files for find_package(TT-Metalium)
+pkg_files(
+    name = "metalium_dev_cmake",
+    srcs = [
+        # Placeholder for generated cmake config files:
+        #   "//packaging:tt-metalium-config.cmake",
+        #   "//packaging:tt-metalium-config-version.cmake",
+        #   "//packaging:Metalium.cmake",  # export targets
+    ],
+    prefix = "usr/lib/cmake/tt-metalium",
+)
+
+# Proto schema files for external use (from tt_metal/fabric/protobuf/)
+pkg_files(
+    name = "metalium_dev_protos",
+    srcs = [
+        # "//tt_metal/fabric:proto_schemas",
+    ],
+    prefix = "usr/share/tt-metalium/proto",
+)
+
+pkg_tar(
+    name = "metalium_dev_data",
+    srcs = [
+        ":metalium_dev_cmake",
+        ":metalium_dev_headers",
+        ":metalium_dev_protos",
+        ":metalium_dev_thirdparty_headers",
+    ],
+)
+
+tt_deb(
+    name = "tt-metalium-dev",
+    data_tar = ":metalium_dev_data",
+    depends = [
+        "tt-metalium (= @VERSION@)",
+        "nlohmann-json3-dev (>= 3.10)",
+    ],
+    description = "TT-Metalium SDK",
+    package = "tt-metalium-dev",
+    section = "devel",
+)
+
+# ===========================================================================
+# metalium-jit — JIT runtime (SFPI toolchain, kernel sources)
+#
+# CMake components: metalium-jit, jit-build
+# Contains the SFPI RISC-V cross-compiler and kernel source files needed
+# for runtime compilation on device.
+# ===========================================================================
+
+pkg_files(
+    name = "metalium_jit_sfpi",
+    srcs = [
+        # Placeholder for SFPI toolchain files.
+        # The CMake build installs runtime/sfpi/ to libexec/tt-metalium/runtime/sfpi
+    ],
+    prefix = "usr/libexec/tt-metalium/runtime/sfpi",
+)
+
+pkg_tar(
+    name = "metalium_jit_data",
+    srcs = [
+        ":metalium_jit_sfpi",
+    ],
+)
+
+tt_deb(
+    name = "tt-metalium-jit",
+    data_tar = ":metalium_jit_data",
+    description = "TT-Metalium JIT runtime library",
+    package = "tt-metalium-jit",
+    section = "libs",
+)
+
+# ===========================================================================
+# metalium-examples — TT-Metalium kernel programming examples
+#
+# CMake component: metalium-examples (DEPENDS metalium-dev)
+# ===========================================================================
+
+pkg_files(
+    name = "metalium_examples_files",
+    srcs = [
+        # Placeholder for programming examples.
+        # CMake installs to share/tt-metalium/examples/
+        # When targets exist:
+        #   "//tt_metal/programming_examples:example_sources",
+    ],
+    prefix = "usr/share/tt-metalium/examples",
+)
+
+pkg_tar(
+    name = "metalium_examples_data",
+    srcs = [
+        ":metalium_examples_files",
+    ],
+)
+
+tt_deb(
+    name = "tt-metalium-examples",
+    data_tar = ":metalium_examples_data",
+    depends = [
+        "tt-metalium-dev (= @VERSION@)",
+    ],
+    description = "TT-Metalium examples",
+    package = "tt-metalium-examples",
+    section = "doc",
+)
+
+# ===========================================================================
+# metalium-validation — TT-Metalium validation tools
+#
+# CMake components: metalium-validation, gtest
+# Depends on: metalium
+# ===========================================================================
+
+pkg_files(
+    name = "metalium_validation_bins",
+    srcs = [
+        # Placeholder for validation binaries:
+        #   "//tt_metal/test:tt-metalium-validation-smoke",
+        #   "//tt_metal/test:tt-metalium-validation-basic",
+    ],
+    prefix = "usr/bin",
+)
+
+pkg_tar(
+    name = "metalium_validation_data",
+    srcs = [
+        ":metalium_validation_bins",
+    ],
+)
+
+tt_deb(
+    name = "tt-metalium-validation",
+    data_tar = ":metalium_validation_data",
+    depends = [
+        "tt-metalium (= @VERSION@)",
+    ],
+    description = "TT-Metalium validation tools",
+    package = "tt-metalium-validation",
+    section = "utils",
+)
+
+# ===========================================================================
+# nn — TT-NN runtime library
+#
+# CMake components: nn, ttnn-runtime
+# Depends on: metalium
+# Contents: libttnn.so, _ttnn.so (nanobind), TTNN JIT kernels
+# ===========================================================================
+
+pkg_files(
+    name = "nn_runtime_libs",
+    srcs = [
+        # Placeholder for TTNN shared libraries:
+        #   "//ttnn:libttnncpp.so",
+        #   "//ttnn:_ttnn.so",
+        #   "//ttnn:libttnn_core.so",
+    ],
+    prefix = "usr/lib",
+)
+
+pkg_files(
+    name = "nn_jitapi_files",
+    srcs = [
+        # TTNN JIT kernels installed to libexec/
+    ],
+    prefix = "usr/libexec/tt-metalium/ttnn",
+)
+
+pkg_tar(
+    name = "nn_data",
+    srcs = [
+        ":nn_jitapi_files",
+        ":nn_runtime_libs",
+    ],
+)
+
+tt_deb(
+    name = "tt-nn",
+    data_tar = ":nn_data",
+    depends = [
+        "tt-metalium (= @VERSION@)",
+    ],
+    description = "TT-NN runtime library",
+    package = "tt-nn",
+    section = "libs",
+)
+
+# ===========================================================================
+# nn-dev — TT-NN SDK (headers, CMake configs)
+#
+# CMake components: nn-dev, ttnn-dev
+# Depends on: metalium-dev, nn
+# Explicit depends: libxtensor-dev (>= 0.23.10)
+# ===========================================================================
+
+pkg_files(
+    name = "nn_dev_headers",
+    srcs = [
+        # Placeholder for TTNN public headers:
+        #   "//ttnn/cpp/ttnn:api_hdrs",
+    ],
+    prefix = "usr/include",
+)
+
+pkg_files(
+    name = "nn_dev_kernel_headers",
+    srcs = [
+        # TTNN kernel file set headers (for development)
+    ],
+    prefix = "usr/libexec/tt-metalium/ttnn",
+)
+
+pkg_files(
+    name = "nn_dev_cmake",
+    srcs = [
+        # Placeholder for CMake config files:
+        #   "//packaging:tt-nn-config.cmake",
+        #   "//packaging:tt-nn-config-version.cmake",
+        #   "//packaging:TT-NN.cmake",
+    ],
+    prefix = "usr/lib/cmake/tt-nn",
+)
+
+pkg_tar(
+    name = "nn_dev_data",
+    srcs = [
+        ":nn_dev_cmake",
+        ":nn_dev_headers",
+        ":nn_dev_kernel_headers",
+    ],
+)
+
+tt_deb(
+    name = "tt-nn-dev",
+    data_tar = ":nn_dev_data",
+    depends = [
+        "tt-metalium-dev (= @VERSION@)",
+        "tt-nn (= @VERSION@)",
+        "libxtensor-dev (>= 0.23.10)",
+    ],
+    description = "TT-NN SDK",
+    package = "tt-nn-dev",
+    section = "devel",
+)
+
+# ===========================================================================
+# nn-examples — TT-NN example programs
+#
+# CMake component: nn-examples (DEPENDS nn-dev)
+# ===========================================================================
+
+pkg_files(
+    name = "nn_examples_files",
+    srcs = [
+        # Placeholder for TTNN examples
+    ],
+    prefix = "usr/share/tt-nn/examples",
+)
+
+pkg_tar(
+    name = "nn_examples_data",
+    srcs = [
+        ":nn_examples_files",
+    ],
+)
+
+tt_deb(
+    name = "tt-nn-examples",
+    data_tar = ":nn_examples_data",
+    depends = [
+        "tt-nn-dev (= @VERSION@)",
+    ],
+    description = "TT-NN examples",
+    package = "tt-nn-examples",
+    section = "doc",
+)
+
+# ===========================================================================
+# nn-validation — TT-NN validation tools
+#
+# CMake components: nn-validation, ttnn-validation
+# Depends on: nn, metalium
+# ===========================================================================
+
+pkg_files(
+    name = "nn_validation_bins",
+    srcs = [
+        # Placeholder for TTNN validation binaries:
+        #   "//ttnn/test:tt-nn-validation-smoke",
+        #   "//ttnn/test:tt-nn-validation-basic",
+    ],
+    prefix = "usr/bin",
+)
+
+pkg_tar(
+    name = "nn_validation_data",
+    srcs = [
+        ":nn_validation_bins",
+    ],
+)
+
+tt_deb(
+    name = "tt-nn-validation",
+    data_tar = ":nn_validation_data",
+    depends = [
+        "tt-metalium (= @VERSION@)",
+        "tt-nn (= @VERSION@)",
+    ],
+    description = "TT-NN validation tools",
+    package = "tt-nn-validation",
+    section = "utils",
+)
