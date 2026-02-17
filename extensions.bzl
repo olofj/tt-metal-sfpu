@@ -153,6 +153,22 @@ def _non_bcr_deps_impl(module_ctx):
         build_file = "//third_party:asio.BUILD",
     )
 
+    # nng (nanomsg-next-gen) v1.8.0 — lightweight messaging library (used by UMD simulation)
+    http_archive(
+        name = "nng",
+        urls = ["https://github.com/nanomsg/nng/archive/refs/tags/v1.8.0.tar.gz"],
+        strip_prefix = "nng-1.8.0",
+        build_file = "//third_party:nng.BUILD",
+    )
+
+    # libuv v1.51.0 — cross-platform async I/O library (used by UMD simulation)
+    http_archive(
+        name = "libuv",
+        urls = ["https://github.com/libuv/libuv/archive/refs/tags/v1.51.0.tar.gz"],
+        strip_prefix = "libuv-1.51.0",
+        build_file = "//third_party:libuv.BUILD",
+    )
+
 non_bcr_deps = module_extension(
     implementation = _non_bcr_deps_impl,
 )

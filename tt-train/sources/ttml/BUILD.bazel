@@ -1,0 +1,277 @@
+# ttml — TT Machine Learning Library (static C++ library).
+#
+# Mirrors the CMake target: ttml (STATIC library)
+# Provides autograd, operations, models, optimizers, serialization,
+# and custom metal ops for training on Tenstorrent hardware.
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:cc_fbs.bzl", "cc_fbs_library")
+
+package(default_visibility = ["//tt-train:__subpackages__"])
+
+# ===========================================================================
+# FlatBuffers schema for model metadata serialization.
+# Generates ttml_metadata_generated.h from the .fbs schema.
+#
+# Source files include the generated header as bare "ttml_metadata_generated.h"
+# so the cc_fbs_library's includes must point to the serialization/ subdir.
+# We use cc_fbs_library (which generates into serialization/) and override
+# the include path with a wrapper cc_library.
+# ===========================================================================
+
+cc_fbs_library(
+    name = "ttml_metadata_fbs_gen",
+    srcs = ["serialization/ttml_metadata.fbs"],
+)
+
+cc_library(
+    name = "ttml_metadata_fbs",
+    hdrs = [":ttml_metadata_fbs_gen_gen"],
+    includes = ["serialization"],
+    deps = ["@flatbuffers//:flatbuffers"],
+)
+
+# ===========================================================================
+# Metal device kernels — runtime data for JIT compilation.
+# These files are NOT compiled by the host compiler; they are loaded at
+# runtime by TT-Metalium's JIT system. Paths are referenced as string
+# constants in program factory source files.
+# ===========================================================================
+
+filegroup(
+    name = "metal_kernels",
+    srcs = glob(["metal/**/kernels/**"]),
+    visibility = ["//visibility:public"],
+)
+
+# ===========================================================================
+# ttml — the core static library.
+#
+# All host-compiled sources are listed explicitly, matching the CMake
+# SOURCES and METAL_OPS_FILES lists in CMakeLists.txt. Metal kernel files
+# under kernels/compute/ and kernels/dataflow/ are excluded (runtime data).
+# ===========================================================================
+
+cc_library(
+    name = "ttml",
+    srcs = [
+        # Root
+        "ttml.cpp",
+        # Autograd
+        "autograd/auto_context.cpp",
+        "autograd/autocast_tensor.cpp",
+        "autograd/graph.cpp",
+        "autograd/tensor.cpp",
+        # Core
+        "core/clip_grad_norm.cpp",
+        "core/compute_kernel_config.cpp",
+        "core/device.cpp",
+        "core/distributed/ccl_resources.cpp",
+        "core/distributed/distributed.cpp",
+        "core/distributed/socket_manager.cpp",
+        "core/mesh_device.cpp",
+        "core/system_utils.cpp",
+        "core/tt_profiler.cpp",
+        "core/tt_tensor_utils.cpp",
+        # Datasets
+        "datasets/generators.cpp",
+        "datasets/in_memory_token_dataset.cpp",
+        "datasets/utils.cpp",
+        # Init
+        "init/cpu_initializers.cpp",
+        "init/tensor_initializers.cpp",
+        # Models
+        "models/common/transformer_common.cpp",
+        "models/distributed/gpt2.cpp",
+        "models/distributed/llama.cpp",
+        "models/distributed/pipeline_parallel_llama.cpp",
+        "models/gpt2.cpp",
+        "models/linear_regression.cpp",
+        "models/llama.cpp",
+        "models/mlp.cpp",
+        # Modules
+        "modules/distributed/gpt_block.cpp",
+        "modules/distributed/grouped_query_attention.cpp",
+        "modules/distributed/linear.cpp",
+        "modules/distributed/llama_block.cpp",
+        "modules/distributed/multi_head_attention.cpp",
+        "modules/dropout_module.cpp",
+        "modules/embedding_module.cpp",
+        "modules/gpt_block.cpp",
+        "modules/grouped_query_attention.cpp",
+        "modules/layer_norm_module.cpp",
+        "modules/linear_module.cpp",
+        "modules/llama_block.cpp",
+        "modules/lora_linear_module.cpp",
+        "modules/module_base.cpp",
+        "modules/multi_head_attention.cpp",
+        "modules/multi_layer_perceptron.cpp",
+        "modules/positional_embeddings.cpp",
+        "modules/rms_norm_module.cpp",
+        "modules/rotary_embedding.cpp",
+        "modules/single_head_attention.cpp",
+        # Ops
+        "ops/binary_ops.cpp",
+        "ops/distributed/comm_ops.cpp",
+        "ops/distributed/pipeline_parallel_comm_ops.cpp",
+        "ops/dropout_op.cpp",
+        "ops/embedding_op.cpp",
+        "ops/layernorm_op.cpp",
+        "ops/linear_op.cpp",
+        "ops/losses.cpp",
+        "ops/matmul_op.cpp",
+        "ops/multi_head_utils.cpp",
+        "ops/reshape_op.cpp",
+        "ops/rmsnorm_op.cpp",
+        "ops/rope_op.cpp",
+        "ops/sampling_op.cpp",
+        "ops/scaled_dot_product_attention.cpp",
+        "ops/swiglu_op.cpp",
+        "ops/unary_ops.cpp",
+        # Optimizers
+        "optimizers/adamw.cpp",
+        "optimizers/adamw_full_precision.cpp",
+        "optimizers/adamw_fused.cpp",
+        "optimizers/no_op.cpp",
+        "optimizers/optimizer_base.cpp",
+        "optimizers/remote_optimizer.cpp",
+        "optimizers/sgd.cpp",
+        "optimizers/sgd_fused.cpp",
+        # Schedulers
+        "schedulers/lambda_scheduler.cpp",
+        "schedulers/linear_scheduler.cpp",
+        "schedulers/scheduler_base.cpp",
+        "schedulers/sequential_scheduler.cpp",
+        "schedulers/step_scheduler.cpp",
+        # Serialization
+        "serialization/flatbuffer_file.cpp",
+        "serialization/safetensors.cpp",
+        "serialization/serialization.cpp",
+        # Tokenizers
+        "tokenizers/char_tokenizer.cpp",
+        "tokenizers/char_tokenizer_trainer.cpp",
+        # TTNN fixed wrappers
+        "ttnn_fixed/distributed/tt_metal.cpp",
+        "ttnn_fixed/distributed/ttnn_ops.cpp",
+        "ttnn_fixed/matmuls.cpp",
+        "ttnn_fixed/trivial_ttnn_ops.cpp",
+        # Utils
+        "utils/memory_utils.cpp",
+        # ---------------------------------------------------------------
+        # Metal ops — host-side operation + device operation + program
+        # factory files. Kernel source files are runtime data (see
+        # :metal_kernels filegroup).
+        # ---------------------------------------------------------------
+        # RMSNorm Forward
+        "metal/ops/rmsnorm_fw/rmsnorm_fw.cpp",
+        "metal/ops/rmsnorm_fw/device/rmsnorm_fw_device_operation.cpp",
+        "metal/ops/rmsnorm_fw/device/rmsnorm_fw_program_factory.cpp",
+        # RMSNorm Backward
+        "metal/ops/rmsnorm_bw/rmsnorm_bw.cpp",
+        "metal/ops/rmsnorm_bw/device/rmsnorm_bw_device_operation.cpp",
+        "metal/ops/rmsnorm_bw/device/rmsnorm_bw_program_factory.cpp",
+        # LayerNorm Backward
+        "metal/ops/layernorm_bw/layernorm_bw.cpp",
+        "metal/ops/layernorm_bw/device/layernorm_bw_device_operation.cpp",
+        "metal/ops/layernorm_bw/device/layernorm_bw_program_factory.cpp",
+        # LayerNorm Forward
+        "metal/ops/layernorm_fw/layernorm_fw.cpp",
+        "metal/ops/layernorm_fw/device/layernorm_fw_device_operation.cpp",
+        "metal/ops/layernorm_fw/device/layernorm_fw_program_factory.cpp",
+        # CrossEntropy Forward
+        "metal/ops/cross_entropy_fw/cross_entropy_fw.cpp",
+        "metal/ops/cross_entropy_fw/device/cross_entropy_fw_device_operation.cpp",
+        "metal/ops/cross_entropy_fw/device/cross_entropy_fw_program_factory.cpp",
+        # CrossEntropy Backward
+        "metal/ops/cross_entropy_bw/cross_entropy_bw.cpp",
+        "metal/ops/cross_entropy_bw/device/cross_entropy_bw_device_operation.cpp",
+        "metal/ops/cross_entropy_bw/device/cross_entropy_bw_program_factory.cpp",
+        # Softmax
+        "metal/ops/softmax/softmax.cpp",
+        "metal/ops/softmax/device/softmax_device_operation.cpp",
+        "metal/ops/softmax/device/softmax_program_factory.cpp",
+        # ProfilerNoOp
+        "metal/ops/profiler_no_op/profiler_no_op.cpp",
+        "metal/ops/profiler_no_op/device/profiler_no_op_device_operation.cpp",
+        "metal/ops/profiler_no_op/device/profiler_no_op_program_factory.cpp",
+        # SiLU Backward
+        "metal/ops/silu_bw/silu_bw.cpp",
+        "metal/ops/silu_bw/device/silu_bw_device_operation.cpp",
+        "metal/ops/silu_bw/device/silu_bw_program_factory.cpp",
+        # SDPA Forward
+        "metal/ops/sdpa_fw/sdpa_fw.cpp",
+        "metal/ops/sdpa_fw/device/sdpa_fw_device_operation.cpp",
+        "metal/ops/sdpa_fw/device/sdpa_fw_program_factory.cpp",
+        # SDPA Backward
+        "metal/ops/sdpa_bw/sdpa_bw.cpp",
+        "metal/ops/sdpa_bw/device/sdpa_bw_kv_device_operation.cpp",
+        "metal/ops/sdpa_bw/device/sdpa_bw_kv_program_factory.cpp",
+        "metal/ops/sdpa_bw/device/sdpa_bw_q_device_operation.cpp",
+        "metal/ops/sdpa_bw/device/sdpa_bw_q_program_factory.cpp",
+        # SwiGLU Forward
+        "metal/ops/swiglu_fw/swiglu_fw.cpp",
+        "metal/ops/swiglu_fw/device/swiglu_fw_device_operation.cpp",
+        "metal/ops/swiglu_fw/device/swiglu_fw_program_factory.cpp",
+        # SGD Fused Optimizer
+        "metal/optimizers/sgd_fused/sgd_fused.cpp",
+        "metal/optimizers/sgd_fused/device/sgd_fused_device_operation.cpp",
+        "metal/optimizers/sgd_fused/device/sgd_fused_program_factory.cpp",
+        # AdamW Optimizer
+        "metal/optimizers/adamw/adamw.cpp",
+        "metal/optimizers/adamw/device/adamw_device_operation.cpp",
+        "metal/optimizers/adamw/device/adamw_program_factory.cpp",
+    ],
+    hdrs = glob(
+        [
+            "**/*.hpp",
+        ],
+        exclude = [
+            # Nanobind headers are only for the Python extension.
+            "nanobind/**",
+            # Metal kernel headers are device-side runtime data.
+            "metal/**/kernels/**",
+        ],
+    ),
+    copts = [
+        # Disable narrowing conversion warnings (compatibility with ttnn headers).
+        "-Wno-narrowing",
+        # Workspace-root-relative includes for tt-metalium / ttnn headers.
+        "-isystem",
+        ".",
+        "-isystem",
+        "$(GENDIR)",
+    ],
+    defines = ["FLATBUFFERS_LARGE_SIZE"],
+    # The ttml include root is this directory (tt-train/sources/ttml/).
+    # This allows: #include <core/foo.hpp>, #include <autograd/tensor.hpp>, etc.
+    includes = ["."],
+    linkopts = [
+        "-ldl",
+        "-lz",
+        "-lpthread",
+        "-latomic",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":ttml_metadata_fbs",
+        # tt-metal core libraries
+        "//tt_metal:tt_metal",
+        "//tt_stl",
+        # All TTNN operations — provides headers for compilation and compiled
+        # implementations for linking. Mirrors CMake's TTNN::TTNN shared library.
+        "//ttnn:all_operations",
+        # External dependencies
+        "@boost.container",
+        "@boost.core",
+        "@enchantum//:enchantum",
+        "@flatbuffers//:flatbuffers",
+        "@fmt",
+        "@nlohmann_json//:json",
+        "@simde//:simde",
+        "@tt_logger//:tt_logger",
+        "@xtensor//:xtensor",
+        "@xtensor_blas//:xtensor_blas",
+        "@xtl//:xtl",
+        "@yaml-cpp",
+    ],
+)

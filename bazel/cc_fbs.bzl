@@ -4,7 +4,7 @@ These rules use flatc v24.3.25 from @flatbuffers to generate *_generated.h
 headers, matching the CMake build's GENERATE_FBS_HEADER() function in
 cmake/flatbuffers.cmake.
 
-Flags match CMake: --keep-prefix --cpp --scoped-enums
+Default flags match CMake's GENERATE_FBS_HEADER(): --keep-prefix --cpp --scoped-enums
 """
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
@@ -78,7 +78,8 @@ def _fbs_gen_impl(ctx):
 
         args = ctx.actions.args()
         args.add("--cpp")
-        args.add("--scoped-enums")
+        if ctx.attr.scoped_enums:
+            args.add("--scoped-enums")
         args.add("--keep-prefix")
         args.add("-o", h.dirname)
 
@@ -115,6 +116,11 @@ _fbs_gen = rule(
         "fbs_deps": attr.label_list(
             doc = "Schema dependencies providing FbsInfo (fbs_library targets).",
         ),
+        "scoped_enums": attr.bool(
+            doc = "Pass --scoped-enums to flatc. Default True (matches CMake GENERATE_FBS_HEADER). "
+                  + "Set False for schemas whose consumers use unscoped enum names.",
+            default = True,
+        ),
         "_flatc": attr.label(
             default = "@flatbuffers//:flatc",
             executable = True,
@@ -123,7 +129,7 @@ _fbs_gen = rule(
     },
 )
 
-def cc_fbs_library(name, srcs, fbs_deps = [], deps = [], visibility = None):
+def cc_fbs_library(name, srcs, fbs_deps = [], deps = [], scoped_enums = True, visibility = None):
     """Compile .fbs files to a C++ header-only library.
 
     Generates *_generated.h from each .fbs source, then wraps them in
@@ -138,6 +144,8 @@ def cc_fbs_library(name, srcs, fbs_deps = [], deps = [], visibility = None):
         fbs_deps: fbs_library targets whose schemas are needed for include
             resolution. Their include_root is passed as -I to flatc.
         deps: Additional cc_library dependencies (e.g., other cc_fbs_library targets).
+        scoped_enums: Pass --scoped-enums to flatc (default True). Set False
+            for schemas whose consumers use unscoped enum names.
         visibility: Bazel visibility specification.
     """
     gen_name = name + "_gen"
@@ -146,6 +154,7 @@ def cc_fbs_library(name, srcs, fbs_deps = [], deps = [], visibility = None):
         name = gen_name,
         srcs = srcs,
         fbs_deps = fbs_deps,
+        scoped_enums = scoped_enums,
     )
 
     cc_library(

@@ -20,6 +20,7 @@ ttnn_operation(
         "//ttnn/cpp/ttnn/operations/eltwise/unary:unary_hdrs",
     ],
     extra_deps = [
+        "//ttnn/cpp/ttnn/operations/copy:copy_hdrs",
         "//ttnn/cpp/ttnn/operations/data_movement:data_movement_hdrs",
         "//ttnn/cpp/ttnn/operations/eltwise/binary:binary_hdrs",
         "//ttnn/cpp/ttnn/operations/eltwise/binary_ng:binary_ng_hdrs",

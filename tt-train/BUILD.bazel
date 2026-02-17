@@ -1,0 +1,6 @@
+# tt-train — TT-Train machine learning training framework.
+#
+# Provides autograd, operations, models, and training utilities
+# built on top of TT-NN and TT-Metalium for Tenstorrent hardware.
+
+package(default_visibility = ["//tt-train:__subpackages__"])

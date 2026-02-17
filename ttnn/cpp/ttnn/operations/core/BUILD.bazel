@@ -19,7 +19,10 @@ cc_library(
         allow_empty = True,
     ),
     includes = ["."],
-    visibility = ["//ttnn:__subpackages__"],
+    visibility = [
+        "//tt-train:__subpackages__",
+        "//ttnn:__subpackages__",
+    ],
 )
 
 # The core operation is special: both TTNN::Core and TT::Metalium are PUBLIC
@@ -36,7 +39,10 @@ cc_library(
         "-Wno-c++11-narrowing",
         "-Wno-unused-lambda-capture",
     ],
-    visibility = ["//ttnn:__subpackages__"],
+    visibility = [
+        "//tt-train:__subpackages__",
+        "//ttnn:__subpackages__",
+    ],
     deps = [
         ":core_hdrs",
         "//tt_metal:tt_metal",

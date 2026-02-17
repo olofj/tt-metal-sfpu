@@ -36,6 +36,7 @@ ttnn_operation(
         "reduce_scatter/device/reduce_scatter_device_operation.cpp",
         "reduce_scatter/device/reduce_scatter_program_factory.cpp",
         "reduce_scatter/reduce_scatter.cpp",
+        "sharding_addrgen_helper.cpp",
         "reduce_to_root/device/reduce_to_root_op.cpp",
         "reduce_to_root/device/reduce_to_root_program.cpp",
         "reduce_to_root/reduce_to_root.cpp",

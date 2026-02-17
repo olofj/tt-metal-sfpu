@@ -1,0 +1,148 @@
+# tt-train/sources/examples — example training applications.
+#
+# Mirrors the CMake examples in sources/examples/CMakeLists.txt.
+# Each example is a standalone cc_binary that links against ttml.
+
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+
+package(default_visibility = ["//tt-train:__subpackages__"])
+
+# ===========================================================================
+# Simple examples (no CLI11 dependency)
+# ===========================================================================
+
+cc_binary(
+    name = "linear_regression",
+    srcs = ["linear_regression/main.cpp"],
+    deps = ["//tt-train/sources/ttml"],
+)
+
+cc_binary(
+    name = "sample_app",
+    srcs = ["sample_app/main.cpp"],
+    deps = ["//tt-train/sources/ttml"],
+)
+
+cc_binary(
+    name = "graph_capture",
+    srcs = ["graph_capture/main.cpp"],
+    deps = ["//tt-train/sources/ttml"],
+)
+
+cc_binary(
+    name = "rng_simd",
+    srcs = ["rng_simd/main.cpp"],
+    linkopts = ["-lpthread"],
+    deps = ["//tt-train/sources/ttml"],
+)
+
+# ===========================================================================
+# Examples requiring CLI11 for argument parsing
+# ===========================================================================
+
+cc_binary(
+    name = "linear_regression_ddp",
+    srcs = ["linear_regression_ddp/main.cpp"],
+    deps = [
+        "//tt-train/sources/ttml",
+        "@cli11",
+    ],
+)
+
+cc_binary(
+    name = "linear_regression_tp_dp",
+    srcs = ["linear_regression_tp_dp/main.cpp"],
+    deps = [
+        "//tt-train/sources/ttml",
+        "@cli11",
+    ],
+)
+
+# nano_gpt — multiple binaries for distributed GPT-2 training.
+cc_binary(
+    name = "nano_gpt",
+    srcs = [
+        "nano_gpt/3tier/common.cpp",
+        "nano_gpt/3tier/common.hpp",
+        "nano_gpt/main.cpp",
+        "nano_gpt/utils.cpp",
+        "nano_gpt/utils.hpp",
+    ],
+    copts = [
+        "-DDATA_FOLDER=\\\"tt-train/data\\\"",
+        "-DCONFIGS_FOLDER=\\\"tt-train/configs\\\"",
+    ],
+    deps = [
+        "//tt-train/sources/ttml",
+        "@cli11",
+    ],
+)
+
+cc_binary(
+    name = "llama_inference",
+    srcs = [
+        "nano_gpt/llama_inference.cpp",
+        "nano_gpt/utils.cpp",
+        "nano_gpt/utils.hpp",
+    ],
+    deps = [
+        "//tt-train/sources/ttml",
+        "@cli11",
+    ],
+)
+
+cc_binary(
+    name = "nano_gpt_aggregator",
+    srcs = [
+        "nano_gpt/3tier/aggregator_worker.cpp",
+        "nano_gpt/3tier/common.cpp",
+        "nano_gpt/3tier/common.hpp",
+        "nano_gpt/utils.cpp",
+        "nano_gpt/utils.hpp",
+    ],
+    copts = [
+        "-DDATA_FOLDER=\\\"tt-train/data\\\"",
+        "-DCONFIGS_FOLDER=\\\"tt-train/configs\\\"",
+    ],
+    deps = [
+        "//tt-train/sources/ttml",
+        "@cli11",
+    ],
+)
+
+cc_binary(
+    name = "nano_gpt_optimizer",
+    srcs = [
+        "nano_gpt/3tier/common.cpp",
+        "nano_gpt/3tier/common.hpp",
+        "nano_gpt/3tier/optimizer_worker.cpp",
+        "nano_gpt/utils.cpp",
+        "nano_gpt/utils.hpp",
+    ],
+    copts = [
+        "-DDATA_FOLDER=\\\"tt-train/data\\\"",
+        "-DCONFIGS_FOLDER=\\\"tt-train/configs\\\"",
+    ],
+    deps = [
+        "//tt-train/sources/ttml",
+        "@cli11",
+    ],
+)
+
+# mnist_mlp — requires external MNIST dataset (wichtounet/mnist).
+# TODO: Add Bazel http_archive for MNIST dataset headers.
+cc_binary(
+    name = "mnist_mlp",
+    srcs = [
+        "mnist_mlp/main.cpp",
+        "mnist_mlp/model.cpp",
+        "mnist_mlp/model.hpp",
+        "mnist_mlp/utils.cpp",
+        "mnist_mlp/utils.hpp",
+    ],
+    tags = ["manual"],  # Requires MNIST dataset dependency not yet in Bazel.
+    deps = [
+        "//tt-train/sources/ttml",
+        "@cli11",
+    ],
+)

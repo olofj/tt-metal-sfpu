@@ -114,6 +114,7 @@ ttnn_operation(
     ],
     extra_deps = [
         "//ttnn/cpp/ttnn/operations/ccl:ccl_hdrs",
+        "//ttnn/cpp/ttnn/operations/copy:copy_hdrs",
         "//ttnn/cpp/ttnn/operations/core:core_hdrs",
         "//ttnn/cpp/ttnn/operations/data_movement:data_movement_hdrs",
         "//ttnn/cpp/ttnn/operations/eltwise/unary:unary_hdrs",

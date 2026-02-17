@@ -85,6 +85,7 @@ ttnn_operation(
         "reshape_view/device/reshape_rm_program_factory.cpp",
         "reshape_view/device/reshape_tiled_program_factory.cpp",
         "reshape_view/reshape.cpp",
+        "reshape_view/reshape_common.cpp",
         "roll/roll.cpp",
         "scatter/device/scatter_device_operation.cpp",
         "scatter/device/scatter_program_factory.cpp",
@@ -214,6 +215,7 @@ ttnn_operation(
     ],
     extra_deps = [
         "//ttnn/cpp/ttnn/operations/ccl:ccl_hdrs",
+        "//ttnn/cpp/ttnn/operations/copy:copy_hdrs",
         "//ttnn/cpp/ttnn/operations/core:core_hdrs",
         "//ttnn/cpp/ttnn/operations/experimental/reshape:reshape_hdrs",
         "//ttnn/cpp/ttnn/operations/full:full_hdrs",

@@ -57,6 +57,9 @@ bazel_dep(name = "range-v3", version = "0.12.0")
 # spdlog — configured to use external fmt (header-only)
 bazel_dep(name = "spdlog", version = "1.15.2")
 
+# CLI11 — command-line parser, used by tt-train examples
+bazel_dep(name = "cli11", version = "2.4.2")
+
 # FlatBuffers — C++ runtime only.
 # The BCR entry depends on rules_swift which is incompatible with Bazel 9.
 # Fetched via http_archive in extensions.bzl to avoid the conflict.
@@ -114,6 +117,12 @@ use_repo(non_bcr_deps, "picosha2")
 
 # Standalone ASIO — header-only async I/O. Not on BCR. Used by UMD.
 use_repo(non_bcr_deps, "asio")
+
+# nng (nanomsg-next-gen) — lightweight messaging. Not on BCR. Used by UMD simulation.
+use_repo(non_bcr_deps, "nng")
+
+# libuv — cross-platform async I/O. Not on BCR. Used by UMD simulation.
+use_repo(non_bcr_deps, "libuv")
 
 # ===========================================================================
 # Hermetic Python 3.12 toolchain (for nanobind extension modules)

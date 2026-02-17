@@ -20,6 +20,7 @@ ttnn_operation(
         "//ttnn/cpp/ttnn/operations/core:core_hdrs",
     ],
     extra_deps = [
+        "//ttnn/cpp/ttnn/operations/copy:copy_hdrs",
         "//ttnn/cpp/ttnn/operations/core:core_hdrs",
         "//ttnn/cpp/ttnn/operations/data_movement:data_movement_hdrs",
     ],

@@ -1,11 +1,13 @@
 load("//ttnn/bazel:ttnn_operation.bzl", "ttnn_operation")
 
 ttnn_operation(
-    name = "rand",
+    name = "copy",
     srcs = [
-        "device/rand_device_operation.cpp",
-        "device/rand_program_factory.cpp",
-        "rand.cpp",
+        "typecast/device/typecast_device_op.cpp",
+        "typecast/device/typecast_program_factory.cpp",
+        "typecast/device/typecast_rm_chunked_program_factory.cpp",
+        "typecast/device/typecast_sharded_program_factory.cpp",
+        "typecast/typecast.cpp",
     ],
     hdrs = glob(
         ["**/*.hpp", "**/*.h"],
@@ -13,7 +15,6 @@ ttnn_operation(
         allow_empty = True,
     ),
     extra_deps = [
-        "//ttnn/cpp/ttnn/operations/copy:copy_hdrs",
         "//ttnn/cpp/ttnn/operations/core:core_hdrs",
     ],
 )

@@ -74,7 +74,10 @@ def ttnn_operation(
         extra_copts: Additional compiler options beyond the standard set.
         visibility: Bazel visibility. Defaults to //ttnn package and subpackages.
     """
-    _visibility = visibility or ["//ttnn:__subpackages__"]
+    _visibility = visibility or [
+        "//ttnn:__subpackages__",
+        "//tt-train:__subpackages__",
+    ]
 
     if kernel_hdrs == None:
         kernel_hdrs = native.glob(
