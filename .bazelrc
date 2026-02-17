@@ -212,3 +212,67 @@ build:ci-readonly --remote_cache=grpcs://remote.buildbuddy.io
 build:ci-readonly --remote_upload_local_results=false
 build:ci-readonly --remote_instance_name=tt-metal
 build:ci-readonly --remote_timeout=3600
+
+# ===========================================================================
+# Test environment variable passthrough
+#
+# Bazel test sandboxing strips environment variables by default. These
+# --test_env flags pass through variables that tt-metal's runtime reads
+# via os.getenv() (Python) or RunTimeOptions (C++). Using the NAME-only
+# form (no =value) means the variable is only set in the test if it
+# exists in the host environment, so local dev builds are unaffected.
+#
+# CI workflows set these in their `env:` blocks; this config ensures
+# they reach the sandboxed test process.
+# ===========================================================================
+
+# --- Hardware & architecture ---
+test --test_env=ARCH_NAME
+test --test_env=TT_GH_CI_INFRA
+
+# --- Dispatch mode ---
+test --test_env=TT_METAL_SLOW_DISPATCH_MODE
+
+# --- Multi-chip / fabric ---
+test --test_env=TT_METAL_ENABLE_REMOTE_CHIP
+test --test_env=TT_METAL_ENABLE_ERISC_IRAM
+test --test_env=TT_METAL_CLEAR_L1
+test --test_env=TT_METAL_MOCK_CLUSTER_DESC_PATH
+test --test_env=TT_MESH_GRAPH_DESC_PATH
+test --test_env=TT_METAL_FABRIC_BW_TELEMETRY
+test --test_env=TT_FABRIC_PROFILE_RX_CH_FWD
+
+# --- Watcher & debug ---
+test --test_env=TT_METAL_WATCHER
+test --test_env=TT_METAL_WATCHER_APPEND
+test --test_env=TT_METAL_WATCHER_NOINLINE
+test --test_env=TT_METAL_WATCHER_TEST_MODE
+test --test_env=TT_METAL_LIGHTWEIGHT_KERNEL_ASSERTS
+test --test_env=TT_METAL_GTEST_NUM_HW_CQS
+
+# --- Profiler ---
+test --test_env=TT_METAL_PROFILER_DISABLE_DUMP_TO_FILES
+
+# --- Simulator ---
+test --test_env=TT_METAL_SIMULATOR
+test --test_env=TT_METAL_SIMULATOR_HOME
+
+# --- Test output ---
+test --test_env=GTEST_OUTPUT
+
+# --- TTNN config ---
+test --test_env=TTNN_CONFIG_PATH
+test --test_env=TTNN_CONFIG_OVERRIDES
+
+# --- Python / build paths ---
+test --test_env=LOGURU_LEVEL
+test --test_env=LSAN_OPTIONS
+
+# --- Model weight caches (CI runners mount these) ---
+test --test_env=HF_HOME
+test --test_env=HF_HUB_CACHE
+test --test_env=HF_HUB_OFFLINE
+test --test_env=TT_CACHE_HOME
+
+# --- Kernel path override ---
+test --test_env=TT_METAL_KERNEL_PATH

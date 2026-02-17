@@ -275,6 +275,8 @@ jobs:
       - name: Run N150 device tests
         env:
           ARCH_NAME: wormhole_b0
+          LOGURU_LEVEL: INFO
+          GTEST_OUTPUT: xml:${{ github.workspace }}/generated/test_reports/
         run: |
           set -euo pipefail
 
@@ -336,6 +338,8 @@ jobs:
       - name: Run N300 device tests
         env:
           ARCH_NAME: wormhole_b0
+          LOGURU_LEVEL: INFO
+          GTEST_OUTPUT: xml:${{ github.workspace }}/generated/test_reports/
         run: |
           set -euo pipefail
 
@@ -399,6 +403,9 @@ jobs:
       - name: Run T3000 device tests
         env:
           ARCH_NAME: wormhole_b0
+          TT_METAL_ENABLE_ERISC_IRAM: "1"
+          LOGURU_LEVEL: INFO
+          GTEST_OUTPUT: xml:${{ github.workspace }}/generated/test_reports/
         run: |
           set -euo pipefail
 
@@ -462,6 +469,8 @@ jobs:
       - name: Run Blackhole device tests
         env:
           ARCH_NAME: blackhole
+          LOGURU_LEVEL: INFO
+          GTEST_OUTPUT: xml:${{ github.workspace }}/generated/test_reports/
         run: |
           set -euo pipefail
 
@@ -527,6 +536,9 @@ jobs:
       - name: Run Galaxy (Wormhole) device tests
         env:
           ARCH_NAME: wormhole_b0
+          TT_METAL_ENABLE_ERISC_IRAM: "1"
+          LOGURU_LEVEL: INFO
+          GTEST_OUTPUT: xml:${{ github.workspace }}/generated/test_reports/
         run: |
           set -euo pipefail
 
@@ -592,6 +604,9 @@ jobs:
       - name: Run Galaxy (Blackhole) device tests
         env:
           ARCH_NAME: blackhole
+          TT_METAL_ENABLE_ERISC_IRAM: "1"
+          LOGURU_LEVEL: INFO
+          GTEST_OUTPUT: xml:${{ github.workspace }}/generated/test_reports/
         run: |
           set -euo pipefail
 

@@ -106,6 +106,12 @@ def pytest_test(
         size = "enormous"
         timeout = "eternal"
 
+    # Auto-set TTNN_CONFIG_OVERRIDES for tests that need fast runtime mode off.
+    # This matches the CMake CI behavior in ttnn-post-commit.yaml.
+    all_env = dict(env)
+    if "requires_fast_runtime_mode_off" in unique_tags:
+        all_env.setdefault("TTNN_CONFIG_OVERRIDES", '{"enable_fast_runtime_mode": false}')
+
     # All pytest tests depend on conftest files and the pytest runner.
     all_data = list(data) + [
         "//tests/ttnn:conftest_files",
@@ -138,7 +144,7 @@ def pytest_test(
         tags = unique_tags,
         size = size,
         timeout = timeout,
-        env = env,
+        env = all_env,
         **kwargs
     )
 
