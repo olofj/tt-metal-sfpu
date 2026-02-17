@@ -4,13 +4,26 @@
 # Contains ~25 source files for mesh device orchestration, command queues,
 # socket communication, workload distribution, and multi-host contexts.
 #
-# MPI support: In CMake, MPI is conditionally enabled via ENABLE_DISTRIBUTED.
-# The Bazel build compiles the single-host fallback by default.
-# MPI support can be added later via a config_setting + select().
+# MPI support: conditionally enabled via --config=distributed (or
+# --define=enable_distributed=true). Without it, the single-host fallback
+# is compiled. Mirrors CMake's ENABLE_DISTRIBUTED option.
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
 package(default_visibility = ["//tt_metal:__subpackages__"])
+
+# ---------------------------------------------------------------------------
+# Feature flag: MPI / multi-host distributed compute
+#
+# Usage:
+#   bazel build --config=distributed //tt_metal/...
+#   bazel build --define=enable_distributed=true //tt_metal/...
+# ---------------------------------------------------------------------------
+
+config_setting(
+    name = "enable_distributed",
+    define_values = {"enable_distributed": "true"},
+)
 
 # ---------------------------------------------------------------------------
 # Header-only subset — used by impl, fabric, and other libraries that need
@@ -39,8 +52,9 @@ cc_library(
 # Full distributed library — all 25 source files.
 #
 # The multihost/ subdirectory contains the distributed context implementation.
-# Without MPI, single_host_context.cpp is compiled as the fallback.
-# distributed_context.cpp uses #ifdef OPEN_MPI to select the implementation.
+# distributed_context.cpp uses #ifdef OPEN_MPI to select the implementation:
+#   - With MPI:    mpi_distributed_context.cpp (full OpenMPI backend)
+#   - Without MPI: single_host_context.cpp (single-host fallback)
 # ---------------------------------------------------------------------------
 
 cc_library(
@@ -70,12 +84,18 @@ cc_library(
         "sd_mesh_command_queue.cpp",
         "system_mesh.cpp",
         "system_mesh_translation_map.cpp",
-        # multihost/ — single-host fallback (no MPI)
+        # multihost/ — dispatcher + fallback (always compiled)
         "multihost/distributed_context.cpp",
         "multihost/single_host_context.cpp",
         # Private headers (not exported by distributed_hdrs)
         "multihost/single_host_context.hpp",
-    ],
+    ] + select({
+        ":enable_distributed": [
+            "multihost/mpi_distributed_context.cpp",
+            "multihost/mpi_distributed_context.hpp",
+        ],
+        "//conditions:default": [],
+    }),
     copts = [
         "-Wno-int-to-pointer-cast",
         # Source files use workspace-root-relative includes like
@@ -91,6 +111,10 @@ cc_library(
         "-isystem",
         "$(GENDIR)",
     ],
+    local_defines = select({
+        ":enable_distributed": ["OPEN_MPI=1"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":distributed_hdrs",
         "//tt_metal/api:mesh_coordinate_cc_fbs",
@@ -104,5 +128,8 @@ cc_library(
         "@fmt",
         "@taskflow//:taskflow",
         "@tt_logger//:tt_logger",
-    ],
+    ] + select({
+        ":enable_distributed": ["//third_party/system:openmpi"],
+        "//conditions:default": [],
+    }),
 )

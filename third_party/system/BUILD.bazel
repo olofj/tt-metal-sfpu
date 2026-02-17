@@ -11,3 +11,9 @@ cc_library(
     linkopts = ["-lhwloc"],
     visibility = ["//visibility:public"],
 )
+
+cc_library(
+    name = "openmpi",
+    linkopts = ["-lmpi"],
+    visibility = ["//visibility:public"],
+)

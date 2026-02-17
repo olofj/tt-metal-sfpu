@@ -119,6 +119,11 @@ build:light-metal-trace --copt=-DTT_ENABLE_LIGHT_METAL_TRACE=1
 # Logging (cmake: TT_METAL_ENABLE_LOGGING, default ON for non-Release)
 build:logging --copt=-DSPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE
 
+# Distributed / MPI multi-host support (cmake: ENABLE_DISTRIBUTED, default ON)
+# Requires OpenMPI (or ULFM build at /opt/openmpi-v5.0.7-ulfm).
+# Without this flag, the single-host fallback is compiled.
+build:distributed --define=enable_distributed=true
+
 # Build time trace (Clang only, cmake: ENABLE_BUILD_TIME_TRACE)
 build:time-trace --copt=-ftime-trace
 
