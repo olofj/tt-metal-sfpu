@@ -15,5 +15,5 @@ pytest_suite(
         "@pip//loguru",
         "@pip//torch",
     ],
-    tags = ["ttnn", "non_working", "grayskull"],
+    tags = ["ttnn", "non_working", "grayskull", "requires_wormhole_b0"],
 )

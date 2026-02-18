@@ -17,5 +17,5 @@ cc_test(
         "//tests:test_common_libs",
         "//ttnn:all_operations",
     ],
-    tags = ["unit", "ttnn", "tracy", "profiling"],
+    tags = ["unit", "ttnn", "tracy", "profiling", "requires_wormhole_b0", "requires_blackhole"],
 )

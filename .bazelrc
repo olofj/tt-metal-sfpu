@@ -317,3 +317,46 @@ test --test_env=TT_CACHE_HOME
 
 # --- Kernel path override ---
 test --test_env=TT_METAL_KERNEL_PATH
+
+# ===========================================================================
+# Hardware test filtering
+#
+# By default, exclude all tests that require Tenstorrent hardware. This makes
+# `bazel test ...` useful on CPU-only machines (dev laptops, CI build nodes).
+# On machines with hardware, use --config=<arch> to include those tests.
+#
+# Usage:
+#   bazel test ...                      # CPU-only (~2 tests)
+#   bazel test --config=wormhole_b0 ... # Single Wormhole B0 card
+#   bazel test --config=blackhole ...   # Single Blackhole card
+#   bazel test --config=n150 ...        # N150 (1-chip WH)
+#   bazel test --config=n300 ...        # N300 (2-chip WH)
+#   bazel test --config=t3000 ...       # T3000 (8-chip WH)
+#   bazel test --config=galaxy ...      # Galaxy (32+ chip WH)
+# ===========================================================================
+
+test --test_tag_filters=-requires_wormhole_b0,-requires_blackhole,-requires_multi_device,-requires_galaxy,-requires_T3000,-requires_N150,-requires_N300
+
+# Wormhole B0 single-card
+test:wormhole_b0 --test_tag_filters=
+test:wormhole_b0 --test_env=ARCH_NAME=wormhole_b0
+
+# Blackhole single-card
+test:blackhole --test_tag_filters=
+test:blackhole --test_env=ARCH_NAME=blackhole
+
+# N150 (1-chip Wormhole)
+test:n150 --test_tag_filters=
+test:n150 --test_env=ARCH_NAME=wormhole_b0
+
+# N300 (2-chip Wormhole)
+test:n300 --test_tag_filters=
+test:n300 --test_env=ARCH_NAME=wormhole_b0
+
+# T3000 (8-chip Wormhole)
+test:t3000 --test_tag_filters=
+test:t3000 --test_env=ARCH_NAME=wormhole_b0
+
+# Galaxy (32+ chip Wormhole)
+test:galaxy --test_tag_filters=
+test:galaxy --test_env=ARCH_NAME=wormhole_b0

@@ -25,5 +25,5 @@ cc_test(
         "//tt_metal",
         "//ttnn:all_operations",
     ],
-    tags = ["unit", "ttnn", "lab_examples"],
+    tags = ["unit", "ttnn", "lab_examples", "requires_wormhole_b0", "requires_blackhole"],
 )

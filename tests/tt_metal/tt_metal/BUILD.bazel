@@ -447,7 +447,7 @@ cc_test(
         "@capnproto//src/capnp:capnp-rpc",
         "//third_party/system:numa",
     ],
-    tags = ["unit", "tt_metal", "debug_tools", "inspector"],
+    tags = ["unit", "tt_metal", "debug_tools", "inspector", "host_only"],
 )
 
 # --------------------------------------------------------------------------
@@ -695,7 +695,7 @@ cc_test(
         "//tests:test_common_libs",
         "@enchantum//:enchantum",
     ],
-    tags = ["unit", "tt_metal", "hal_codegen"],
+    tags = ["unit", "tt_metal", "hal_codegen", "host_only"],
 )
 
 # --------------------------------------------------------------------------
