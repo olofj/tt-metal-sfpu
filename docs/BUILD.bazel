@@ -37,6 +37,9 @@ py_binary(
         "@pip//lxml",
         "@pip//docutils",
         "@pip//tabulate",
+        # bleach[css] extra: tinycss2 is needed by nbconvert's HTML sanitizer
+        # but isn't auto-resolved as a bleach dep by rules_python.
+        "@pip//tinycss2",
     ],
 )
 
@@ -106,6 +109,11 @@ genrule(
         REPO_ROOT=$$(cd $$(dirname $(location Doxyfile))/.. && pwd)
         DOCS_DIR="$$REPO_ROOT/docs"
 
+        # nbconvert templates (rst, etc.) live in the pip package's data/ dir,
+        # which rules_python does not copy into runfiles. Point JUPYTER_PATH at
+        # the external repository so nbconvert can discover them.
+        export JUPYTER_PATH="$$PWD/external/rules_python++pip+pip_312_nbconvert/data/share/jupyter"
+
         # Extract Doxygen XML so Breathe can find it
         mkdir -p "$$DOCS_DIR/doxygen_build"
         tar -xzf $(location :doxygen_xml) -C "$$DOCS_DIR/doxygen_build"
@@ -144,6 +152,13 @@ genrule(
     cmd = """
         REPO_ROOT=$$(cd $$(dirname $(location Doxyfile))/.. && pwd)
         DOCS_DIR="$$REPO_ROOT/docs"
+
+        # nbconvert templates (rst, etc.) are inside the pip package's data dir.
+        # Set JUPYTER_PATH so nbconvert can discover them in the Bazel environment.
+        # nbconvert templates (rst, etc.) live in the pip package's data/ dir,
+        # which rules_python does not copy into runfiles. Point JUPYTER_PATH at
+        # the external repository so nbconvert can discover them.
+        export JUPYTER_PATH="$$PWD/external/rules_python++pip+pip_312_nbconvert/data/share/jupyter"
 
         # Extract Doxygen XML so Breathe can find it
         mkdir -p "$$DOCS_DIR/doxygen_build"
