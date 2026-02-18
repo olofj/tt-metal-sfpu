@@ -355,15 +355,17 @@ tt_deb(
 # for runtime compilation on device.
 # ===========================================================================
 
-# NOTE: The SFPI toolchain (runtime/sfpi/) is a downloaded/built artifact
-# that lives in a gitignored directory. CMake uses FetchContent to download
-# it at configure time (see tt_metal/hw/CMakeLists.txt). A Bazel equivalent
-# requires an http_archive or repository_rule to fetch and expose the
-# toolchain. Left as a placeholder until that infrastructure is created.
+# The SFPI toolchain is downloaded via the sfpi_toolchain_repo repository
+# rule (toolchain/sfpi/repo.bzl), mirroring CMake's FetchContent approach
+# (tt_metal/hw/CMakeLists.txt). The @sfpi repo provides the full compiler
+# tree (compiler/bin/riscv-tt-elf-g++, etc.) for JIT compilation on device.
+# strip_prefix removes the external repo path prefix (external/+sfpi_ext+sfpi)
+# so only the internal directory structure (compiler/bin/, include/) remains.
 pkg_tar(
     name = "metalium_jit_data",
-    srcs = [],
+    srcs = ["@sfpi//:all_files"],
     package_dir = "usr/libexec/tt-metalium/runtime/sfpi",
+    strip_prefix = "/external/+sfpi_ext+sfpi",
 )
 
 tt_deb(
@@ -683,6 +685,11 @@ tt_deb(
 # build/test/tt_metal/unit_tests_api. The Bazel build produces individual
 # test binaries instead (one per cc_test target). CI workflows will need
 # updating to use the individual binaries — tracked by tt-metal-90z.
+#
+# All ci_tarball_* targets are tagged "manual" to exclude them from wildcard
+# builds (bazel build ...). This prevents action conflicts: pkg_tar targets
+# pull test binaries in a different configuration than the direct build,
+# causing "conflicting actions" errors. CI builds these explicitly.
 # ===========================================================================
 
 # --- Component sub-tarballs ---
@@ -700,6 +707,7 @@ pkg_tar(
         ":libumd.so",
     ],
     package_dir = "build/lib",
+    tags = ["manual"],
 )
 
 # _ttnncpp.so ships alongside the other libs in build/lib/.
@@ -707,6 +715,7 @@ pkg_tar(
     name = "ci_tarball_lib_ttnn",
     srcs = ["//ttnn:ttnncpp_shared"],
     package_dir = "build/lib",
+    tags = ["manual"],
 )
 
 # Nanobind Python extension → ttnn/ttnn/
@@ -715,6 +724,7 @@ pkg_tar(
     name = "ci_tarball_ttnn_ext",
     srcs = ["//ttnn:_ttnn.so"],
     package_dir = "ttnn/ttnn",
+    tags = ["manual"],
 )
 
 # Programming examples → build/programming_examples/
@@ -723,6 +733,7 @@ pkg_tar(
     name = "ci_tarball_examples",
     srcs = ["//tt_metal/programming_examples:programming_examples"],
     package_dir = "build/programming_examples",
+    tags = ["manual"],
 )
 
 # Runtime firmware and toolchain → runtime/
@@ -731,6 +742,7 @@ pkg_tar(
     name = "ci_tarball_runtime",
     srcs = ["//:runtime_hw_files"],
     strip_prefix = ".",
+    tags = ["manual"],
 )
 
 # --- Test binaries → build/test/ ---
@@ -742,6 +754,7 @@ pkg_tar(
 pkg_tar(
     name = "ci_tarball_test_ttnn_gtests",
     testonly = True,
+    tags = ["manual"],
     srcs = [
         "//tests/ttnn/unit_tests/gtests:accessor_test_accessor_benchmarks",
         "//tests/ttnn/unit_tests/gtests:accessor_test_tensor_accessor",
@@ -804,6 +817,7 @@ pkg_tar(
 pkg_tar(
     name = "ci_tarball_test_tt_metal",
     testonly = True,
+    tags = ["manual"],
     srcs = [
         "//tests/tt_metal/tt_metal:api_allocator_test_free_list_opt_allocator",
         "//tests/tt_metal/tt_metal:api_allocator_test_l1_banking_allocator",
@@ -1003,6 +1017,7 @@ pkg_tar(
 pkg_tar(
     name = "ci_tarball_test_tt_fabric",
     testonly = True,
+    tags = ["manual"],
     srcs = [
         "//tests/tt_metal/tt_fabric:bench_unicast",
         "//tests/tt_metal/tt_fabric:fabric_data_movement_unit_tests",
@@ -1037,6 +1052,7 @@ pkg_tar(
 pkg_tar(
     name = "ci_tarball_test_distributed",
     testonly = True,
+    tags = ["manual"],
     srcs = [
         "//tests/tt_metal/distributed:benchmark_distributed_host_buffer",
         "//tests/tt_metal/distributed:benchmark_thread_pool",
@@ -1069,6 +1085,7 @@ pkg_tar(
 pkg_tar(
     name = "ci_tarball_test_perf_microbenchmark",
     testonly = True,
+    tags = ["manual"],
     srcs = [
         "//tests/tt_metal/tt_metal/perf_microbenchmark:10_dram_read_remote_cb_sync_test_dram_read_remote_cb",
         "//tests/tt_metal/tt_metal/perf_microbenchmark:11_remote_cb_sync_matmul_single_core_test_remote_cb_sync_matmul",
@@ -1109,6 +1126,7 @@ pkg_tar(
 pkg_tar(
     name = "ci_tarball_test_multihost",
     testonly = True,
+    tags = ["manual"],
     srcs = [
         "//tests/tt_metal/multihost/fabric_tests:multi_host_fabric_tests",
         "//tests/tt_metal/multihost/fault_tolerance_tests:fault_tolerance_tests",
@@ -1126,6 +1144,7 @@ pkg_tar(
 pkg_tar(
     name = "ci_tarball_tests",
     testonly = True,
+    tags = ["manual"],
     deps = [
         ":ci_tarball_test_distributed",
         ":ci_tarball_test_multihost",
@@ -1141,6 +1160,7 @@ pkg_tar(
 pkg_tar(
     name = "ci_tarball_tar",
     testonly = True,
+    tags = ["manual"],
     deps = [
         ":ci_tarball_examples",
         ":ci_tarball_lib",
@@ -1160,6 +1180,7 @@ genrule(
     srcs = [":ci_tarball_tar"],
     outs = ["ttm_any.tar.zst"],
     cmd = "$(execpath //bazel:zstd_compress) < $< > $@",
+    tags = ["manual"],
     tools = ["//bazel:zstd_compress"],
     visibility = ["//visibility:public"],
 )
@@ -1189,6 +1210,7 @@ sh_test(
     data = [":ci_tarball_tar"],
     tags = [
         "ci_tarball",
+        "manual",
         "packaging",
     ],
     testonly = True,

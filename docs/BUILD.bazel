@@ -88,6 +88,7 @@ genrule(
         tar -czf $$OLDPWD/$@ -C docs/doxygen_build xml
     """,
     local = True,
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 
@@ -128,6 +129,7 @@ genrule(
         tar -czf $@ -C "$$DOCS_DIR/build" tt-metalium
     """,
     local = True,
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 
@@ -174,6 +176,7 @@ genrule(
         tar -czf $@ -C "$$DOCS_DIR/build" ttnn
     """,
     local = True,
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 
@@ -208,5 +211,6 @@ genrule(
 
         rm -rf "$$STAGING"
     """,
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
