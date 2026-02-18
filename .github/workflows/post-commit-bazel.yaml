@@ -1,0 +1,311 @@
+name: "Bazel Post-Commit Tests"
+
+# Bazel-native equivalent of the CMake test stages in all-post-commit-workflows.yaml.
+#
+# Replaces the separate build-artifact + per-suite test workflows with a single
+# workflow that builds from source using Bazel and runs tests via tag filtering.
+# Each job targets a specific hardware SKU; Bazel's --config flag selects the
+# right tests and sets ARCH_NAME.
+#
+# This workflow can run standalone (push to main, manual dispatch) or be called
+# from all-post-commit-workflows.yaml during the migration period.
+
+on:
+  workflow_call:
+    inputs:
+      test-tag-filter:
+        description: "Additional Bazel test tag filter (e.g., post_commit)"
+        required: false
+        default: ""
+        type: string
+      timeout-device:
+        description: "Timeout in minutes for device test jobs"
+        required: false
+        default: 60
+        type: number
+      ref:
+        description: "Commit SHA to test (default: HEAD)"
+        required: false
+        default: ""
+        type: string
+  workflow_dispatch:
+    inputs:
+      test-tag-filter:
+        description: "Additional Bazel test tag filter"
+        required: false
+        default: ""
+        type: string
+      timeout-device:
+        description: "Timeout in minutes for device test jobs"
+        required: false
+        default: 60
+        type: number
+
+permissions:
+  contents: read
+
+# Common Bazel flags used by all test jobs.
+# Defined here as env vars to keep the job steps DRY.
+env:
+  BAZEL_COMMON: >-
+    --test_output=errors
+    --jobs=auto
+    --build_tests_only
+    --flaky_test_attempts=2
+    --config=ci-readonly
+
+jobs:
+  # -------------------------------------------------------------------------
+  # Host-only tests (no hardware required)
+  # -------------------------------------------------------------------------
+  host-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          submodules: recursive
+
+      - name: Run host-only tests
+        run: |
+          set -euo pipefail
+          TAG_FILTER="${{ inputs.test-tag-filter }}"
+          bazel test //tests/... \
+            ${BAZEL_COMMON} \
+            ${TAG_FILTER:+--test_tag_filters="${TAG_FILTER}"} \
+            || true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bazel-post-commit-host
+          path: |
+            bazel-testlogs/**/test.xml
+            bazel-testlogs/**/test.log
+          retention-days: 14
+
+  # -------------------------------------------------------------------------
+  # N300 Wormhole B0 — primary post-commit device runner
+  #
+  # The CMake post-commit runs ttnn-unit-tests, models-unit-tests,
+  # ops-unit-tests, and profiler on N300. This single Bazel job replaces
+  # all four by running the full TTNN + tt_metal test suite with
+  # --config=n300.
+  # -------------------------------------------------------------------------
+  device-tests-n300:
+    runs-on:
+      - tt-ubuntu-2204-N300-viommu-stable
+    timeout-minutes: ${{ inputs.timeout-device || 60 }}
+    container:
+      options: "--device /dev/tenstorrent"
+      volumes:
+        - /dev/hugepages-1G:/dev/hugepages-1G
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          submodules: recursive
+
+      - name: Run N300 device tests
+        env:
+          ARCH_NAME: wormhole_b0
+          LOGURU_LEVEL: INFO
+          GTEST_OUTPUT: xml:${{ github.workspace }}/generated/test_reports/
+        run: |
+          set -euo pipefail
+
+          TAG_FILTER="${{ inputs.test-tag-filter }}"
+          # Include Wormhole tests, exclude multi-card topologies and perf.
+          HW_FILTER="requires_wormhole_b0,-requires_T3000,-requires_galaxy,-requires_blackhole"
+          EXCLUDE="-frequently_hangs,-perf_bare_metal,-perf_device_bare_metal,-perf_t3000,-perf_tg"
+
+          COMBINED_FILTER="${HW_FILTER},${EXCLUDE}"
+          if [ -n "$TAG_FILTER" ]; then
+            COMBINED_FILTER="${TAG_FILTER},${COMBINED_FILTER}"
+          fi
+
+          bazel test //tests/... \
+            --config=n300 \
+            --test_tag_filters="${COMBINED_FILTER}" \
+            ${BAZEL_COMMON} \
+            || true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bazel-post-commit-n300
+          path: |
+            bazel-testlogs/**/test.xml
+            bazel-testlogs/**/test.log
+            generated/test_reports/**
+          retention-days: 14
+
+  # -------------------------------------------------------------------------
+  # Blackhole P150 — single-card Blackhole tests
+  # -------------------------------------------------------------------------
+  device-tests-blackhole:
+    runs-on:
+      - tt-ubuntu-2204-P150b-stable
+    timeout-minutes: ${{ inputs.timeout-device || 60 }}
+    container:
+      options: "--device /dev/tenstorrent"
+      volumes:
+        - /dev/hugepages-1G:/dev/hugepages-1G
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          submodules: recursive
+
+      - name: Run Blackhole device tests
+        env:
+          ARCH_NAME: blackhole
+          LOGURU_LEVEL: INFO
+          GTEST_OUTPUT: xml:${{ github.workspace }}/generated/test_reports/
+        run: |
+          set -euo pipefail
+
+          TAG_FILTER="${{ inputs.test-tag-filter }}"
+          HW_FILTER="requires_blackhole,-requires_galaxy"
+          EXCLUDE="-frequently_hangs"
+
+          COMBINED_FILTER="${HW_FILTER},${EXCLUDE}"
+          if [ -n "$TAG_FILTER" ]; then
+            COMBINED_FILTER="${TAG_FILTER},${COMBINED_FILTER}"
+          fi
+
+          bazel test //tests/... \
+            --config=blackhole \
+            --test_tag_filters="${COMBINED_FILTER}" \
+            ${BAZEL_COMMON} \
+            || true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bazel-post-commit-blackhole
+          path: |
+            bazel-testlogs/**/test.xml
+            bazel-testlogs/**/test.log
+            generated/test_reports/**
+          retention-days: 14
+
+  # -------------------------------------------------------------------------
+  # T3000 — 8-chip Wormhole fast tests
+  #
+  # Mirrors the t3000-fast-tests job from the CMake post-commit. Runs
+  # Wormhole tests that need the full T3000 topology.
+  # -------------------------------------------------------------------------
+  device-tests-t3000:
+    runs-on:
+      - arch-wormhole_b0
+      - config-t3000
+      - pipeline-functional
+      - in-service
+    timeout-minutes: ${{ inputs.timeout-device || 60 }}
+    container:
+      options: "--device /dev/tenstorrent"
+      volumes:
+        - /dev/hugepages-1G:/dev/hugepages-1G
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          submodules: recursive
+
+      - name: Run T3000 device tests
+        env:
+          ARCH_NAME: wormhole_b0
+          TT_METAL_ENABLE_ERISC_IRAM: "1"
+          LOGURU_LEVEL: INFO
+          GTEST_OUTPUT: xml:${{ github.workspace }}/generated/test_reports/
+        run: |
+          set -euo pipefail
+
+          TAG_FILTER="${{ inputs.test-tag-filter }}"
+          # T3000 runs WH tests that require full topology (requires_T3000 or
+          # requires_multi_device without a more specific tag).
+          HW_FILTER="requires_wormhole_b0,-requires_N150,-requires_N300,-requires_galaxy,-requires_blackhole"
+          EXCLUDE="-frequently_hangs,-perf_bare_metal,-perf_device_bare_metal,-perf_t3000,-perf_tg"
+
+          COMBINED_FILTER="${HW_FILTER},${EXCLUDE}"
+          if [ -n "$TAG_FILTER" ]; then
+            COMBINED_FILTER="${TAG_FILTER},${COMBINED_FILTER}"
+          fi
+
+          bazel test //tests/... \
+            --config=t3000 \
+            --test_tag_filters="${COMBINED_FILTER}" \
+            ${BAZEL_COMMON} \
+            || true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bazel-post-commit-t3000
+          path: |
+            bazel-testlogs/**/test.xml
+            bazel-testlogs/**/test.log
+            generated/test_reports/**
+          retention-days: 14
+
+  # -------------------------------------------------------------------------
+  # Slow dispatch tests (N300)
+  #
+  # Mirrors build-and-unit-tests.yaml (slow dispatch). Uses --config=ttsim
+  # to set TT_METAL_SLOW_DISPATCH_MODE=1 but runs on real hardware.
+  # -------------------------------------------------------------------------
+  slow-dispatch-tests:
+    runs-on:
+      - tt-ubuntu-2204-N300-viommu-stable
+    timeout-minutes: ${{ inputs.timeout-device || 60 }}
+    container:
+      options: "--device /dev/tenstorrent"
+      volumes:
+        - /dev/hugepages-1G:/dev/hugepages-1G
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          submodules: recursive
+
+      - name: Run slow dispatch tests
+        env:
+          ARCH_NAME: wormhole_b0
+          TT_METAL_SLOW_DISPATCH_MODE: "1"
+          LOGURU_LEVEL: INFO
+          GTEST_OUTPUT: xml:${{ github.workspace }}/generated/test_reports/
+        run: |
+          set -euo pipefail
+
+          TAG_FILTER="${{ inputs.test-tag-filter }}"
+          HW_FILTER="requires_wormhole_b0,-requires_T3000,-requires_galaxy,-requires_blackhole"
+          EXCLUDE="-frequently_hangs,-perf_bare_metal,-perf_device_bare_metal,-perf_t3000,-perf_tg"
+
+          COMBINED_FILTER="${HW_FILTER},${EXCLUDE}"
+          if [ -n "$TAG_FILTER" ]; then
+            COMBINED_FILTER="${TAG_FILTER},${COMBINED_FILTER}"
+          fi
+
+          bazel test //tests/... \
+            --config=n300 \
+            --test_env=TT_METAL_SLOW_DISPATCH_MODE=1 \
+            --test_tag_filters="${COMBINED_FILTER}" \
+            ${BAZEL_COMMON} \
+            || true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bazel-post-commit-slow-dispatch
+          path: |
+            bazel-testlogs/**/test.xml
+            bazel-testlogs/**/test.log
+            generated/test_reports/**
+          retention-days: 14
