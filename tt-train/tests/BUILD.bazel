@@ -107,7 +107,7 @@ cc_test(
     ],
     deps = [
         "//tt-train/sources/ttml",
-        "//ttnn:ttnn_core",
+        "//ttnn:all_operations",
         "@google_benchmark//:benchmark",
     ],
 )

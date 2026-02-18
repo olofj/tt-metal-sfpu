@@ -8,6 +8,7 @@ load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
 package(default_visibility = [
+    "//packaging:__pkg__",
     "//tests:__subpackages__",
     "//ttnn/test:__pkg__",
 ])
@@ -21,12 +22,14 @@ cc_library(
     hdrs = [
         "common_test_utils.hpp",
         "ttnn_test_fixtures.hpp",
-    ],
+    ] + glob(["ccl/*.hpp"]),
     includes = ["."],
+    # CMake adds ${PROJECT_SOURCE_DIR}/tests as include path; mirror that.
+    copts = ["-I$(GENDIR)/tests", "-Itests"],
     deps = [
         "//tests:test_common_libs",
         "//tests/tt_metal:test_utils",
-        "//ttnn:ttnn_core",
+        "//ttnn:all_operations",
     ],
 )
 
@@ -40,7 +43,7 @@ cc_library(
     deps = [
         ":test_common_utils",
         "//tests:test_common_libs",
-        "//ttnn:ttnn_core",
+        "//ttnn:all_operations",
     ],
     tags = ["smoke", "ttnn", "requires_wormhole_b0", "requires_blackhole"],
 ) for src in [
@@ -60,9 +63,14 @@ cc_library(
 [cc_test(
     name = src.replace(".cpp", ""),
     srcs = [src],
+    # -isystem . : repo-root-relative angled includes (e.g. <tt_metal/api/...>)
+    copts = ["-isystem", "."],
     deps = [
+        ":test_common_utils",
         "//tests:test_common_libs",
-        "//ttnn:ttnn_core",
+        "//tests/tt_metal/tt_fabric:fabric_test_common",
+        "//tests/tt_metal/tt_metal:test_fixtures",
+        "//ttnn:all_operations",
     ],
     tags = ["basic", "ttnn", "requires_wormhole_b0", "requires_blackhole"],
 ) for src in [
@@ -91,9 +99,14 @@ cc_library(
 [cc_test(
     name = src.replace("/", "_").replace(".cpp", ""),
     srcs = [src],
+    # -isystem . : repo-root-relative includes (e.g. "tests/ttnn/...")
+    # -Wno-c++11-narrowing : upstream narrowing in test sources
+    copts = ["-isystem", ".", "-Wno-c++11-narrowing"],
     deps = [
+        ":test_common_utils",
         "//tests:test_common_libs",
-        "//ttnn:ttnn_core",
+        "//tests/tt_metal:test_utils",
+        "//ttnn:all_operations",
     ],
     tags = ["unit", "ttnn", "ccl", "requires_multi_device", "requires_wormhole_b0", "requires_blackhole"],
 ) for src in [
@@ -114,9 +127,14 @@ cc_library(
 [cc_test(
     name = src.replace("/", "_").replace(".cpp", ""),
     srcs = [src],
+    # -isystem . : repo-root-relative includes
+    copts = ["-isystem", "."],
     deps = [
+        ":test_common_utils",
         "//tests:test_common_libs",
-        "//ttnn:ttnn_core",
+        "//tests/tt_metal:test_utils",
+        "//tests/tt_metal/tt_metal:test_fixtures",
+        "//ttnn:all_operations",
     ],
     tags = ["unit", "ttnn", "ccl", "requires_multi_device", "requires_wormhole_b0", "requires_blackhole"],
 ) for src in [
@@ -131,9 +149,14 @@ cc_library(
 cc_test(
     name = "test_multi_tensor_ccl",
     srcs = ["ccl/test_multi_tensor_ccl.cpp"],
+    # -isystem . : repo-root-relative includes
+    copts = ["-isystem", "."],
     deps = [
+        ":test_common_utils",
         "//tests:test_common_libs",
-        "//ttnn:ttnn_core",
+        "//tests/tt_metal:test_utils",
+        "//tests/tt_metal/tt_metal:test_fixtures",
+        "//ttnn:all_operations",
     ],
     tags = ["unit", "ttnn", "ccl", "requires_multi_device", "requires_wormhole_b0", "requires_blackhole"],
 )
@@ -149,7 +172,7 @@ cc_library(
     hdrs = ["accessor/common.hpp"],
     deps = [
         "//tests:test_common_libs",
-        "//ttnn:ttnn_core",
+        "//ttnn:all_operations",
         "//tt_metal/hw",
     ],
 )
@@ -157,10 +180,13 @@ cc_library(
 [cc_test(
     name = src.replace("/", "_").replace(".cpp", ""),
     srcs = [src],
+    # -isystem . : repo-root-relative includes like "tests/tt_metal/..."
+    copts = ["-isystem", ".", "-Wno-c++11-narrowing"],
     deps = [
         ":accessor_common",
         "//tests:test_common_libs",
-        "//ttnn:ttnn_core",
+        "//tests/tt_metal/tt_metal:test_fixtures",
+        "//ttnn:all_operations",
         "//tt_metal/hw",
     ],
     tags = ["unit", "ttnn", "accessor", "requires_wormhole_b0", "requires_blackhole"],
@@ -181,7 +207,7 @@ cc_library(
     hdrs = ["tensor/common_tensor_test_utils.hpp"],
     deps = [
         "//tests:test_common_libs",
-        "//ttnn:ttnn_core",
+        "//ttnn:all_operations",
         "@xtensor//:xtensor",
     ],
 )
@@ -189,10 +215,14 @@ cc_library(
 [cc_test(
     name = src.replace("/", "_").replace(".cpp", ""),
     srcs = ["tensor/" + src],
+    copts = ["-isystem", ".", "-Itests", "-Wno-c++11-narrowing"],
     deps = [
+        ":test_common_utils",
         ":tensor_test_utils",
         "//tests:test_common_libs",
-        "//ttnn:ttnn_core",
+        "//tests/tt_metal/distributed:distributed_test_utils",
+        "//tests/tt_metal/tt_metal:test_fixtures",
+        "//ttnn:all_operations",
         "@xtensor//:xtensor",
     ],
     tags = ["unit", "ttnn", "tensor", "requires_wormhole_b0", "requires_blackhole"],
@@ -220,10 +250,13 @@ cc_library(
 cc_test(
     name = "test_ccl_multi_cq_multi_device",
     srcs = ["multi_thread/test_ccl_multi_cq_multi_device.cpp"],
+    # -isystem . : repo-root-relative includes
+    copts = ["-isystem", "."],
     deps = [
         ":test_common_utils",
         "//tests:test_common_libs",
-        "//ttnn:ttnn_core",
+        "//tests/tt_metal/tt_metal:test_fixtures",
+        "//ttnn:all_operations",
         "@boost.asio",
     ],
     tags = ["unit", "ttnn", "ccl", "requires_multi_device"],
@@ -235,10 +268,14 @@ cc_test(
 
 cc_test(
     name = "test_emitc_sanity",
-    srcs = ["emitc/test_sanity.cpp"],
+    srcs = [
+        "emitc/test_sanity.cpp",
+        "emitc/emitc.hpp",
+    ],
+    copts = ["-Itests/ttnn/unit_tests/gtests/emitc"],
     deps = [
         "//tests:test_common_libs",
-        "//ttnn:ttnn_core",
+        "//ttnn:all_operations",
     ],
     tags = ["unit", "ttnn", "emitc", "requires_wormhole_b0", "requires_blackhole"],
 )
@@ -266,7 +303,7 @@ cc_library(
     deps = [
         ":test_common_utils",
         "//tests:test_common_libs",
-        "//ttnn:ttnn_core",
+        "//ttnn:all_operations",
     ],
     alwayslink = True,
 )
@@ -278,9 +315,13 @@ cc_library(
         "ccl/test_persistent_fabric_ccl_ops.cpp",
         "ccl/test_send_recv_ops.cpp",
     ],
+    copts = ["-isystem", "."],
     deps = [
+        ":test_common_utils",
         "//tests:test_common_libs",
-        "//ttnn:ttnn_core",
+        "//tests/tt_metal:test_utils",
+        "//tests/tt_metal/tt_metal:test_fixtures",
+        "//ttnn:all_operations",
     ],
     alwayslink = True,
 )
@@ -306,9 +347,13 @@ cc_library(
         "test_rsub_int.cpp",
         "test_sub_int.cpp",
     ],
+    copts = ["-isystem", "."],
     deps = [
+        ":test_common_utils",
         "//tests:test_common_libs",
-        "//ttnn:ttnn_core",
+        "//tests/tt_metal/tt_fabric:fabric_test_common",
+        "//tests/tt_metal/tt_metal:test_fixtures",
+        "//ttnn:all_operations",
     ],
     alwayslink = True,
 )
@@ -334,9 +379,13 @@ cc_library(
         "test_xtensor_conversion.cpp",
     ]],
     hdrs = ["tensor/common_tensor_test_utils.hpp"],
+    copts = ["-isystem", ".", "-Itests", "-Wno-c++11-narrowing"],
     deps = [
+        ":test_common_utils",
         "//tests:test_common_libs",
-        "//ttnn:ttnn_core",
+        "//tests/tt_metal/distributed:distributed_test_utils",
+        "//tests/tt_metal/tt_metal:test_fixtures",
+        "//ttnn:all_operations",
         "@xtensor//:xtensor",
     ],
     alwayslink = True,
@@ -355,9 +404,12 @@ cc_library(
         "ccl/test_sharded_address_generators.cpp",
         "ccl/test_sharded_address_generators_new.cpp",
     ],
+    copts = ["-isystem", ".", "-Wno-c++11-narrowing"],
     deps = [
+        ":test_common_utils",
         "//tests:test_common_libs",
-        "//ttnn:ttnn_core",
+        "//tests/tt_metal:test_utils",
+        "//ttnn:all_operations",
     ],
     alwayslink = True,
 )

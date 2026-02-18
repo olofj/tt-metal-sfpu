@@ -8,7 +8,10 @@
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
-package(default_visibility = ["//tests:__subpackages__"])
+package(default_visibility = [
+    "//packaging:__pkg__",
+    "//tests:__subpackages__",
+])
 
 # --------------------------------------------------------------------------
 # Runtime kernel files (JIT-compiled on device, NOT compiled by Bazel).
@@ -83,6 +86,11 @@ cc_library(
         "routing/tt_fabric_test_results.cpp",
     ],
     hdrs = glob(["routing/*.hpp"]),
+    # -isystem . : repo-root-relative angled includes (e.g. <tt_metal/fabric/...>)
+    copts = ["-isystem", "."],
+    # "." allows #include "routing/tt_fabric_test_common_types.hpp" from within
+    # routing/ sources (mirrors CMake's include_directories(${CMAKE_CURRENT_SOURCE_DIR})).
+    includes = ["."],
     deps = [
         ":perf_common",
         "//tests:test_metal_common_libs",
@@ -130,6 +138,7 @@ cc_test(
 cc_test(
     name = "dispatch_test_prefetcher",
     srcs = ["dispatch/test_prefetcher.cpp"],
+    copts = ["-isystem", "."],
     data = [":kernels"],
     deps = [
         ":dispatch_common",
@@ -158,6 +167,7 @@ cc_test(
 cc_test(
     name = "dispatch_test_dispatcher",
     srcs = ["dispatch/test_dispatcher.cpp"],
+    copts = ["-isystem", "."],
     data = [":kernels"],
     deps = [
         ":dispatch_common",
@@ -177,11 +187,15 @@ cc_test(
 [cc_test(
     name = "ethernet_" + src.replace(".cpp", ""),
     srcs = ["ethernet/" + src],
+    # -isystem . : repo-root-relative includes (e.g. "tests/tt_metal/tt_metal/test_kernels/...")
+    copts = ["-isystem", "."],
     data = [":kernels"],
     deps = [
         ":perf_common",
         "//tests:test_metal_common_libs",
         "//tests/tt_metal:test_utils",
+        # Provides host-side headers from test_kernels/ used at compile time.
+        "//tests/tt_metal/tt_metal:test_kernels_hdrs",
     ],
     tags = ["perf_microbenchmark", "ethernet", "requires_multi_device", "requires_wormhole_b0", "requires_blackhole"],
 ) for src in [
@@ -197,6 +211,8 @@ cc_test(
 cc_test(
     name = "routing_test_tt_fabric_mux_bandwidth",
     srcs = ["routing/test_tt_fabric_mux_bandwidth.cpp"],
+    # -isystem . : repo-root-relative angled includes in routing headers
+    copts = ["-isystem", "."],
     data = [
         ":kernels",
         ":routing_kernels",
@@ -213,6 +229,8 @@ cc_test(
 cc_test(
     name = "routing_test_tt_fabric",
     srcs = ["routing/test_tt_fabric.cpp"],
+    # -isystem . : repo-root-relative angled includes in routing headers
+    copts = ["-isystem", "."],
     data = [
         ":kernels",
         ":routing_kernels",

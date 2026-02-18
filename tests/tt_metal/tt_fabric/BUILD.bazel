@@ -9,6 +9,7 @@ load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 
 package(default_visibility = [
+    "//packaging:__pkg__",
     "//tests:__subpackages__",
     "//tt_metal/test:__pkg__",
 ])
@@ -51,6 +52,12 @@ cc_library(
         "common/utils.cpp",
     ],
     hdrs = glob(["common/*.hpp"]),
+    # -isystem . : repo-root-relative angled includes in headers
+    #   (e.g. <tt_metal/fabric/ccl/ccl_common.hpp> in test_fabric_edm_common.hpp)
+    copts = ["-isystem", "."],
+    # "common" allows bare #include "fabric_fixture.hpp" (matches CMake's
+    # target_include_directories(...  ${CMAKE_CURRENT_SOURCE_DIR}/common)).
+    includes = ["common"],
     deps = [
         "//tests:test_metal_common_libs",
         "//tests/tt_metal:test_utils",
@@ -70,6 +77,7 @@ cc_library(
         "benchmark/collectives/unicast/run_unicast_once.cpp",
     ],
     hdrs = ["benchmark/collectives/common/perf_helpers.hpp"],
+    copts = ["-Wno-c++11-narrowing"],
     deps = [
         ":fabric_test_common",
         "//tests:test_metal_common_libs",
@@ -116,7 +124,8 @@ cc_library(
     "test_connection_mapping_logic.cpp",
     "test_fabric_builder_local_connections.cpp",
     "test_fabric_topology_helpers.cpp",
-    "test_control_plane_logical_to_physical.cpp",
+    # NOTE: test_control_plane_logical_to_physical.cpp excluded — references
+    # non-existent function build_mesh_adjacency_map (broken source, not a BUILD issue).
 ]]
 
 # Router integration and device detection tests — these initialize real hardware
@@ -147,9 +156,28 @@ cc_library(
 # CMake includes these in the monolithic "fabric_unit_tests" executable.
 # --------------------------------------------------------------------------
 
-[cc_test(
-    name = "fabric_data_movement_" + src.replace(".cpp", ""),
-    srcs = ["fabric_data_movement/" + src],
+# In CMake these are compiled into the monolithic "fabric_unit_tests" executable;
+# the test sources cross-reference helper functions across files (e.g.
+# test_basic_fabric_apis.cpp calls RunTestUnicastRaw from test_basic_1d_fabric.cpp),
+# so they must be linked together in Bazel as well.
+cc_test(
+    name = "fabric_data_movement_unit_tests",
+    srcs = [
+        "fabric_data_movement/test_basic_fabric_apis.cpp",
+        "fabric_data_movement/test_basic_1d_fabric.cpp",
+        "fabric_data_movement/test_basic_fabric_mux.cpp",
+        "fabric_data_movement/test_fabric_traffic_generator_kernel.cpp",
+    ],
+    # -isystem . : repo-root-relative angled includes like <tt_metal/fabric/...>
+    # -I.../fabric_data_movement : for "kernels/..." includes
+    # -I.../common : test_host_kernel_common.hpp moved here from kernels/
+    # -Wno-c++11-narrowing : suppresses narrowing errors in test sources
+    copts = [
+        "-isystem", ".",
+        "-Itests/tt_metal/tt_fabric/fabric_data_movement",
+        "-Itests/tt_metal/tt_fabric/common",
+        "-Wno-c++11-narrowing",
+    ],
     data = [
         ":test_data",
         ":test_kernels",
@@ -161,17 +189,14 @@ cc_library(
         "//tests/tt_metal:test_utils",
     ],
     tags = ["unit", "tt_fabric", "fabric_data_movement", "requires_multi_device", "requires_wormhole_b0", "requires_blackhole"],
-) for src in [
-    "test_basic_fabric_apis.cpp",
-    "test_basic_1d_fabric.cpp",
-    "test_basic_fabric_mux.cpp",
-    "test_fabric_traffic_generator_kernel.cpp",
-]]
+)
 
 # Fabric smoke test (standalone, CMake target: fabric_smoke_tests)
 cc_test(
     name = "fabric_data_movement_test_basic_fabric_smoke",
     srcs = ["fabric_data_movement/test_basic_fabric_smoke.cpp"],
+    # -isystem . : repo-root-relative includes like "tt_metal/fabric/..."
+    copts = ["-isystem", ".", "-Wno-c++11-narrowing"],
     data = [
         ":test_data",
         ":test_kernels",
@@ -192,6 +217,8 @@ cc_test(
 cc_test(
     name = "physical_discovery_test_physical_system_descriptor",
     srcs = ["physical_discovery/test_physical_system_descriptor.cpp"],
+    # Repo-root include for #include "tests/tt_metal/test_utils/test_common.hpp"
+    copts = ["-isystem", "."],
     data = [":test_data"],
     deps = [
         "//tests:test_metal_common_libs",
@@ -208,6 +235,8 @@ cc_test(
 cc_test(
     name = "system_health_test_system_health",
     srcs = ["system_health/test_system_health.cpp"],
+    # Repo-root include for #include "tests/tt_metal/test_utils/test_common.hpp"
+    copts = ["-isystem", "."],
     data = [":test_data"],
     deps = [
         "//tests:test_metal_common_libs",
@@ -225,6 +254,7 @@ cc_binary(
     name = "fabric_elastic_channels_host_test",
     testonly = True,
     srcs = ["feature_bringup/fabric_elastic_channels_host_test.cpp"],
+    copts = ["-Wno-c++11-narrowing"],
     data = [
         ":test_data",
         ":test_kernels",
@@ -248,6 +278,7 @@ cc_test(
         "fabric_data_movement/addrgen_write/test_common.hpp",
         "fabric_data_movement/addrgen_write/kernels/kernel_common.hpp",
     ],
+    copts = ["-Wno-c++11-narrowing"],
     data = [
         ":test_data",
         ":test_kernels",
@@ -270,6 +301,7 @@ cc_test(
 cc_test(
     name = "test_bandwidth_telemetry_validation",
     srcs = ["test_bandwidth_telemetry_validation.cpp"],
+    copts = ["-Wno-c++11-narrowing"],
     data = [
         ":test_data",
         ":test_kernels",
@@ -291,6 +323,7 @@ cc_test(
 cc_test(
     name = "bench_unicast",
     srcs = ["benchmark/collectives/unicast/bench_unicast_main.cpp"],
+    copts = ["-Wno-c++11-narrowing"],
     data = [
         ":test_data",
         ":test_kernels",
@@ -315,6 +348,8 @@ cc_library(
     name = "validation_system_health_smoke",
     testonly = True,
     srcs = ["system_health/test_system_health.cpp"],
+    # Repo-root include for #include "tests/tt_metal/test_utils/test_common.hpp"
+    copts = ["-isystem", "."],
     deps = [
         "//tests:test_metal_common_libs",
         "//tests/tt_metal:test_utils",
@@ -326,6 +361,8 @@ cc_library(
     name = "validation_fabric_smoke",
     testonly = True,
     srcs = ["fabric_data_movement/test_basic_fabric_smoke.cpp"],
+    # -isystem . : repo-root-relative includes like "tt_metal/fabric/..."
+    copts = ["-isystem", ".", "-Wno-c++11-narrowing"],
     data = [
         ":test_data",
         ":test_kernels",

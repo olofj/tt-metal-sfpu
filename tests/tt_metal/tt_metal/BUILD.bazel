@@ -8,6 +8,7 @@ load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
 package(default_visibility = [
+    "//packaging:__pkg__",
     "//tests:__subpackages__",
     "//tt_metal/test:__pkg__",
 ])
@@ -20,6 +21,9 @@ cc_library(
     hdrs = glob([
         "common/*.hpp",
     ]),
+    # "common" allows bare #include "device_fixture.hpp" / "command_queue_fixture.hpp"
+    # (matches CMake's include_directories(${CMAKE_CURRENT_SOURCE_DIR}/common)).
+    includes = ["common"],
     deps = [
         "//tests:test_metal_common_libs",
         "//tests/tt_metal:test_utils",
@@ -32,9 +36,13 @@ cc_library(
     name = "dispatch_test_utils",
     testonly = True,
     hdrs = glob(["dispatch/*_utils.hpp"]) + [
+        "dispatch/multi_command_queue_fixture.hpp",
         "dispatch/random_program_fixture.hpp",
     ],
+    # "dispatch" allows bare #include "dispatch_test_utils.hpp" from subdirectories.
+    includes = ["dispatch"],
     deps = [
+        ":eth_common",
         ":test_fixtures",
         "//tests:test_metal_common_libs",
     ],
@@ -45,6 +53,15 @@ cc_library(
 filegroup(
     name = "test_kernels",
     srcs = glob(["test_kernels/**"]),
+)
+
+# Host-side headers within test_kernels/ that some tests #include at compile time
+# (e.g. eth_ubenchmark_types.hpp).  Separate from the filegroup so they are
+# available in the sandbox during compilation.
+cc_library(
+    name = "test_kernels_hdrs",
+    testonly = True,
+    hdrs = glob(["test_kernels/**/*.hpp", "test_kernels/**/*.h"]),
 )
 
 # Perf microbenchmark routing kernels — alias to the subpackage filegroup.
@@ -62,7 +79,7 @@ alias(
 
 [cc_test(
     name = src.replace(".cpp", ""),
-    srcs = [src],
+    srcs = [src] + glob(["*.hpp"]),
     data = [":test_kernels"],
     deps = [
         ":test_fixtures",
@@ -124,7 +141,7 @@ cc_test(
 
 [cc_test(
     name = "api_" + src.replace("/", "_").replace(".cpp", ""),
-    srcs = ["api/" + src],
+    srcs = ["api/" + src] + glob(["api/**/*.hpp"]),
     data = [":test_kernels"],
     deps = [
         ":test_fixtures",
@@ -191,8 +208,11 @@ cc_test(
 [cc_test(
     name = "dispatch_" + src.replace("/", "_").replace(".cpp", ""),
     srcs = ["dispatch/" + src],
+    # -isystem . : repo-root includes used transitively by impl headers (e.g. fd_kernel.hpp)
+    copts = ["-isystem", "."],
     data = [":test_kernels"],
     deps = [
+        ":dispatch_test_utils",
         ":test_fixtures",
         "//tests/tt_metal:test_utils",
         "//tests:test_metal_common_libs",
@@ -212,8 +232,11 @@ cc_test(
 [cc_test(
     name = "dispatch_" + src.replace("/", "_").replace(".cpp", ""),
     srcs = ["dispatch/" + src],
+    # -isystem . : repo-root includes used transitively by impl headers (e.g. fd_kernel.hpp)
+    copts = ["-isystem", "."],
     data = [":test_kernels"],
     deps = [
+        ":dispatch_test_utils",
         ":test_fixtures",
         "//tests/tt_metal:test_utils",
         "//tests:test_metal_common_libs",
@@ -232,8 +255,11 @@ cc_test(
 [cc_test(
     name = "dispatch_" + src.replace("/", "_").replace(".cpp", ""),
     srcs = ["dispatch/" + src],
+    # -isystem . : repo-root includes used transitively by impl headers (e.g. fd_kernel.hpp)
+    copts = ["-isystem", "."],
     data = [":test_kernels"],
     deps = [
+        ":dispatch_test_utils",
         ":test_fixtures",
         "//tests/tt_metal:test_utils",
         "//tests:test_metal_common_libs",
@@ -253,7 +279,7 @@ cc_test(
 
 [cc_test(
     name = "device_" + src.replace(".cpp", ""),
-    srcs = ["device/" + src],
+    srcs = ["device/" + src] + glob(["device/*.hpp"]),
     data = [":test_kernels"],
     deps = [
         ":test_fixtures",
@@ -280,7 +306,14 @@ cc_library(
     name = "dm_common",
     testonly = True,
     srcs = ["data_movement/dm_common.cpp"],
-    hdrs = ["data_movement/dm_common.hpp"],
+    hdrs = glob(["data_movement/**/*.hpp"]),
+    # "data_movement" allows bare #include "dm_common.hpp" from subdirectories.
+    # Subdirectory includes (e.g., "data_movement/one_to_all") allow
+    # #include "test_one_to_all.hpp" from tests in the same subdirectory.
+    includes = [
+        "data_movement",
+        "data_movement/one_to_all",
+    ],
     deps = [
         ":test_fixtures",
         "//tests/tt_metal:test_utils",
@@ -291,6 +324,8 @@ cc_library(
 [cc_test(
     name = "data_movement_" + src.replace("/", "_").replace(".cpp", ""),
     srcs = ["data_movement/" + src],
+    # -isystem . : repo-root include for multi_device_fixture.hpp
+    copts = ["-isystem", "."],
     data = [":test_kernels"],
     deps = [
         ":dm_common",
@@ -302,7 +337,6 @@ cc_library(
 ) for src in [
     "dram_unary/test_unary_dram.cpp",
     "one_to_all/test_one_to_all.cpp",
-    "one_to_all/test_multicast_schemes.cpp",
     "loopback/test_loopback.cpp",
     "reshard_hardcoded/test_reshard_hardcoded.cpp",
     "deinterleave_hardcoded/test_deinterleave_hardcoded.cpp",
@@ -326,15 +360,50 @@ cc_library(
     "noc_api_latency/test_noc_api_latency.cpp",
 ]]
 
+# test_multicast_schemes needs the shared helper functions (directed_ideal_test,
+# run_dm, etc.) defined in test_one_to_all.cpp, so it is built as a standalone
+# target with both source files instead of being part of the loop above.
+cc_test(
+    name = "data_movement_one_to_all_test_multicast_schemes",
+    srcs = [
+        "data_movement/one_to_all/test_multicast_schemes.cpp",
+        "data_movement/one_to_all/test_one_to_all.cpp",
+    ],
+    copts = ["-isystem", "."],
+    data = [":test_kernels"],
+    deps = [
+        ":dm_common",
+        ":test_fixtures",
+        "//tests/tt_metal:test_utils",
+        "//tests:test_metal_common_libs",
+    ],
+    tags = ["unit", "tt_metal", "data_movement", "requires_wormhole_b0", "requires_blackhole"],
+)
+
 # --------------------------------------------------------------------------
 # Debug tools tests
 # --------------------------------------------------------------------------
+
+# Shared fixture and utility headers for debug tools tests.
+cc_library(
+    name = "debug_tools_common",
+    testonly = True,
+    hdrs = glob(["debug_tools/*.hpp"]),
+    includes = ["debug_tools"],
+    deps = [
+        ":test_fixtures",
+        "//tests/tt_metal:test_utils",
+        "//tests:test_metal_common_libs",
+    ],
+)
 
 [cc_test(
     name = "debug_tools_" + src.replace("/", "_").replace(".cpp", ""),
     srcs = ["debug_tools/" + src],
     data = [":test_kernels"],
     deps = [
+        ":debug_tools_common",
+        ":eth_common",
         ":test_fixtures",
         "//tests/tt_metal:test_utils",
         "//tests:test_metal_common_libs",
@@ -385,11 +454,24 @@ cc_test(
 # Ethernet tests
 # --------------------------------------------------------------------------
 
+# Shared headers for ethernet tests — also used by debug_tools/dprint tests.
+cc_library(
+    name = "eth_common",
+    testonly = True,
+    hdrs = glob(["eth/*.hpp"]),
+    deps = [
+        ":test_fixtures",
+        "//tests/tt_metal:test_utils",
+        "//tests:test_metal_common_libs",
+    ],
+)
+
 [cc_test(
     name = "eth_" + src.replace(".cpp", ""),
     srcs = ["eth/" + src],
     data = [":test_kernels"],
     deps = [
+        ":eth_common",
         ":test_fixtures",
         "//tests/tt_metal:test_utils",
         "//tests:test_metal_common_libs",
@@ -434,11 +516,26 @@ cc_test(
 # LLK tests
 # --------------------------------------------------------------------------
 
+# Golden implementation library — shared by many LLK tests.
+cc_library(
+    name = "llk_golden_impls",
+    testonly = True,
+    srcs = ["llk/test_golden_impls.cpp"],
+    hdrs = glob(["llk/*.hpp"]),
+    includes = ["llk"],
+    deps = [
+        ":test_fixtures",
+        "//tests/tt_metal:test_utils",
+        "//tests:test_metal_common_libs",
+    ],
+)
+
 [cc_test(
     name = "llk_" + src.replace(".cpp", ""),
     srcs = ["llk/" + src],
     data = [":test_kernels"],
     deps = [
+        ":llk_golden_impls",
         ":test_fixtures",
         "//tests/tt_metal:test_utils",
         "//tests:test_metal_common_libs",
@@ -450,7 +547,6 @@ cc_test(
     "test_copy_block_matmul_partials.cpp",
     "test_cumsum.cpp",
     "test_dropout_sfpu_compute.cpp",
-    "test_golden_impls.cpp",
     "test_mul_reduce_scalar.cpp",
     "test_pack_rows.cpp",
     "test_reconfig.cpp",
@@ -487,7 +583,7 @@ cc_test(
 
 cc_test(
     name = "noc_debugging_test_reads_writes",
-    srcs = ["noc_debugging/test_reads_writes.cpp"],
+    srcs = ["noc_debugging/test_reads_writes.cpp"] + glob(["noc_debugging/*.hpp"]),
     data = [":test_kernels"],
     deps = [
         ":test_fixtures",
@@ -503,7 +599,7 @@ cc_test(
 
 cc_test(
     name = "lightmetal_test_lightmetal",
-    srcs = ["lightmetal/test_lightmetal.cpp"],
+    srcs = ["lightmetal/test_lightmetal.cpp"] + glob(["lightmetal/*.hpp"]),
     data = [":test_kernels"],
     deps = [
         ":test_fixtures",
@@ -615,7 +711,7 @@ cc_test(
 cc_library(
     name = "validation_api",
     testonly = True,
-    srcs = ["api/" + src for src in [
+    srcs = glob(["api/**/*.hpp"]) + ["api/" + src for src in [
         "allocator/test_free_list_opt_allocator.cpp",
         "allocator/test_l1_banking_allocator.cpp",
         "allocator/test_overlapped_bank_manager.cpp",
@@ -685,7 +781,7 @@ cc_library(
         "test_simulator_device.cpp",
         "test_galaxy_cluster_api.cpp",
         "test_mock_device_api.cpp",
-    ]],
+    ]] + glob(["device/*.hpp"]),
     deps = [
         ":test_fixtures",
         "//tests/tt_metal:test_utils",
@@ -707,7 +803,10 @@ cc_library(
         "dispatch_util/test_device_command.cpp",
         "dispatch_util/test_dispatch_settings.cpp",
     ]],
+    # -isystem . : repo-root includes used transitively by impl headers (e.g. fd_kernel.hpp)
+    copts = ["-isystem", "."],
     deps = [
+        ":dispatch_test_utils",
         ":test_fixtures",
         "//tests/tt_metal:test_utils",
         "//tests:test_metal_common_libs",
@@ -728,6 +827,7 @@ cc_library(
         "dispatch_util/test_ringbuffer_cache.cpp",
     ]],
     deps = [
+        ":dispatch_test_utils",
         ":test_fixtures",
         "//tests/tt_metal:test_utils",
         "//tests:test_metal_common_libs",

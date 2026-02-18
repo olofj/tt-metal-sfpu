@@ -56,6 +56,8 @@ cc_library(
         "core/tensor/py_to_tt_tensor.cpp",
         # Shared utility used by matmul, conv, and experimental ops.
         "cpp/ttnn/operations/compute_throttle_utils.cpp",
+        # Trace capture/replay — used by graph tests and benchmarks.
+        "cpp/ttnn/operations/trace.cpp",
     ],
     hdrs =
         # All headers in the ttnn package. The glob automatically stops at
