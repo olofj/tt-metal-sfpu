@@ -154,7 +154,15 @@ build:lto --copt=-flto=thin
 build:lto --linkopt=-flto=thin
 build:lto --copt=-ffunction-sections
 build:lto --copt=-fdata-sections
+build:lto --copt=-ffat-lto-objects
+build:lto --linkopt=-ffat-lto-objects
+build:lto --copt=-fforce-emit-vtables
+build:lto --copt=-Wodr
+build:lto --copt=-Wstrict-aliasing
+build:lto --linkopt=-fwhole-program-vtables
+build:lto --linkopt=-Wl,--thinlto-jobs=all
 build:lto --linkopt=-Wl,--gc-sections
+build:lto --linkopt=-Wl,--icf=safe
 
 # ===========================================================================
 # C++ toolchain configurations
