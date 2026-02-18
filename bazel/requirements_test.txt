@@ -20,11 +20,21 @@ numpy>=1.24.4,<2
 torch==2.7.1
 loguru==0.6.0
 
+# ML model dependencies used by model tests.
+transformers==4.53.0
+torchvision==0.22.1
+pandas==2.3.3
+
 # Test utilities
 pyyaml>=5.4
 
 # Documentation build (Sphinx + extensions).
 # Used by //docs:html_docs target.
+# Pin bleach<6 — bleach 6.x removed CSS sanitization that nbconvert requires.
+bleach>=5,<6
+# Pin nbconvert<7.17 — 7.17.0 has a bug where ALLOWED_STYLES is undefined
+# when the CSS sanitizer is not fully initialized (NameError in sanitize.py).
+nbconvert>=7.16,<7.17
 sphinx==7.1.2
 sphinx-rtd-theme==1.3.0
 sphinxcontrib-email==0.3.5

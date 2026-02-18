@@ -159,6 +159,9 @@ pip.parse(
     hub_name = "pip",
     python_version = "3.12",
     requirements_lock = "//bazel:requirements_test_lock.txt",
+    # PyTorch publishes CPU-only wheels (torch+cpu, torchvision+cpu) on a
+    # separate index. Without this, rules_python cannot resolve them.
+    extra_pip_args = ["--extra-index-url", "https://download.pytorch.org/whl/cpu"],
 )
 
 use_repo(pip, "pip")
