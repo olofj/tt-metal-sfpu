@@ -23,6 +23,7 @@ _COMMON_INCLUDES = [
     "-Itt_metal/api/tt-metalium",
     "-Itt_metal/hw/inc",
     "-Itt_metal/hw/inc/debug",
+    "-Itt_metal/hw/inc/internal/tt-1xx",
     "-Itt_metal/hw/firmware/src/tt-1xx",
 ]
 
@@ -114,6 +115,7 @@ def firmware_binary(
             "-T$(location %s)" % linker_script,
         ] + extra_linkopts,
         deps = deps,
+        target_compatible_with = ["@platforms//cpu:riscv32"],
         **kwargs
     )
 

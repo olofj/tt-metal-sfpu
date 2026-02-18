@@ -180,11 +180,17 @@ _SUPPORT_OBJ_COPTS = [
     "-Itt_metal/hw/firmware/src/tt-1xx",
 ]
 
+# These targets require the SFPI RISC-V cross-compiler.
+# Build with: bazel build --config=sfpi-wormhole (or sfpi-blackhole).
+# Incompatible with the host (x86) platform so `bazel build ...` skips them.
+_RISCV_COMPAT = ["@platforms//cpu:riscv32"]
+
 # C runtime startup — entry point for all firmware except active ERISC
 cc_library(
     name = "tmu_crt0",
     srcs = ["tmu-crt0.S"],
     copts = _SUPPORT_OBJ_COPTS,
+    target_compatible_with = _RISCV_COMPAT,
 )
 
 # Compiler intrinsic substitutes (atexit, exit, wzerorange)
@@ -192,6 +198,7 @@ cc_library(
     name = "substitutes",
     srcs = ["substitutes.cpp"],
     copts = _SUPPORT_OBJ_COPTS,
+    target_compatible_with = _RISCV_COMPAT,
 )
 
 # Wormhole-only: NCRISC IRAM trampoline (saves/restores register state)
@@ -201,6 +208,7 @@ cc_library(
     copts = _SUPPORT_OBJ_COPTS + [
         "-Itt_metal/hw/inc/internal/tt-1xx/wormhole",
     ],
+    target_compatible_with = _RISCV_COMPAT,
 )
 
 # Wormhole-only: NCRISC IRAM start (kernel entry point in IRAM mode)
@@ -210,6 +218,7 @@ cc_library(
     copts = _SUPPORT_OBJ_COPTS + [
         "-Itt_metal/hw/inc/internal/tt-1xx/wormhole",
     ],
+    target_compatible_with = _RISCV_COMPAT,
 )
 
 # ===================================================================

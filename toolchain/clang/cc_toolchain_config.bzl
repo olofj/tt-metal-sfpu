@@ -31,6 +31,8 @@ _COMMON_COMPILE_FLAGS = [
     "-Wno-deprecated-declarations",
     "-std=c++20",
     "-no-canonical-prefixes",
+    # Compressed debug sections (matches linking.cmake zlib compression)
+    "-gz",
 ]
 
 _CLANG_COMPILE_FLAGS = [
@@ -184,6 +186,13 @@ def _clang_cc_toolchain_config_impl(ctx):
         "linker_selection",
         _ALL_LINK_ACTIONS,
         ["-fuse-ld=lld"],
+    ))
+
+    # Compressed debug sections (matches linking.cmake zlib compression)
+    features.append(_make_flag_feature(
+        "compress_debug_sections",
+        _ALL_LINK_ACTIONS,
+        ["-Wl,--compress-debug-sections=zlib"],
     ))
 
     features.append(feature(name = "supports_dynamic_linker", enabled = True))

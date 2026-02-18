@@ -6,23 +6,20 @@ try-import %workspace%/.bazelrc.user
 # ===========================================================================
 # Common build flags (always applied)
 #
-# Mirrors CMakeLists.txt lines 65-192: C++20, arch-specific codegen, warnings.
+# Host toolchain flags (C++20, arch-specific codegen, warnings) are baked
+# into each cc_toolchain_config (toolchain/cc_toolchain_config.bzl and
+# toolchain/clang/cc_toolchain_config.bzl).  They MUST NOT appear here as
+# unconditional --copt/--cxxopt flags because those apply to ALL platforms,
+# including SFPI RISC-V cross-compilation targets.  The RISC-V compiler
+# does not understand x86 flags like -march=x86-64-v3.
+#
+# Flags that only affect the host (exec) platform are safe here.
 # ===========================================================================
 
-build --cxxopt=-std=c++20
+# Host-only C++ standard — only affects tools built for the host.
+# Target C++ standard is set per-toolchain (C++20 for host, C++17 for SFPI).
 build --host_cxxopt=-std=c++20
 build --action_env=BAZEL_CXXOPTS=-std=c++20
-
-# Architecture-specific codegen (x86-64-v3 = AVX2 + BMI2 + FMA baseline)
-build --copt=-march=x86-64-v3
-build --copt=-fPIC
-build --copt=-pipe
-build --copt=-fvisibility-inlines-hidden
-
-# Warnings (matches CMakeLists.txt add_compile_options)
-build --copt=-Wall
-build --copt=-Werror
-build --copt=-Wno-deprecated-declarations
 
 # Disable -Werror for third-party code that we don't control.
 # Cap'n Proto triggers -Wconditional-uninitialized and -Wnontrivial-memcall
@@ -31,9 +28,14 @@ build --copt=-Wno-deprecated-declarations
 build --per_file_copt=external/.*@-Wno-error
 build --host_per_file_copt=external/.*@-Wno-error
 
-# Compressed debug sections (matches linking.cmake zlib compression)
-build --copt=-gz
-build --linkopt=-Wl,--compress-debug-sections=zlib
+# Suppress narrowing errors in test sources. The tests were written for GCC
+# which treats C++11 narrowing as a warning; Clang treats it as an error.
+# This is harmless in test code (int→unsigned, size_t→uint32_t, etc.).
+build --per_file_copt=tests/.*@-Wno-c++11-narrowing,-Wno-narrowing
+
+# Compressed debug sections are configured in the host toolchain configs
+# (toolchain/cc_toolchain_config.bzl and toolchain/clang/cc_toolchain_config.bzl)
+# rather than here, to avoid passing -gz to the SFPI RISC-V cross-compiler.
 
 # Version stamping via git tags (replicates setuptools_scm "guess-next-dev").
 # Off by default for dev builds (faster, no cache invalidation on git changes).

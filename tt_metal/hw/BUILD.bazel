@@ -179,10 +179,11 @@ cc_library(
             "inc/api/**/*.hpp",
             "inc/hostdev/**/*.h",
             "inc/hostdev/**/*.hpp",
-            # Common internal headers shared across architectures (e.g., risc_attribs.h).
-            # Included by arch-specific headers via "internal/risc_attribs.h".
-            "inc/internal/*.h",
-            "inc/internal/*.hpp",
+            # Common internal headers shared across architectures (e.g., risc_attribs.h,
+            # internal/tensor/const.h). Recursive glob stops at subpackage boundaries
+            # (tt-1xx/wormhole, tt-1xx/blackhole, tt-2xx/quasar have their own BUILD).
+            "inc/internal/**/*.h",
+            "inc/internal/**/*.hpp",
         ],
         allow_empty = True,
     ),

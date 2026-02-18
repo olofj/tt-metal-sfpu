@@ -28,6 +28,10 @@ _COMMON_FW_COPTS = [
     "-DLOCAL_MEM_EN=0",
 ]
 
+# Firmware targets require the SFPI RISC-V cross-compiler.
+# `bazel build ...` (host platform) skips them automatically.
+_RISCV_COMPAT = ["@platforms//cpu:riscv32"]
+
 # NOC initialization — C code, architecture-specific
 # Mirrors: "noc.o:tt_metal/hw/firmware/src/tt-1xx/${ARCH}/noc.c"
 cc_library(
@@ -41,6 +45,7 @@ cc_library(
         "-Itt_metal/hw/inc",
         "-Itt_metal/hw/firmware/src/tt-1xx",
     ],
+    target_compatible_with = _RISCV_COMPAT,
 )
 
 cc_library(
@@ -53,6 +58,7 @@ cc_library(
         "-Itt_metal/hw/inc",
         "-Itt_metal/hw/firmware/src/tt-1xx",
     ],
+    target_compatible_with = _RISCV_COMPAT,
 )
 
 # TDMA transfer functions — C code, needs architecture-specific tensix headers
@@ -68,6 +74,7 @@ cc_library(
         "-Itt_metal/hw/inc/internal/tt-1xx/wormhole/noc",
         "-Itt_metal/hw/firmware/src/tt-1xx",
     ],
+    target_compatible_with = _RISCV_COMPAT,
 )
 
 cc_library(
@@ -80,6 +87,7 @@ cc_library(
         "-Itt_metal/hw/inc/internal/tt-1xx/blackhole/noc",
         "-Itt_metal/hw/firmware/src/tt-1xx",
     ],
+    target_compatible_with = _RISCV_COMPAT,
 )
 
 # ===================================================================
