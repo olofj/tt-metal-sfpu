@@ -1,0 +1,18 @@
+# Unified Data Movement (UDM) library — experimental mesh-level programming API.
+#
+# Mirrors CMake target: tt_metal_udm (STATIC library)
+# from tt_metal/experimental/udm/CMakeLists.txt.
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+cc_library(
+    name = "tt_metal_udm",
+    srcs = glob(["*.cpp"]),
+    hdrs = glob(["*.hpp"]),
+    visibility = [
+        "//tests:__subpackages__",
+    ],
+    deps = [
+        "//tt_metal",
+    ],
+)

@@ -1,0 +1,8 @@
+# Lab eltwise binary example — kernel programming tutorial.
+#
+# The source file is compiled as a test by tests/ttnn/lab_examples/BUILD.bazel.
+
+exports_files(
+    ["lab_eltwise_binary.cpp"],
+    visibility = ["//tests/ttnn/lab_examples:__pkg__"],
+)

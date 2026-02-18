@@ -1,0 +1,29 @@
+# TTNN lab examples — educational example tests.
+#
+# Mirrors the CMake target from tests/ttnn/lab_examples/CMakeLists.txt:
+#   - test_lab_eltwise_binary
+#
+# NOTE: The source file lives outside this directory (in ttnn/examples/),
+# matching the upstream CMake layout. The FIXME in sources.cmake acknowledges
+# this cross-scope reference.
+
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
+package(default_visibility = [
+    "//packaging:__pkg__",
+    "//tests:__subpackages__",
+])
+
+cc_test(
+    name = "test_lab_eltwise_binary",
+    srcs = ["//ttnn/examples/lab_eltwise_binary:lab_eltwise_binary.cpp"],
+    copts = [
+        "-isystem", ".",
+        "-Itests",
+    ],
+    deps = [
+        "//tt_metal",
+        "//ttnn:all_operations",
+    ],
+    tags = ["unit", "ttnn", "lab_examples"],
+)

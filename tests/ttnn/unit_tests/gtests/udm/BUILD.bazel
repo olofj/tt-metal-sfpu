@@ -1,0 +1,44 @@
+# TTNN UDM (Unified Data Movement) tests.
+#
+# Mirrors the CMake target from tests/ttnn/unit_tests/gtests/udm/CMakeLists.txt:
+#   - unit_tests_ttnn_udm (single executable with 4 test source files)
+#
+# Kernel files in subdirectories (copy/kernels/, eltwise/kernels/, etc.)
+# are runtime data for JIT compilation, not compiled directly.
+
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
+package(default_visibility = [
+    "//packaging:__pkg__",
+    "//tests:__subpackages__",
+])
+
+# Runtime kernel files used by UDM tests via JIT compilation.
+filegroup(
+    name = "test_kernels",
+    srcs = glob(["**/kernels/**"]),
+)
+
+cc_test(
+    name = "unit_tests_ttnn_udm",
+    srcs = [
+        "copy/test_udm_copy.cpp",
+        "eltwise/test_udm_add.cpp",
+        "reduction/interleaved/test_udm_reduction_interleaved.cpp",
+        "reduction/sharded/test_udm_reduction.cpp",
+        "test_udm_utils.hpp",
+    ],
+    copts = [
+        "-isystem", ".",
+        "-Itests",
+    ],
+    data = [":test_kernels"],
+    deps = [
+        "//tests:test_common_libs",
+        "//tests/tt_metal/tt_metal:test_fixtures",
+        "//tt_metal/experimental/udm:tt_metal_udm",
+        "//tt_metal/programming_examples/matmul:matmul_common",
+        "//ttnn:all_operations",
+    ],
+    tags = ["unit", "ttnn", "udm", "requires_multi_device"],
+)

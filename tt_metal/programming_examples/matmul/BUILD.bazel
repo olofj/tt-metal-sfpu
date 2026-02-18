@@ -25,6 +25,10 @@ cc_library(
     name = "matmul_common",
     hdrs = ["matmul_common/bmm_op.hpp"],
     strip_include_prefix = "matmul_common",
+    visibility = [
+        "//tests:__subpackages__",
+        "//tt_metal/programming_examples:__pkg__",
+    ],
 )
 
 # Kernel files used by matmul examples at runtime.

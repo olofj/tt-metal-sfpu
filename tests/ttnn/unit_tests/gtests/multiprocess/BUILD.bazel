@@ -1,0 +1,39 @@
+# TTNN multiprocess tests — multi-process mesh communication tests.
+#
+# Mirrors the CMake targets from tests/ttnn/unit_tests/gtests/multiprocess/CMakeLists.txt:
+#   - unit_tests_dual_rank_2x4 (host all-gather)
+#   - unit_tests_dual_rank_2x2 (send/recv ops)
+#   - unit_tests_pipeline_2x4  (send/recv pipeline)
+#
+# Each target has a custom main.cpp (no gtest_main) and uses intermesh
+# routing utilities from the fabric tests.
+
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
+package(default_visibility = [
+    "//packaging:__pkg__",
+    "//tests:__subpackages__",
+])
+
+[cc_test(
+    name = name,
+    srcs = [
+        "main.cpp",
+        test_src,
+    ],
+    copts = ["-isystem", ".", "-Itests"],
+    deps = [
+        "//tests:test_common_libs",
+        "//tests/tt_metal/multihost:multihost_common",
+        "//tests/tt_metal/multihost/fabric_tests:intermesh_routing_test_utils",
+        "//tests/tt_metal/multihost/fabric_tests:socket_send_recv_utils",
+        "//tests/tt_metal/tt_metal:test_fixtures",
+        "//tests/ttnn/unit_tests/gtests:test_common_utils",
+        "//ttnn:all_operations",
+    ],
+    tags = ["unit", "ttnn", "multiprocess", "requires_multi_device"],
+) for name, test_src in [
+    ("unit_tests_dual_rank_2x4", "test_host_all_gather.cpp"),
+    ("unit_tests_dual_rank_2x2", "test_send_recv_ops.cpp"),
+    ("unit_tests_pipeline_2x4", "test_send_recv_pipeline.cpp"),
+]]

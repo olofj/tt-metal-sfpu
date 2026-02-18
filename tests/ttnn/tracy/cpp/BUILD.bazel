@@ -1,0 +1,21 @@
+# TTNN Tracy C++ tests — profiling data extraction.
+#
+# Mirrors the CMake target from tests/ttnn/tracy/cpp/CMakeLists.txt:
+#   - test_get_programs_perf_data
+
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
+package(default_visibility = [
+    "//packaging:__pkg__",
+    "//tests:__subpackages__",
+])
+
+cc_test(
+    name = "test_get_programs_perf_data",
+    srcs = ["test_get_programs_perf_data.cpp"],
+    deps = [
+        "//tests:test_common_libs",
+        "//ttnn:all_operations",
+    ],
+    tags = ["unit", "ttnn", "tracy", "profiling"],
+)
