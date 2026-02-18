@@ -6,7 +6,10 @@
 
 load("@rules_python//python:py_library.bzl", "py_library")
 
-package(default_visibility = ["//tests:__subpackages__"])
+package(default_visibility = [
+    "//models:__subpackages__",
+    "//tests:__subpackages__",
+])
 
 # Sweep test utility modules imported by test files via:
 #   from tests.tt_eager.python_api_testing.sweep_tests import comparison_funcs

@@ -3,6 +3,11 @@
 load("@rules_python//python:py_library.bzl", "py_library")
 load("//bazel:pytest.bzl", "pytest_suite")
 
+package(default_visibility = [
+    "//packaging:__pkg__",
+    "//tests:__subpackages__",
+])
+
 py_library(
     name = "sdpa_test_utils",
     testonly = True,
