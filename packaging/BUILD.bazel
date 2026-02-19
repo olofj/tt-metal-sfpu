@@ -184,11 +184,14 @@ pkg_tar(
 
 pkg_tar(
     name = "metalium_data",
-    deps = [
-        ":metalium_jitapi_tar",
-    ],
     srcs = [
         ":metalium_runtime_libs",
+    ],
+    # Both metalium_jitapi_tar and metalium_runtime_libs create usr/
+    # directory entries; allow the harmless duplicate silently.
+    allow_duplicates_from_deps = True,
+    deps = [
+        ":metalium_jitapi_tar",
     ],
 )
 
