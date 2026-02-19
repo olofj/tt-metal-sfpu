@@ -4,10 +4,6 @@
 # requiring no physical Tenstorrent hardware. Each test gets a Wormhole B0
 # (_wh) and Blackhole (_bh) variant that run in parallel.
 #
-# The test cases here match exactly what the CMake-based ttsim.yaml CI
-# workflow validates (see .github/workflows/ttsim.yaml, ttsim-cpp-unit-tests
-# job). Only gtest cases known to work with TTSim are included.
-#
 # Because these targets have no requires_* hardware tags, they are included
 # in the default `bazel test ...` invocation on any machine.
 #
@@ -177,114 +173,139 @@ ttsim_runtime(
 
 # ===================================================================
 # Test targets
+#
+# Each ttsim_test_suite creates _wh and _bh variants that run in
+# parallel. Omitting gtest_filter runs all cases in the binary.
+# All targets validated to pass on CPU-only machines under TTSim.
 # ===================================================================
 
 _TT_METAL = "//tests/tt_metal/tt_metal"
 
 # ---------------------------------------------------------------------------
-# API tests (2 gtest cases from unit_tests_api)
+# API tests
 # ---------------------------------------------------------------------------
 
 ttsim_test_suite(
     name = "api_noc",
     test = _TT_METAL + ":api_test_noc",
-    gtest_filter = "MeshDeviceFixture.IdleEthTestNocStreamRegs",
+    # NOC.TensixVerifyNocIdentityTranslationTable crashes on WH (unimplemented
+    # register NOC_X_ID_TRANSLATE_TABLE_0). Passes on BH but excluded for
+    # consistency. Remaining 11 cases all pass on both architectures.
+    gtest_filter = "*:-NOC.TensixVerifyNocIdentityTranslationTable",
 )
 
 ttsim_test_suite(
     name = "api_dram",
     test = _TT_METAL + ":api_test_dram",
-    gtest_filter = "MeshDispatchFixture.IdleEthDRAMLoopbackSingleCore",
 )
 
 # ---------------------------------------------------------------------------
-# Debug tools tests (4 gtest cases from unit_tests_debug_tools)
+# Debug tools — dprint tests
 # ---------------------------------------------------------------------------
 
 ttsim_test_suite(
     name = "debug_dprint_eth",
     test = _TT_METAL + ":debug_tools_dprint_test_eth_cores",
-    gtest_filter = "DPrintMeshFixture.IdleEthTestPrint",
 )
+
+ttsim_test_suite(
+    name = "debug_dprint_before_finish",
+    test = _TT_METAL + ":debug_tools_dprint_test_print_before_finish",
+)
+
+ttsim_test_suite(
+    name = "debug_dprint_buffering",
+    test = _TT_METAL + ":debug_tools_dprint_test_print_buffering",
+)
+
+ttsim_test_suite(
+    name = "debug_dprint_prepend",
+    test = _TT_METAL + ":debug_tools_dprint_test_print_prepend_device_core_risc",
+)
+
+# ---------------------------------------------------------------------------
+# Debug tools — watcher tests
+# ---------------------------------------------------------------------------
 
 ttsim_test_suite(
     name = "debug_watcher_ringbuf",
     test = _TT_METAL + ":debug_tools_watcher_test_ringbuf",
-    gtest_filter = "MeshWatcherFixture.TestWatcherRingBufferIErisc",
 )
 
 ttsim_test_suite(
     name = "debug_watcher_stack_usage",
     test = _TT_METAL + ":debug_tools_watcher_test_stack_usage",
-    gtest_filter = "MeshWatcherFixture.TestWatcherStackUsage*",
+)
+
+ttsim_test_suite(
+    name = "debug_watcher_assert",
+    test = _TT_METAL + ":debug_tools_watcher_test_assert",
+)
+
+ttsim_test_suite(
+    name = "debug_watcher_sanitize",
+    test = _TT_METAL + ":debug_tools_watcher_test_sanitize",
 )
 
 # ---------------------------------------------------------------------------
-# Dispatch tests (2 gtest cases from unit_tests_dispatch)
+# Dispatch tests
 # ---------------------------------------------------------------------------
 
 ttsim_test_suite(
-    name = "dispatch_idle_eth",
+    name = "dispatch",
     test = _TT_METAL + ":dispatch_dispatch_program_test_dispatch",
-    gtest_filter = "MeshDispatchFixture.TensixIdleEthTestSemaphores:MeshDispatchFixture.EthTestBlank",
 )
 
 # ---------------------------------------------------------------------------
-# Ethernet tests (3 gtest cases from unit_tests_eth, Blackhole-specific)
+# Ethernet tests
 # ---------------------------------------------------------------------------
 
 ttsim_test_suite(
-    name = "eth_idle_erisc",
+    name = "eth_basic",
     test = _TT_METAL + ":eth_test_basic_eth",
-    gtest_filter = "BlackholeSingleCardFixture.IdleEthKernelOnIdleErisc*:BlackholeSingleCardFixture.IdleEthKernelOnBothIdleEriscs",
+)
+
+# ---------------------------------------------------------------------------
+# Device simulator tests
+# ---------------------------------------------------------------------------
+
+ttsim_test_suite(
+    name = "device_simulator",
+    test = _TT_METAL + ":device_test_simulator_device",
 )
 
 # ---------------------------------------------------------------------------
 # Aggregate suites
 # ---------------------------------------------------------------------------
 
+_ALL_SUITES = [
+    "api_noc",
+    "api_dram",
+    "debug_dprint_eth",
+    "debug_dprint_before_finish",
+    "debug_dprint_buffering",
+    "debug_dprint_prepend",
+    "debug_watcher_ringbuf",
+    "debug_watcher_stack_usage",
+    "debug_watcher_assert",
+    "debug_watcher_sanitize",
+    "dispatch",
+    "eth_basic",
+    "device_simulator",
+]
+
 test_suite(
     name = "ttsim_all",
-    tests = [
-        ":api_noc_wh",
-        ":api_noc_bh",
-        ":api_dram_wh",
-        ":api_dram_bh",
-        ":debug_dprint_eth_wh",
-        ":debug_dprint_eth_bh",
-        ":debug_watcher_ringbuf_wh",
-        ":debug_watcher_ringbuf_bh",
-        ":debug_watcher_stack_usage_wh",
-        ":debug_watcher_stack_usage_bh",
-        ":dispatch_idle_eth_wh",
-        ":dispatch_idle_eth_bh",
-        ":eth_idle_erisc_wh",
-        ":eth_idle_erisc_bh",
-    ],
+    tests = [":{}_wh".format(s) for s in _ALL_SUITES] +
+            [":{}_bh".format(s) for s in _ALL_SUITES],
 )
 
 test_suite(
     name = "ttsim_all_wh",
-    tests = [
-        ":api_noc_wh",
-        ":api_dram_wh",
-        ":debug_dprint_eth_wh",
-        ":debug_watcher_ringbuf_wh",
-        ":debug_watcher_stack_usage_wh",
-        ":dispatch_idle_eth_wh",
-        ":eth_idle_erisc_wh",
-    ],
+    tests = [":{}_wh".format(s) for s in _ALL_SUITES],
 )
 
 test_suite(
     name = "ttsim_all_bh",
-    tests = [
-        ":api_noc_bh",
-        ":api_dram_bh",
-        ":debug_dprint_eth_bh",
-        ":debug_watcher_ringbuf_bh",
-        ":debug_watcher_stack_usage_bh",
-        ":dispatch_idle_eth_bh",
-        ":eth_idle_erisc_bh",
-    ],
+    tests = [":{}_bh".format(s) for s in _ALL_SUITES],
 )
