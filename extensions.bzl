@@ -1,6 +1,6 @@
 """Module extensions for dependencies not available on the Bazel Central Registry."""
 
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file")
 load("//toolchain/clang:repo.bzl", "clang_toolchain_repo")
 load("//toolchain/sfpi:repo.bzl", "sfpi_toolchain_repo")
 
@@ -167,6 +167,20 @@ def _non_bcr_deps_impl(module_ctx):
         urls = ["https://github.com/libuv/libuv/archive/refs/tags/v1.51.0.tar.gz"],
         strip_prefix = "libuv-1.51.0",
         build_file = "//third_party:libuv.BUILD",
+    )
+
+    # TTSim v1.3.4 — Tenstorrent hardware simulator shared libraries.
+    # These enable running device tests without physical hardware.
+    # Used by --config=ttsim-wh / --config=ttsim-bh in .bazelrc.
+    http_file(
+        name = "ttsim_wh",
+        urls = ["https://github.com/tenstorrent/ttsim/releases/download/v1.3.4/libttsim_wh.so"],
+        executable = False,
+    )
+    http_file(
+        name = "ttsim_bh",
+        urls = ["https://github.com/tenstorrent/ttsim/releases/download/v1.3.4/libttsim_bh.so"],
+        executable = False,
     )
 
 non_bcr_deps = module_extension(

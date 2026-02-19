@@ -71,6 +71,21 @@ cc_library(
 # device configuration. Aggregates filegroups from subpackages.
 # ===========================================================================
 
+# SoC descriptor files — exported for use by TTSim test wrappers
+# (see //bazel:ttsim.bzl).
+exports_files([
+    "soc_descriptors/wormhole_b0_80_arch.yaml",
+    "soc_descriptors/blackhole_140_arch.yaml",
+])
+
+# Core descriptor YAML files — needed at runtime by device initialization.
+# TTSim test wrappers include this as a data dependency so the files are
+# available in Bazel's sandbox.
+filegroup(
+    name = "core_descriptors",
+    srcs = glob(["core_descriptors/*.yaml"]),
+)
+
 # Source files from the tt_metal/ package (not in subpackages).
 filegroup(
     name = "wheel_data_local",

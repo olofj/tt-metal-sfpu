@@ -133,6 +133,11 @@ filegroup(
 )
 
 filegroup(
+    name = "gxx",
+    srcs = ["compiler/bin/riscv-tt-elf-g++"],
+)
+
+filegroup(
     name = "empty",
     srcs = [],
 )
@@ -152,6 +157,7 @@ sfpi_cc_toolchain_config(
 cc_toolchain(
     name = "sfpi_{name}_cc_toolchain",
     all_files = ":all_files",
+    ar_files = ":compiler_files",
     compiler_files = ":compiler_files",
     dwp_files = ":empty",
     linker_files = ":linker_files",

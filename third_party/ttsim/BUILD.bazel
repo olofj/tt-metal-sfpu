@@ -1,0 +1,41 @@
+# TTSim simulator integration — wrapper script and sh_binary targets.
+#
+# The ttsim_test() macro in //bazel:ttsim.bzl creates CPU-only test targets
+# that wrap hardware tests with the TTSim simulator. The .so libraries are
+# downloaded automatically by Bazel (see extensions.bzl).
+
+# run_ttsim.sh — exported for use by ttsim_test() macro in //bazel:ttsim.bzl.
+# The macro creates sh_test targets with this script as srcs.
+exports_files(
+    ["run_ttsim.sh"],
+    visibility = ["//visibility:public"],
+)
+
+# Standalone wrappers — can be used with --run_under for ad-hoc testing.
+# Prefer using ttsim_test() targets in //tests/ttsim instead.
+
+sh_binary(
+    name = "run_ttsim_wh",
+    srcs = ["run_ttsim.sh"],
+    data = [
+        "@ttsim_wh//file",
+        "//tt_metal:soc_descriptors/wormhole_b0_80_arch.yaml",
+    ],
+    env = {
+        "TTSIM_ARCH": "wormhole_b0",
+    },
+    visibility = ["//visibility:public"],
+)
+
+sh_binary(
+    name = "run_ttsim_bh",
+    srcs = ["run_ttsim.sh"],
+    data = [
+        "@ttsim_bh//file",
+        "//tt_metal:soc_descriptors/blackhole_140_arch.yaml",
+    ],
+    env = {
+        "TTSIM_ARCH": "blackhole",
+    },
+    visibility = ["//visibility:public"],
+)

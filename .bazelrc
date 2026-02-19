@@ -245,14 +245,29 @@ build:ci-readonly --remote_timeout=3600
 # ===========================================================================
 # TTSim simulator configuration
 #
-# Usage: bazel test --config=ttsim //tests/...
+# TTSim is a software simulator for Tenstorrent ASICs. The preferred way to
+# run TTSim tests is via the dedicated test targets in //tests/ttsim:
 #
-# Enables slow-dispatch mode, required for TTSim. The TT_METAL_SIMULATOR
-# and TT_METAL_SIMULATOR_HOME variables must be set in the host environment
-# (see passthrough rules below); this config only sets dispatch mode.
+#   bazel test //tests/ttsim/...           # All TTSim tests (WH + BH)
+#   bazel test //tests/ttsim:ttsim_api     # API tests only
+#
+# These targets are CPU-only (no requires_* tags) so they are included in
+# the default `bazel test ...` invocation — no --config flag needed.
+#
+# The --config=ttsim-* flags below are kept for advanced use cases where
+# you want to run an existing hardware test under TTSim with manually
+# configured simulator environment variables.
 # ===========================================================================
 
+test:ttsim --test_tag_filters=
 test:ttsim --test_env=TT_METAL_SLOW_DISPATCH_MODE=1
+
+# Arch-specific TTSim configs (inherit from ttsim)
+test:ttsim-wh --config=ttsim
+test:ttsim-wh --test_env=ARCH_NAME=wormhole_b0
+
+test:ttsim-bh --config=ttsim
+test:ttsim-bh --test_env=ARCH_NAME=blackhole
 
 # ===========================================================================
 # Test environment variable passthrough

@@ -1,0 +1,290 @@
+# TTSim test targets — CPU-only wrappers for hardware tests.
+#
+# These targets run tt_metal C++ tests under the TTSim software simulator,
+# requiring no physical Tenstorrent hardware. Each test gets a Wormhole B0
+# (_wh) and Blackhole (_bh) variant that run in parallel.
+#
+# The test cases here match exactly what the CMake-based ttsim.yaml CI
+# workflow validates (see .github/workflows/ttsim.yaml, ttsim-cpp-unit-tests
+# job). Only gtest cases known to work with TTSim are included.
+#
+# Because these targets have no requires_* hardware tags, they are included
+# in the default `bazel test ...` invocation on any machine.
+#
+# Usage:
+#   bazel test //tests/ttsim/...           # All ttsim tests (WH + BH)
+#   bazel test //tests/ttsim:ttsim_all_wh  # All Wormhole tests
+#   bazel test //tests/ttsim:ttsim_all_bh  # All Blackhole tests
+
+load("//bazel:ttsim.bzl", "ttsim_test_suite")
+load("//bazel:ttsim_runtime.bzl", "firmware_obj", "ttsim_runtime")
+
+package(default_visibility = ["//visibility:public"])
+
+# ===================================================================
+# Runtime trees — cross-compiled firmware objects + linker scripts
+#
+# Each firmware source is compiled to .o using the SFPI cross-compiler
+# via genrule (no platform transition needed). The ttsim_runtime rule
+# assembles everything into the directory layout the JIT build expects.
+# ===================================================================
+
+# Common include paths for toolchain support objects (tmu-crt0, substitutes)
+_TOOLCHAIN_COPTS = [
+    "-Itt_metal/hw/inc",
+    "-Itt_metal/hw/firmware/src/tt-1xx",
+]
+
+# --- Wormhole firmware objects ----------------------------------------
+
+_WH_HDRS = [
+    "//tt_metal/hw/inc/internal/tt-1xx/wormhole:all_headers",
+    "//tt_metal/hw:jit_internal_common_headers",
+]
+
+firmware_obj(
+    name = "wh_tmu_crt0",
+    src = "//tt_metal/hw/toolchain:tmu-crt0.S",
+    obj_name = "tmu-crt0.o",
+    mcpu = "tt-wh",
+    copts = _TOOLCHAIN_COPTS,
+)
+
+firmware_obj(
+    name = "wh_substitutes",
+    src = "//tt_metal/hw/toolchain:substitutes.cpp",
+    obj_name = "substitutes.o",
+    mcpu = "tt-wh",
+    copts = _TOOLCHAIN_COPTS,
+)
+
+firmware_obj(
+    name = "wh_iram_trampoline",
+    src = "//tt_metal/hw/toolchain:wh-iram-trampoline.S",
+    obj_name = "wh-iram-trampoline.o",
+    mcpu = "tt-wh",
+    hdrs = _WH_HDRS,
+    copts = _TOOLCHAIN_COPTS + [
+        "-Itt_metal/hw/inc/internal/tt-1xx/wormhole",
+    ],
+)
+
+firmware_obj(
+    name = "wh_iram_start",
+    src = "//tt_metal/hw/toolchain:wh-iram-start.S",
+    obj_name = "wh-iram-start.o",
+    mcpu = "tt-wh",
+    hdrs = _WH_HDRS,
+    copts = _TOOLCHAIN_COPTS + [
+        "-Itt_metal/hw/inc/internal/tt-1xx/wormhole",
+    ],
+)
+
+firmware_obj(
+    name = "wh_noc",
+    src = "//tt_metal/hw/firmware/src/tt-1xx:wormhole/noc.c",
+    obj_name = "noc.o",
+    mcpu = "tt-wh",
+    hdrs = _WH_HDRS,
+    copts = [
+        "-DARCH_WORMHOLE",
+        "-Itt_metal/hw/inc/internal/tt-1xx/wormhole",
+        "-Itt_metal/hw/inc/internal/tt-1xx/wormhole/wormhole_b0_defines",
+        "-Itt_metal/hw/inc/internal/tt-1xx/wormhole/noc",
+        "-Itt_metal/hw/inc",
+        "-Itt_metal/hw/firmware/src/tt-1xx",
+    ],
+)
+
+firmware_obj(
+    name = "wh_tdma_xmov",
+    src = "//tt_metal/hw/firmware/src/tt-1xx:tdma_xmov.c",
+    obj_name = "tdma_xmov.o",
+    mcpu = "tt-wh",
+    hdrs = _WH_HDRS,
+    copts = [
+        "-DARCH_WORMHOLE",
+        "-Itt_metal/hw/inc",
+        "-Itt_metal/hw/inc/internal/tt-1xx/wormhole",
+        "-Itt_metal/hw/inc/internal/tt-1xx/wormhole/wormhole_b0_defines",
+        "-Itt_metal/hw/inc/internal/tt-1xx/wormhole/noc",
+        "-Itt_metal/hw/firmware/src/tt-1xx",
+    ],
+)
+
+ttsim_runtime(
+    name = "runtime_wh",
+    arch_dir = "wormhole",
+    firmware_objs = [
+        ":wh_tmu_crt0",
+        ":wh_substitutes",
+        ":wh_iram_trampoline",
+        ":wh_iram_start",
+        ":wh_noc",
+        ":wh_tdma_xmov",
+    ],
+    linker_scripts = ["//tt_metal/hw/toolchain:wormhole_linker_scripts"],
+)
+
+# --- Blackhole firmware objects ----------------------------------------
+
+_BH_HDRS = [
+    "//tt_metal/hw/inc/internal/tt-1xx/blackhole:all_headers",
+    "//tt_metal/hw:jit_internal_common_headers",
+]
+
+firmware_obj(
+    name = "bh_tmu_crt0",
+    src = "//tt_metal/hw/toolchain:tmu-crt0.S",
+    obj_name = "tmu-crt0.o",
+    mcpu = "tt-bh",
+    copts = _TOOLCHAIN_COPTS,
+)
+
+firmware_obj(
+    name = "bh_substitutes",
+    src = "//tt_metal/hw/toolchain:substitutes.cpp",
+    obj_name = "substitutes.o",
+    mcpu = "tt-bh",
+    copts = _TOOLCHAIN_COPTS,
+)
+
+firmware_obj(
+    name = "bh_noc",
+    src = "//tt_metal/hw/firmware/src/tt-1xx:blackhole/noc.c",
+    obj_name = "noc.o",
+    mcpu = "tt-bh",
+    hdrs = _BH_HDRS,
+    copts = [
+        "-DARCH_BLACKHOLE",
+        "-Itt_metal/hw/inc/internal/tt-1xx/blackhole",
+        "-Itt_metal/hw/inc/internal/tt-1xx/blackhole/noc",
+        "-Itt_metal/hw/inc",
+        "-Itt_metal/hw/firmware/src/tt-1xx",
+    ],
+)
+
+ttsim_runtime(
+    name = "runtime_bh",
+    arch_dir = "blackhole",
+    firmware_objs = [
+        ":bh_tmu_crt0",
+        ":bh_substitutes",
+        ":bh_noc",
+    ],
+    linker_scripts = ["//tt_metal/hw/toolchain:blackhole_linker_scripts"],
+)
+
+# ===================================================================
+# Test targets
+# ===================================================================
+
+_TT_METAL = "//tests/tt_metal/tt_metal"
+
+# ---------------------------------------------------------------------------
+# API tests (2 gtest cases from unit_tests_api)
+# ---------------------------------------------------------------------------
+
+ttsim_test_suite(
+    name = "api_noc",
+    test = _TT_METAL + ":api_test_noc",
+    gtest_filter = "MeshDeviceFixture.IdleEthTestNocStreamRegs",
+)
+
+ttsim_test_suite(
+    name = "api_dram",
+    test = _TT_METAL + ":api_test_dram",
+    gtest_filter = "MeshDispatchFixture.IdleEthDRAMLoopbackSingleCore",
+)
+
+# ---------------------------------------------------------------------------
+# Debug tools tests (4 gtest cases from unit_tests_debug_tools)
+# ---------------------------------------------------------------------------
+
+ttsim_test_suite(
+    name = "debug_dprint_eth",
+    test = _TT_METAL + ":debug_tools_dprint_test_eth_cores",
+    gtest_filter = "DPrintMeshFixture.IdleEthTestPrint",
+)
+
+ttsim_test_suite(
+    name = "debug_watcher_ringbuf",
+    test = _TT_METAL + ":debug_tools_watcher_test_ringbuf",
+    gtest_filter = "MeshWatcherFixture.TestWatcherRingBufferIErisc",
+)
+
+ttsim_test_suite(
+    name = "debug_watcher_stack_usage",
+    test = _TT_METAL + ":debug_tools_watcher_test_stack_usage",
+    gtest_filter = "MeshWatcherFixture.TestWatcherStackUsage*",
+)
+
+# ---------------------------------------------------------------------------
+# Dispatch tests (2 gtest cases from unit_tests_dispatch)
+# ---------------------------------------------------------------------------
+
+ttsim_test_suite(
+    name = "dispatch_idle_eth",
+    test = _TT_METAL + ":dispatch_dispatch_program_test_dispatch",
+    gtest_filter = "MeshDispatchFixture.TensixIdleEthTestSemaphores:MeshDispatchFixture.EthTestBlank",
+)
+
+# ---------------------------------------------------------------------------
+# Ethernet tests (3 gtest cases from unit_tests_eth, Blackhole-specific)
+# ---------------------------------------------------------------------------
+
+ttsim_test_suite(
+    name = "eth_idle_erisc",
+    test = _TT_METAL + ":eth_test_basic_eth",
+    gtest_filter = "BlackholeSingleCardFixture.IdleEthKernelOnIdleErisc*:BlackholeSingleCardFixture.IdleEthKernelOnBothIdleEriscs",
+)
+
+# ---------------------------------------------------------------------------
+# Aggregate suites
+# ---------------------------------------------------------------------------
+
+test_suite(
+    name = "ttsim_all",
+    tests = [
+        ":api_noc_wh",
+        ":api_noc_bh",
+        ":api_dram_wh",
+        ":api_dram_bh",
+        ":debug_dprint_eth_wh",
+        ":debug_dprint_eth_bh",
+        ":debug_watcher_ringbuf_wh",
+        ":debug_watcher_ringbuf_bh",
+        ":debug_watcher_stack_usage_wh",
+        ":debug_watcher_stack_usage_bh",
+        ":dispatch_idle_eth_wh",
+        ":dispatch_idle_eth_bh",
+        ":eth_idle_erisc_wh",
+        ":eth_idle_erisc_bh",
+    ],
+)
+
+test_suite(
+    name = "ttsim_all_wh",
+    tests = [
+        ":api_noc_wh",
+        ":api_dram_wh",
+        ":debug_dprint_eth_wh",
+        ":debug_watcher_ringbuf_wh",
+        ":debug_watcher_stack_usage_wh",
+        ":dispatch_idle_eth_wh",
+        ":eth_idle_erisc_wh",
+    ],
+)
+
+test_suite(
+    name = "ttsim_all_bh",
+    tests = [
+        ":api_noc_bh",
+        ":api_dram_bh",
+        ":debug_dprint_eth_bh",
+        ":debug_watcher_ringbuf_bh",
+        ":debug_watcher_stack_usage_bh",
+        ":dispatch_idle_eth_bh",
+        ":eth_idle_erisc_bh",
+    ],
+)

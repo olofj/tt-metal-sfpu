@@ -173,6 +173,16 @@ cc_binary(
 # Build with: bazel build --config=sfpi-{wormhole,blackhole} //tt_metal/hw/toolchain:...
 # ===================================================================
 
+exports_files(
+    [
+        "tmu-crt0.S",
+        "substitutes.cpp",
+        "wh-iram-start.S",
+        "wh-iram-trampoline.S",
+    ],
+    visibility = ["//visibility:public"],
+)
+
 _SUPPORT_OBJ_COPTS = [
     "-DTENSIX_FIRMWARE",
     "-DLOCAL_MEM_EN=0",

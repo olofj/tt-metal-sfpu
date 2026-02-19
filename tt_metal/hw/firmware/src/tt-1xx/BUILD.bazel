@@ -19,6 +19,15 @@ load(":firmware_defs.bzl", "all_firmware")
 
 package(default_visibility = ["//visibility:public"])
 
+# Exported source files for cross-compilation by //bazel:ttsim_runtime.bzl firmware_obj.
+exports_files(
+    [
+        "wormhole/noc.c",
+        "blackhole/noc.c",
+        "tdma_xmov.c",
+    ],
+)
+
 # ===================================================================
 # Per-architecture support libraries (compiled with SFPI cross-compiler)
 # ===================================================================
