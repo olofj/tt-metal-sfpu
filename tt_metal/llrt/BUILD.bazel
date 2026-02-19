@@ -55,7 +55,7 @@ cc_library(
         "//tt_metal/hostdevcommon",
         "//tt_metal/hw",
         "//tt_metal/llrt/hal:hal_generated_hdrs",
-        "//tt_metal/third_party/umd/device",
+        "@umd//device",
         "//tt_stl",
         "@enchantum//:enchantum",
         "@fmt",

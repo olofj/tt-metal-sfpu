@@ -43,7 +43,7 @@ cc_library(
     deps = [
         "//tt_metal/api:impl_api_hdrs",
         "//tt_metal/hostdevcommon",
-        "//tt_metal/third_party/umd/device",
+        "@umd//device",
         "//tt_stl",
     ],
 )
@@ -124,7 +124,7 @@ cc_library(
         "//tt_metal/impl:impl_hdrs",
         "//tt_metal/llrt:llrt_hdrs",
         "//tt_metal/third_party:tracy",
-        "//tt_metal/third_party/umd/device",
+        "@umd//device",
         "@fmt",
         "@taskflow//:taskflow",
         "@tt_logger//:tt_logger",

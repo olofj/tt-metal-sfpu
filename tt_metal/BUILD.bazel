@@ -54,7 +54,7 @@ cc_library(
         "//tools/scaleout:scaleout_tools",
         "//tt_stl",
         # External — public API surface
-        "//tt_metal/third_party/umd/device",
+        "@umd//device",
         "@enchantum//:enchantum",
         "@flatbuffers//:flatbuffers",
         "@fmt",

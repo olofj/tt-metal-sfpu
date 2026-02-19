@@ -196,6 +196,18 @@ sfpi_ext = use_extension("//:extensions.bzl", "sfpi_ext")
 use_repo(sfpi_ext, "sfpi")
 
 # ===========================================================================
+# UMD (User Mode Driver) — submodule exposed as external repo
+#
+# The UMD git submodule at tt_metal/third_party/umd is symlinked into an
+# external Bazel repo so we can overlay BUILD files without dirtying the
+# submodule working tree.  Targets: @umd//device, @umd//src:firmware.
+# ===========================================================================
+
+umd_ext = use_extension("//:extensions.bzl", "umd_ext")
+
+use_repo(umd_ext, "umd")
+
+# ===========================================================================
 # C++ toolchains — mirrors cmake/*-toolchain.cmake + cmake/linking.cmake
 #
 # Hermetic Clang 20 toolchains (downloaded) are registered first so they

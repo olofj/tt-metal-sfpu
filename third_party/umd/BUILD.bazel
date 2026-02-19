@@ -1,0 +1,7 @@
+# Package marker for UMD repo rule and BUILD overlay files.
+# The actual UMD build targets live in the @umd external repo.
+
+exports_files([
+    "device.BUILD",
+    "repo.bzl",
+])

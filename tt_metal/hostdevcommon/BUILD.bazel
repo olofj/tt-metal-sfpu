@@ -16,7 +16,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//tt_metal/hw",
-        "//tt_metal/third_party/umd/device",
+        "@umd//device",
         "@fmt",
     ],
 )

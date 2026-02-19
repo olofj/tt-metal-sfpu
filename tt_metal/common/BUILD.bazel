@@ -50,7 +50,7 @@ cc_library(
         "//tt_metal/api:common_api_hdrs",
         "//tt_metal/hostdevcommon",
         "//tt_stl",
-        "//tt_metal/third_party/umd/device",
+        "@umd//device",
         # External
         "@boost.core",
         "@enchantum//:enchantum",

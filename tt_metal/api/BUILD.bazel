@@ -37,7 +37,7 @@ cc_library(
     ],
     deps = [
         "//tt_stl",
-        "//tt_metal/third_party/umd/device",
+        "@umd//device",
         "@enchantum//:enchantum",
         "@fmt",
         "@nlohmann_json//:json",
@@ -83,7 +83,7 @@ cc_library(
     deps = [
         ":common_api_hdrs",
         "//tt_stl",
-        "//tt_metal/third_party/umd/device",
+        "@umd//device",
     ],
 )
 
@@ -113,7 +113,7 @@ cc_library(
     deps = [
         "//tt_stl",
         "//tt_metal/hostdevcommon",
-        "//tt_metal/third_party/umd/device",
+        "@umd//device",
         "@enchantum//:enchantum",
         "@fmt",
         "@nlohmann_json//:json",

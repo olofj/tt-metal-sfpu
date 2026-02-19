@@ -73,11 +73,11 @@ cc_shared_library(
 # libtt_metal.so can use them via dynamic_deps.
 cc_shared_library(
     name = "libumd.so",
-    deps = ["//tt_metal/third_party/umd/device"],
+    deps = ["@umd//device"],
     dynamic_deps = [":libtt_stl.so"],
     exports_filter = [
-        "//tt_metal/third_party/umd/device:__subpackages__",
-        "//tt_metal/third_party/umd/src:__subpackages__",
+        "@umd//device:__subpackages__",
+        "@umd//src:__subpackages__",
         "@yaml-cpp//:__pkg__",
         "@asio//:__pkg__",
         "@picosha2//:__pkg__",

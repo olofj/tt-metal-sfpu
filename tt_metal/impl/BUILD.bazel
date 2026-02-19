@@ -52,7 +52,7 @@ cc_library(
         "//tt_metal/impl/flatbuffer:flatbuffer_hdrs",
         "//tt_metal/jit_build:jit_build_hdrs",
         "//tt_metal/llrt:llrt_hdrs",
-        "//tt_metal/third_party/umd/device",
+        "@umd//device",
         "//tt_metal/tools:profiler_hdrs",
         "//tt_stl",
         "@enchantum//:enchantum",

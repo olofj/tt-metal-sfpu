@@ -26,7 +26,7 @@ cc_library(
     deps = [
         "//tt_metal/api:impl_api_hdrs",
         "//tt_metal/hostdevcommon",
-        "//tt_metal/third_party/umd/device",
+        "@umd//device",
         "//tt_stl",
     ],
 )

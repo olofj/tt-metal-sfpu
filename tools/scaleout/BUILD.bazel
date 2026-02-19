@@ -46,7 +46,7 @@ cc_library(
     includes = ["."],
     deps = [
         "//tools/scaleout/protobuf:scaleout_cc_proto",
-        "//tt_metal/third_party/umd/device",
+        "@umd//device",
         "//tt_stl",
         "@enchantum//:enchantum",
         "@fmt",

@@ -1,6 +1,7 @@
 """Module extensions for dependencies not available on the Bazel Central Registry."""
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file")
+load("//third_party/umd:repo.bzl", "umd_local_repository")
 load("//toolchain/clang:repo.bzl", "clang_toolchain_repo")
 load("//toolchain/sfpi:repo.bzl", "sfpi_toolchain_repo")
 
@@ -207,5 +208,19 @@ def _sfpi_ext_impl(module_ctx):
 
 sfpi_ext = module_extension(
     implementation = _sfpi_ext_impl,
+)
+
+# ===========================================================================
+# UMD (User Mode Driver) submodule as external repo
+# ===========================================================================
+
+def _umd_ext_impl(module_ctx):
+    umd_local_repository(
+        name = "umd",
+        path = "tt_metal/third_party/umd",
+    )
+
+umd_ext = module_extension(
+    implementation = _umd_ext_impl,
 )
 

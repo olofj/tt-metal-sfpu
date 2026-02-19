@@ -9,7 +9,7 @@ _HAL_DEPS = [
     "//tt_metal/llrt:llrt_hdrs",
     "//tt_metal/llrt/hal:hal_generated_hdrs",
     "//tt_metal/hw",
-    "//tt_metal/third_party/umd/device",
+    "@umd//device",
     "//tt_stl",
     "//tt_metal/third_party:tracy",
     "//tt_metal/impl:impl_hdrs",
@@ -47,7 +47,7 @@ cc_library(
     deps = [
         ":qa_hal",
         "//tt_metal/hw",
-        "//tt_metal/third_party/umd/device",
+        "@umd//device",
         "//tt_stl",
         "//tt_metal/impl:impl_hdrs",
         "//tt_metal/api:common_api_hdrs",
