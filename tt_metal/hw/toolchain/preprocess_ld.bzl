@@ -114,9 +114,9 @@ def preprocess_erisc_ld(name, script_type, includes, enable_iram = False, **kwar
     defines = []
     if enable_iram:
         defines.append("ENABLE_IRAM")
-        out_name = "erisc-b0-%s_iram.ld" % script_type
+        out_name = "wormhole_erisc-b0-%s_iram.ld" % script_type
     else:
-        out_name = "erisc-b0-%s.ld" % script_type
+        out_name = "wormhole_erisc-b0-%s.ld" % script_type
 
     preprocess_ld(
         name = name,
