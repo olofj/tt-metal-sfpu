@@ -125,8 +125,7 @@ use_repo(non_bcr_deps, "nng")
 use_repo(non_bcr_deps, "libuv")
 
 # TTSim — Tenstorrent hardware simulator .so files (WH + BH).
-# Used by --config=ttsim-wh / --config=ttsim-bh to run device tests
-# without physical hardware.
+# Used by //tests/ttsim targets to run device tests without physical hardware.
 use_repo(non_bcr_deps, "ttsim_wh")
 use_repo(non_bcr_deps, "ttsim_bh")
 

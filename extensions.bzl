@@ -171,7 +171,7 @@ def _non_bcr_deps_impl(module_ctx):
 
     # TTSim v1.3.4 — Tenstorrent hardware simulator shared libraries.
     # These enable running device tests without physical hardware.
-    # Used by --config=ttsim-wh / --config=ttsim-bh in .bazelrc.
+    # Used by //tests/ttsim targets and ttsim_test() macro in //bazel:ttsim.bzl.
     http_file(
         name = "ttsim_wh",
         urls = ["https://github.com/tenstorrent/ttsim/releases/download/v1.3.4/libttsim_wh.so"],

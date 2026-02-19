@@ -67,6 +67,8 @@ jobs:
           ref: ${{ inputs.ref || github.sha }}
           submodules: recursive
 
+      - uses: ./.github/actions/setup-bazel
+
       - name: Run host-only tests
         run: |
           set -euo pipefail
@@ -107,6 +109,8 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.sha }}
           submodules: recursive
+
+      - uses: ./.github/actions/setup-bazel
 
       - name: Run N300 device tests
         env:
@@ -159,6 +163,8 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.sha }}
           submodules: recursive
+
+      - uses: ./.github/actions/setup-bazel
 
       - name: Run Blackhole device tests
         env:
@@ -217,6 +223,8 @@ jobs:
           ref: ${{ inputs.ref || github.sha }}
           submodules: recursive
 
+      - uses: ./.github/actions/setup-bazel
+
       - name: Run T3000 device tests
         env:
           ARCH_NAME: wormhole_b0
@@ -257,8 +265,8 @@ jobs:
   # -------------------------------------------------------------------------
   # Slow dispatch tests (N300)
   #
-  # Mirrors build-and-unit-tests.yaml (slow dispatch). Uses --config=ttsim
-  # to set TT_METAL_SLOW_DISPATCH_MODE=1 but runs on real hardware.
+  # Mirrors build-and-unit-tests.yaml (slow dispatch). Sets
+  # TT_METAL_SLOW_DISPATCH_MODE=1 and runs on real N300 hardware.
   # -------------------------------------------------------------------------
   slow-dispatch-tests:
     runs-on:
@@ -273,6 +281,8 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.sha }}
           submodules: recursive
+
+      - uses: ./.github/actions/setup-bazel
 
       - name: Run slow dispatch tests
         env:

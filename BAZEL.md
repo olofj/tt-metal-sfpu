@@ -32,7 +32,7 @@ CI build nodes). Use `--config=<name>` to include hardware tests:
 
 | Config | Hardware | `ARCH_NAME` | Description |
 |---|---|---|---|
-| *(default)* | None | — | CPU-only tests (~2 targets) |
+| *(default)* | None | — | CPU-only + TTSim tests |
 | `--config=wormhole_b0` | Wormhole B0 | `wormhole_b0` | Single-card WH tests |
 | `--config=blackhole` | Blackhole | `blackhole` | Single-card BH tests |
 | `--config=n150` | N150 | `wormhole_b0` | 1-chip Wormhole system |
@@ -50,6 +50,12 @@ bazel test --config=wormhole_b0 --config=debug //tests/tt_metal/...
 
 # Run Blackhole tests with ASan
 bazel test --config=blackhole --config=asan //tests/ttnn/...
+
+# Run all TTSim tests (WH + BH in parallel, no hardware required)
+bazel test //tests/ttsim/...
+
+# Run TTSim API tests only
+bazel test //tests/ttsim:ttsim_api
 ```
 
 ### Hardware Tags
@@ -164,6 +170,7 @@ Tests live under `//tests/` and are organized to mirror the CMake layout:
 
 ```
 tests/
+├── ttsim/                 # TTSim CPU-only wrappers (WH + BH, no hardware needed)
 ├── tt_metal/
 │   ├── tt_metal/          # C++ gtest: api, dispatch, device, data_movement, ...
 │   └── tt_fabric/         # C++ gtest: fabric tests
