@@ -233,7 +233,7 @@ jobs:
           set -euo pipefail
 
           TAG_FILTER="${{ inputs.test-tag-filter || 'post_commit' }}"
-          HW_EXCLUDE="-requires_wormhole_b0,-requires_blackhole,-requires_galaxy,-requires_N150,-requires_N300,-requires_T3000,-no_remote,-monolithic"
+          HW_EXCLUDE="-requires_wormhole_b0,-requires_blackhole,-requires_galaxy,-requires_N150,-requires_N300,-requires_T3000,-no_remote,-monolithic,-ttsim"
 
           if [ "${{ needs.determine-targets.outputs.mode }}" = "FULL_CI" ]; then
             echo "Running FULL CI (host-only tests)"

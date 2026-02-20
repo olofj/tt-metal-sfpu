@@ -49,5 +49,5 @@ pytest_suite(
         "copy",
     ],
     markers = ["post_commit"],
-    tags = ["ttnn", "unit", "requires_wormhole_b0", "requires_blackhole", "ttsim"],
+    tags = ["ttnn", "unit", "ttsim"],
 )

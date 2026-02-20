@@ -335,7 +335,10 @@ test --test_env=TT_METAL_KERNEL_PATH
 #   bazel test --config=galaxy ...      # Galaxy (32+ chip WH)
 # ===========================================================================
 
-test --test_tag_filters=-requires_wormhole_b0,-requires_blackhole,-requires_multi_device,-requires_galaxy,-requires_T3000,-requires_N150,-requires_N300
+test --test_tag_filters=-requires_wormhole_b0,-requires_blackhole,-requires_multi_device,-requires_galaxy,-requires_T3000,-requires_N150,-requires_N300,-ttsim
+
+# TTSim (CPU-only, simulated hardware)
+test:ttsim --test_tag_filters=ttsim,-slow,-frequently_hangs,-monolithic
 
 # Wormhole B0 single-card
 test:wormhole_b0 --test_tag_filters=
