@@ -18,7 +18,7 @@ genrule(
 )
 
 # Copy split-module .so files into this package directory.
-# These are additive prototypes — the monolithic _ttnn.so still works as before.
+# These are additive — the monolithic _ttnn.so still works as before.
 genrule(
     name = "_ttnn_core_so",
     srcs = ["//ttnn:_ttnn_core.so"],
@@ -26,12 +26,54 @@ genrule(
     cmd = "cp $< $@",
 )
 
-genrule(
-    name = "_ttnn_bernoulli_so",
-    srcs = ["//ttnn:_ttnn_bernoulli.so"],
-    outs = ["_ttnn_bernoulli.so"],
+# Per-operation split modules — one genrule per operation.
+_TTNN_SPLIT_MODULES = [
+    "bernoulli",
+    "binary",
+    "binary_backward",
+    "ccl",
+    "complex",
+    "complex_unary",
+    "complex_unary_backward",
+    "conv",
+    "copy",
+    "creation",
+    "data_movement",
+    "debug",
+    "embedding",
+    "embedding_backward",
+    "examples",
+    "experimental",
+    "full",
+    "full_like",
+    "generic",
+    "index_fill",
+    "kv_cache",
+    "loss",
+    "matmul",
+    "moreh",
+    "normalization",
+    "point_to_point",
+    "pool",
+    "prefetcher",
+    "quantization",
+    "rand",
+    "reduction",
+    "sliding_window",
+    "ternary",
+    "ternary_backward",
+    "transformer",
+    "unary",
+    "unary_backward",
+    "uniform",
+]
+
+[genrule(
+    name = "_ttnn_" + name + "_so",
+    srcs = ["//ttnn:_ttnn_" + name + ".so"],
+    outs = ["_ttnn_" + name + ".so"],
     cmd = "cp $< $@",
-)
+) for name in _TTNN_SPLIT_MODULES]
 
 py_library(
     name = "ttnn_py",

@@ -272,8 +272,7 @@ nanobind_extension(
             ["cpp/ttnn-nanobind/**/*.cpp"],
             exclude = [
                 "cpp/ttnn-nanobind/__init__.cpp",
-                "cpp/ttnn-nanobind/bernoulli_module.cpp",
-                "cpp/ttnn-nanobind/core_module.cpp",
+                "cpp/ttnn-nanobind/*_module.cpp",
                 "cpp/ttnn-nanobind/operations/__init__.cpp",
                 "cpp/ttnn-nanobind/operations/copy.cpp",
                 "cpp/ttnn-nanobind/operations/creation.cpp",
@@ -292,23 +291,125 @@ nanobind_extension(
 )
 
 # ===========================================================================
-# _ttnn_bernoulli — single-operation nanobind module (bernoulli only)
+# Per-operation split modules — one .so per operation group.
 #
-# Prototype for per-operation split modules. Links ONLY the bernoulli
-# operation's C++ implementation and nanobind bindings. Types are provided
-# by _ttnn_core.so at runtime via NB_DOMAIN cross-module sharing.
+# Each module binds a single operation (or operation group). Types are
+# provided by _ttnn_core.so at runtime via NB_DOMAIN cross-module sharing.
+# The monolithic _ttnn.so is unchanged and coexists for compatibility.
 # ===========================================================================
 
+# Standard operations — dict maps module name → Bazel target.
+# Each gets a nanobind_extension with the module .cpp + operation nanobind srcs.
+_TTNN_OP_MODULES = {
+    "bernoulli": "//ttnn/cpp/ttnn/operations/bernoulli",
+    "ccl": "//ttnn/cpp/ttnn/operations/ccl",
+    "conv": "//ttnn/cpp/ttnn/operations/conv",
+    "data_movement": "//ttnn/cpp/ttnn/operations/data_movement",
+    "debug": "//ttnn/cpp/ttnn/operations/debug",
+    "embedding": "//ttnn/cpp/ttnn/operations/embedding",
+    "embedding_backward": "//ttnn/cpp/ttnn/operations/embedding_backward",
+    "examples": "//ttnn/cpp/ttnn/operations/examples",
+    "full": "//ttnn/cpp/ttnn/operations/full",
+    "full_like": "//ttnn/cpp/ttnn/operations/full_like",
+    "generic": "//ttnn/cpp/ttnn/operations/generic",
+    "index_fill": "//ttnn/cpp/ttnn/operations/index_fill",
+    "kv_cache": "//ttnn/cpp/ttnn/operations/kv_cache",
+    "loss": "//ttnn/cpp/ttnn/operations/loss",
+    "matmul": "//ttnn/cpp/ttnn/operations/matmul",
+    "moreh": "//ttnn/cpp/ttnn/operations/moreh",
+    "normalization": "//ttnn/cpp/ttnn/operations/normalization",
+    "point_to_point": "//ttnn/cpp/ttnn/operations/point_to_point",
+    "pool": "//ttnn/cpp/ttnn/operations/pool",
+    "prefetcher": "//ttnn/cpp/ttnn/operations/prefetcher",
+    "rand": "//ttnn/cpp/ttnn/operations/rand",
+    "reduction": "//ttnn/cpp/ttnn/operations/reduction",
+    "sliding_window": "//ttnn/cpp/ttnn/operations/sliding_window",
+    "transformer": "//ttnn/cpp/ttnn/operations/transformer",
+    "uniform": "//ttnn/cpp/ttnn/operations/uniform",
+    # Eltwise operations:
+    "binary": "//ttnn/cpp/ttnn/operations/eltwise/binary",
+    "binary_backward": "//ttnn/cpp/ttnn/operations/eltwise/binary_backward",
+    "complex": "//ttnn/cpp/ttnn/operations/eltwise/complex",
+    "complex_unary": "//ttnn/cpp/ttnn/operations/eltwise/complex_unary",
+    "complex_unary_backward": "//ttnn/cpp/ttnn/operations/eltwise/complex_unary_backward",
+    "quantization": "//ttnn/cpp/ttnn/operations/eltwise/quantization",
+    "ternary": "//ttnn/cpp/ttnn/operations/eltwise/ternary",
+    "ternary_backward": "//ttnn/cpp/ttnn/operations/eltwise/ternary_backward",
+    "unary": "//ttnn/cpp/ttnn/operations/eltwise/unary",
+    "unary_backward": "//ttnn/cpp/ttnn/operations/eltwise/unary_backward",
+}
+
+# Operations that need extra runtime deps (link-only ops with no bindings).
+_TTNN_OP_EXTRA_DEPS = {
+    "binary": ["//ttnn/cpp/ttnn/operations/eltwise/binary_ng"],
+    "complex": ["//ttnn/cpp/ttnn/operations/eltwise/complex_binary"],
+}
+
+[nanobind_extension(
+    name = "_ttnn_" + name,
+    srcs = ["cpp/ttnn-nanobind/" + name + "_module.cpp", target + ":nanobind_srcs"],
+    hdrs = glob(["cpp/ttnn-nanobind/**/*.hpp"]),
+    deps = [":ttnn_core", target] + _TTNN_OP_EXTRA_DEPS.get(name, []),
+) for name, target in _TTNN_OP_MODULES.items()]
+
+# --- Special-case split modules (non-standard binding patterns) ---
+
+# Experimental sub-package targets linked into _ttnn_experimental.
+_TTNN_EXPERIMENTAL_OPS = [
+    "//ttnn/cpp/ttnn/operations/experimental/adaptive_pool",
+    "//ttnn/cpp/ttnn/operations/experimental/bcast_to",
+    "//ttnn/cpp/ttnn/operations/experimental/ccl",
+    "//ttnn/cpp/ttnn/operations/experimental/cnn",
+    "//ttnn/cpp/ttnn/operations/experimental/conv3d",
+    "//ttnn/cpp/ttnn/operations/experimental/copy",
+    "//ttnn/cpp/ttnn/operations/experimental/deepseek/moe/moe_gate_mm",
+    "//ttnn/cpp/ttnn/operations/experimental/dropout",
+    "//ttnn/cpp/ttnn/operations/experimental/isin",
+    "//ttnn/cpp/ttnn/operations/experimental/matmul",
+    "//ttnn/cpp/ttnn/operations/experimental/minimal_matmul",
+    "//ttnn/cpp/ttnn/operations/experimental/padded_slice",
+    "//ttnn/cpp/ttnn/operations/experimental/paged_cache",
+    "//ttnn/cpp/ttnn/operations/experimental/plusone",
+    "//ttnn/cpp/ttnn/operations/experimental/reduction",
+    "//ttnn/cpp/ttnn/operations/experimental/reshape",
+    "//ttnn/cpp/ttnn/operations/experimental/slice_write",
+    "//ttnn/cpp/ttnn/operations/experimental/ssm",
+    "//ttnn/cpp/ttnn/operations/experimental/test",
+    "//ttnn/cpp/ttnn/operations/experimental/transformer",
+    "//ttnn/cpp/ttnn/operations/experimental/unary_backward",
+    "//ttnn/cpp/ttnn/operations/experimental/where",
+]
+
 nanobind_extension(
-    name = "_ttnn_bernoulli",
+    name = "_ttnn_experimental",
     srcs = [
-        "cpp/ttnn-nanobind/bernoulli_module.cpp",
-        "//ttnn/cpp/ttnn/operations/bernoulli:nanobind_srcs",
+        "cpp/ttnn-nanobind/experimental_module.cpp",
+        "cpp/ttnn/operations/experimental/experimental_nanobind.cpp",
+    ] + [op + ":nanobind_srcs" for op in _TTNN_EXPERIMENTAL_OPS],
+    hdrs = glob(["cpp/ttnn-nanobind/**/*.hpp"]),
+    deps = [":ttnn_core"] + _TTNN_EXPERIMENTAL_OPS,
+)
+
+nanobind_extension(
+    name = "_ttnn_creation",
+    srcs = [
+        "cpp/ttnn-nanobind/creation_module.cpp",
+        "cpp/ttnn-nanobind/operations/creation.cpp",
+    ],
+    hdrs = glob(["cpp/ttnn-nanobind/**/*.hpp"]),
+    deps = [":ttnn_core"],
+)
+
+nanobind_extension(
+    name = "_ttnn_copy",
+    srcs = [
+        "cpp/ttnn-nanobind/copy_module.cpp",
+        "cpp/ttnn-nanobind/operations/copy.cpp",
     ],
     hdrs = glob(["cpp/ttnn-nanobind/**/*.hpp"]),
     deps = [
         ":ttnn_core",
-        "//ttnn/cpp/ttnn/operations/bernoulli",
+        "//ttnn/cpp/ttnn/operations/copy",
     ],
 )
 
