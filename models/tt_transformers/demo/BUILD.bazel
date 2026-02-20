@@ -7,6 +7,8 @@ load("//bazel:pytest.bzl", "pytest_test")
 
 package(default_visibility = ["//visibility:public"])
 
+exports_files(["conftest.py"])
+
 py_library(
     name = "trace_region_config",
     testonly = True,

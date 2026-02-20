@@ -1,3 +1,5 @@
 # TT-Transformers model definitions.
 
 package(default_visibility = ["//visibility:public"])
+
+exports_files(["conftest.py"])

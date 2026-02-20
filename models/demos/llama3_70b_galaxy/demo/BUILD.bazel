@@ -70,3 +70,5 @@ pytest_test(
     tags = ["ttnn", "nightly", "models", "galaxy", "requires_wormhole_b0", "requires_galaxy"],
     timeout_seconds = 1200,
 )
+
+exports_files(["conftest.py"])

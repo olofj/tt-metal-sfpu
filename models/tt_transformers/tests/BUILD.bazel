@@ -20,3 +20,5 @@ pytest_suite(
     markers = ["slow"],
     tags = ["ttnn", "nightly", "models", "requires_wormhole_b0", "requires_blackhole"],
 )
+
+exports_files(["conftest.py"])

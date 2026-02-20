@@ -1,0 +1,4 @@
+package(default_visibility = ["//models:__subpackages__"])
+
+# py_library targets deferred — perf utils have tracy/gitpython deps not yet in Bazel pip.
+# Tests find these via sys.path injection in pytest_wrapper.py.

@@ -16,3 +16,5 @@ pytest_suite(
     markers = ["slow"],
     tags = ["ttnn", "nightly", "models", "galaxy", "requires_wormhole_b0", "requires_galaxy"],
 )
+
+exports_files(["conftest.py"])

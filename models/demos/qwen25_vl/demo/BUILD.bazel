@@ -17,3 +17,5 @@ pytest_test(
     tags = ["ttnn", "nightly", "models", "requires_wormhole_b0", "requires_T3000"],
     timeout_seconds = 900,
 )
+
+exports_files(["conftest.py"])
