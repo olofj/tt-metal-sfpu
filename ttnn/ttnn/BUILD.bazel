@@ -17,6 +17,22 @@ genrule(
     cmd = "cp $< $@",
 )
 
+# Copy split-module .so files into this package directory.
+# These are additive prototypes — the monolithic _ttnn.so still works as before.
+genrule(
+    name = "_ttnn_core_so",
+    srcs = ["//ttnn:_ttnn_core.so"],
+    outs = ["_ttnn_core.so"],
+    cmd = "cp $< $@",
+)
+
+genrule(
+    name = "_ttnn_bernoulli_so",
+    srcs = ["//ttnn:_ttnn_bernoulli.so"],
+    outs = ["_ttnn_bernoulli.so"],
+    cmd = "cp $< $@",
+)
+
 py_library(
     name = "ttnn_py",
     srcs = glob(["**/*.py"]),

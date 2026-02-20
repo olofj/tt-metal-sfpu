@@ -248,6 +248,71 @@ nanobind_extension(
 )
 
 # ===========================================================================
+# _ttnn_core — core-only nanobind module (types + core functions, no ops)
+#
+# Prototype for splitting _ttnn.so into smaller modules. Binds all types
+# (Tensor, Device, MemoryConfig, etc.) and core functions, plus
+# operations::core (DeviceComputeKernelConfig) and operations::trace
+# (MeshTraceId) type definitions. Does NOT bind any operation functions.
+#
+# Per-operation modules (e.g., _ttnn_bernoulli) share types with _ttnn_core
+# via nanobind's NB_DOMAIN cross-module mechanism.
+# ===========================================================================
+
+nanobind_extension(
+    name = "_ttnn_core",
+    srcs =
+        # Core module entry point (replaces __init__.cpp's NB_MODULE).
+        ["cpp/ttnn-nanobind/core_module.cpp"] +
+        # All type/tensor/device/cluster binding sources EXCEPT:
+        #   - __init__.cpp (replaced by core_module.cpp)
+        #   - operations/__init__.cpp (the 40+ operation dispatcher)
+        #   - operations/copy.cpp, operations/creation.cpp (operation bindings, not types)
+        glob(
+            ["cpp/ttnn-nanobind/**/*.cpp"],
+            exclude = [
+                "cpp/ttnn-nanobind/__init__.cpp",
+                "cpp/ttnn-nanobind/bernoulli_module.cpp",
+                "cpp/ttnn-nanobind/core_module.cpp",
+                "cpp/ttnn-nanobind/operations/__init__.cpp",
+                "cpp/ttnn-nanobind/operations/copy.cpp",
+                "cpp/ttnn-nanobind/operations/creation.cpp",
+            ],
+        ) +
+        # Core subsystem nanobind bindings.
+        [
+            "core/distributed/distributed_nanobind.cpp",
+            "core/graph/graph_nanobind.cpp",
+        ],
+    hdrs = glob(["cpp/ttnn-nanobind/**/*.hpp"]),
+    deps = [
+        ":ttnn_core",
+        "//ttnn/cpp/ttnn/operations/core",
+    ],
+)
+
+# ===========================================================================
+# _ttnn_bernoulli — single-operation nanobind module (bernoulli only)
+#
+# Prototype for per-operation split modules. Links ONLY the bernoulli
+# operation's C++ implementation and nanobind bindings. Types are provided
+# by _ttnn_core.so at runtime via NB_DOMAIN cross-module sharing.
+# ===========================================================================
+
+nanobind_extension(
+    name = "_ttnn_bernoulli",
+    srcs = [
+        "cpp/ttnn-nanobind/bernoulli_module.cpp",
+        "//ttnn/cpp/ttnn/operations/bernoulli:nanobind_srcs",
+    ],
+    hdrs = glob(["cpp/ttnn-nanobind/**/*.hpp"]),
+    deps = [
+        ":ttnn_core",
+        "//ttnn/cpp/ttnn/operations/bernoulli",
+    ],
+)
+
+# ===========================================================================
 # all_operations — aggregate target for linking all TTNN operations.
 #
 # C++ consumers of TTNN (e.g., tt-train) that call operation functions need
