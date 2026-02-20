@@ -5,7 +5,7 @@
 # as @pip//<package> deps in BUILD files.
 #
 # To regenerate the lock file after editing this file:
-#   pip-compile --strip-extras --no-emit-index-url --no-emit-options \
+#   pip-compile --allow-unsafe --strip-extras --no-emit-index-url --no-emit-options \
 #     --extra-index-url https://download.pytorch.org/whl/cpu \
 #     --output-file=bazel/requirements_test_lock.txt \
 #     bazel/requirements_test.txt
@@ -24,6 +24,14 @@ loguru==0.6.0
 transformers==4.53.0
 torchvision==0.22.1
 pandas==2.3.3
+
+# Additional ML dependencies for model tests (Phase 2).
+# Pins match tt_metal/python_env/requirements-dev.txt where available.
+scipy>=1.11
+diffusers==0.35.1
+datasets==2.9.0
+timm>=1.0.0
+evaluate==0.4.0
 
 # Test utilities
 pyyaml>=5.4

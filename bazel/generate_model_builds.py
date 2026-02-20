@@ -30,11 +30,6 @@ MODELS_DIR = ROOT / "models"
 
 # Imports that indicate missing Bazel pip deps — defer these directories.
 BLOCKING_IMPORTS = {
-    "diffusers",
-    "datasets",
-    "evaluate",
-    "timm",
-    "scipy",
     "tt_lib",
     "cv2",
     "kagglehub",
@@ -56,10 +51,8 @@ SKIP_DIRS = {
 }
 
 # Stub BUILD.bazel files that exist but need pytest_suite added.
-STUB_BUILD_FILES = {
-    "models/demos/deepseek_v3/tests",
-    "models/demos/gpt_oss/tests",
-}
+# (Phase 1 already populated deepseek_v3 and gpt_oss stubs.)
+STUB_BUILD_FILES: set[str] = set()
 
 # ---------------------------------------------------------------------------
 # Hardware tag detection from path
@@ -97,6 +90,11 @@ def scan_imports(test_files: list[Path]) -> dict:
         "blocking": set(),
         "torchvision": False,
         "pil": False,
+        "diffusers": False,
+        "datasets": False,
+        "evaluate": False,
+        "timm": False,
+        "scipy": False,
         "tests_ttnn": False,
         "tests_tt_eager": False,
     }
@@ -121,6 +119,16 @@ def scan_imports(test_files: list[Path]) -> dict:
                 result["torchvision"] = True
             if top == "PIL" or mod.startswith("PIL"):
                 result["pil"] = True
+            if top == "diffusers":
+                result["diffusers"] = True
+            if top == "datasets":
+                result["datasets"] = True
+            if top == "evaluate":
+                result["evaluate"] = True
+            if top == "timm":
+                result["timm"] = True
+            if top == "scipy":
+                result["scipy"] = True
             if mod.startswith("tests.ttnn"):
                 result["tests_ttnn"] = True
             if mod.startswith("tests.tt_eager"):
@@ -234,6 +242,16 @@ def generate_build_content(
         deps.append('"@pip//torchvision"')
     if imports["pil"]:
         deps.append('"@pip//pillow"')
+    if imports["diffusers"]:
+        deps.append('"@pip//diffusers"')
+    if imports["datasets"]:
+        deps.append('"@pip//datasets"')
+    if imports["evaluate"]:
+        deps.append('"@pip//evaluate"')
+    if imports["timm"]:
+        deps.append('"@pip//timm"')
+    if imports["scipy"]:
+        deps.append('"@pip//scipy"')
     if imports["tests_ttnn"]:
         deps.append('"//tests/ttnn:test_utils"')
     if imports["tests_tt_eager"]:
@@ -291,6 +309,16 @@ def generate_stub_amendment(rel_dir: str, test_files: list[Path], imports: dict)
         deps.append('"@pip//torchvision"')
     if imports["pil"]:
         deps.append('"@pip//pillow"')
+    if imports["diffusers"]:
+        deps.append('"@pip//diffusers"')
+    if imports["datasets"]:
+        deps.append('"@pip//datasets"')
+    if imports["evaluate"]:
+        deps.append('"@pip//evaluate"')
+    if imports["timm"]:
+        deps.append('"@pip//timm"')
+    if imports["scipy"]:
+        deps.append('"@pip//scipy"')
     if imports["tests_ttnn"]:
         deps.append('"//tests/ttnn:test_utils"')
     if imports["tests_tt_eager"]:
