@@ -16,7 +16,7 @@
 #include <fmt/ranges.h>
 
 #include "export_enum.hpp"
-#include "ttnn/operations/eltwise/unary/common/unary_op_utils.hpp"
+#include "ttnn/operations/eltwise/unary/common/unary_op_types.hpp"
 
 // NOLINTBEGIN(bugprone-unused-raii)
 
@@ -65,8 +65,6 @@ void py_module(nb::module_& mod) {
     nb::implicitly_convertible<std::pair<UnaryOpType, float>, UnaryWithParam>();
     nb::implicitly_convertible<std::pair<UnaryOpType, int>, UnaryWithParam>();
     nb::implicitly_convertible<std::pair<UnaryOpType, bool>, UnaryWithParam>();
-
-    mod.def("string_to_unary_with_param", &utils::string_to_unary_with_param);
 
     auto eltwise_unary_with_param = static_cast<nb::class_<EltwiseUnaryWithParam>>(mod.attr("EltwiseUnaryWithParam"));
     eltwise_unary_with_param.def(nb::init<UnaryOpType>())

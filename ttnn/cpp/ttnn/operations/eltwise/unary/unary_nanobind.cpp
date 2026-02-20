@@ -15,6 +15,7 @@
 #include <nanobind/stl/variant.h>
 
 #include "ttnn-nanobind/decorators.hpp"
+#include "ttnn/operations/eltwise/unary/common/unary_op_utils.hpp"
 #include "ttnn/operations/eltwise/unary/unary.hpp"
 #include "ttnn/operations/eltwise/unary/unary_composite.hpp"
 #include "ttnn/operations/eltwise/complex_unary/complex_unary.hpp"
@@ -2592,6 +2593,12 @@ void py_module(nb::module_& mod) {
             nb::kw_only(),
             nb::arg("memory_config") = nb::none(),
             nb::arg("output_tensor") = nb::none()});
+
+
+    // Activation utility: convert string names to UnaryWithParam objects.
+    // Moved from activation.cpp (core module) to avoid linking unary_op_utils
+    // into _ttnn_core.so, which breaks split-module builds.
+    mod.def("string_to_unary_with_param", &utils::string_to_unary_with_param);
 }
 
 }  // namespace ttnn::operations::unary

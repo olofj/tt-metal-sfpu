@@ -287,6 +287,14 @@ nanobind_extension(
     deps = [
         ":ttnn_core",
         "//ttnn/cpp/ttnn/operations/core",
+        # ttnn_core source files (tensor_ops.cpp, device.cpp, etc.) call into
+        # these operations via _hdrs includes. The monolithic _ttnn.so links
+        # everything so these resolve; the split _ttnn_core.so needs them
+        # explicitly to avoid undefined symbols at runtime.
+        "//ttnn/cpp/ttnn/operations/ccl",
+        "//ttnn/cpp/ttnn/operations/copy",
+        "//ttnn/cpp/ttnn/operations/data_movement",
+        "//ttnn/cpp/ttnn/operations/experimental/reshape",
     ],
 )
 

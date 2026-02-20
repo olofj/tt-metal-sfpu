@@ -12,19 +12,13 @@ from functools import partial
 from operator import contains, eq, getitem
 from pathlib import Path
 import json
-import multiprocess
-from queue import Empty
 import signal
 import time
-import psutil
 import subprocess
 from datetime import datetime
 
 from loguru import logger
 
-from models.tt_transformers.demo.trace_region_config import get_supported_trace_region_size
-from tests.scripts.common import run_process_and_get_result
-from tests.scripts.common import get_updated_device_params
 
 # Constants for device configurations
 SIX_U_NUM_PCIE_DEVICES = 32
@@ -371,6 +365,7 @@ def _device_module_impl(request):
     For test isolation after failures, prefer function-scoped devices.
     """
     import ttnn
+    from tests.scripts.common import get_updated_device_params
 
     device_id = request.config.getoption("device_id")
 
@@ -424,6 +419,7 @@ def device(request, device_params):
     conflicting usage with @pytest.mark.parametrize("device_params", ...).
     """
     import ttnn
+    from tests.scripts.common import get_updated_device_params
 
     # Check if file/test wants module-scoped device
     if request.node.get_closest_marker("use_module_device"):
@@ -542,6 +538,8 @@ def mesh_device(request, silicon_arch_name, device_params):
         mesh_device: Initialized device mesh object.
     """
     import ttnn
+    from models.tt_transformers.demo.trace_region_config import get_supported_trace_region_size
+    from tests.scripts.common import get_updated_device_params
 
     request.node.pci_ids = ttnn.get_pcie_device_ids()
 
@@ -619,6 +617,7 @@ def t3k_single_board_mesh_device(request, silicon_arch_name, silicon_arch_wormho
 @pytest.fixture(scope="function")
 def pcie_mesh_device(request, silicon_arch_name, silicon_arch_wormhole_b0, device_params):
     import ttnn
+    from tests.scripts.common import get_updated_device_params
 
     device_ids = ttnn.get_pcie_device_ids()
     try:
@@ -660,6 +659,7 @@ def bh_1d_mesh_device(request, silicon_arch_name, silicon_arch_blackhole, device
     # This configures an [m,n] blackhole mesh device to appear as a [1,m*n] line or ring
     # Implements wraparound in rackboxes
     import ttnn
+    from tests.scripts.common import get_updated_device_params
 
     if ttnn.get_num_devices() not in [1, 2, 4, 8, 32]:
         pytest.skip()
@@ -691,6 +691,7 @@ def bh_1d_mesh_device(request, silicon_arch_name, silicon_arch_blackhole, device
 @contextlib.contextmanager
 def bh_2d_mesh_device_context(device_params):
     import ttnn
+    from tests.scripts.common import get_updated_device_params
 
     if ttnn.get_num_devices() not in [1, 2, 4, 8, 32]:
         raise RuntimeError("bh_2d_mesh_device requires 1, 2, 4, 8, or 32 devices (got %s)" % ttnn.get_num_devices())
@@ -1109,6 +1110,7 @@ def pytest_runtest_teardown(item, nextitem):
 
 def reset_tensix(tt_open_devices=None):
     import shutil
+    from tests.scripts.common import run_process_and_get_result
 
     if is_galaxy():
         logger.info("Skipping reset for Galaxy systems, need a new reset.json scheme")
