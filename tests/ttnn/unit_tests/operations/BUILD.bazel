@@ -40,3 +40,15 @@ py_library(
         "@pip//loguru",
     ],
 )
+
+# Split-module variant: uses ttnn_py_base (core only, no operations).
+py_library(
+    name = "prefetcher_common_base",
+    testonly = True,
+    srcs = ["prefetcher_common.py"],
+    deps = [
+        "//ttnn/ttnn:ttnn_py_base",
+        "@pip//torch",
+        "@pip//loguru",
+    ],
+)

@@ -228,12 +228,12 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Run affected host tests
+      - name: Run affected host tests (no hardware)
         run: |
           set -euo pipefail
 
           TAG_FILTER="${{ inputs.test-tag-filter || 'post_commit' }}"
-          HW_EXCLUDE="-requires_wormhole_b0,-requires_blackhole,-requires_galaxy,-requires_N150,-requires_N300,-requires_T3000,-no_remote"
+          HW_EXCLUDE="-requires_wormhole_b0,-requires_blackhole,-requires_galaxy,-requires_N150,-requires_N300,-requires_T3000,-no_remote,-monolithic"
 
           if [ "${{ needs.determine-targets.outputs.mode }}" = "FULL_CI" ]; then
             echo "Running FULL CI (host-only tests)"
@@ -251,6 +251,42 @@ jobs:
             # shellcheck disable=SC2086
             bazel test $TARGETS \
               --test_tag_filters="${TAG_FILTER},${HW_EXCLUDE}" \
+              --test_output=errors \
+              --jobs=auto \
+              --local_test_jobs=4 \
+              --build_tests_only \
+              --flaky_test_attempts=2 \
+              || true
+          fi
+
+      - name: Run affected ttsim tests (simulated hardware)
+        run: |
+          set -euo pipefail
+
+          # TTSim tests are tagged with both ttsim and an architecture tag
+          # (requires_wormhole_b0/requires_blackhole). They don't need physical
+          # hardware — the simulator provides the device. The previous step
+          # excludes these because of the architecture tags, so we run them
+          # here with ttsim as a positive filter.
+          TAG_FILTER="${{ inputs.test-tag-filter || 'post_commit' }}"
+          TAG_EXCLUDE="-frequently_hangs,-slow,-monolithic"
+
+          if [ "${{ needs.determine-targets.outputs.mode }}" = "FULL_CI" ]; then
+            echo "Running FULL CI (ttsim tests)"
+            bazel test //tests/... \
+              --test_tag_filters="ttsim,${TAG_FILTER},${TAG_EXCLUDE}" \
+              --test_output=errors \
+              --jobs=auto \
+              --local_test_jobs=4 \
+              --build_tests_only \
+              --flaky_test_attempts=2 \
+              || true
+          else
+            TARGETS="${{ needs.determine-targets.outputs.affected_tests }}"
+            echo "Running affected ttsim tests"
+            # shellcheck disable=SC2086
+            bazel test $TARGETS \
+              --test_tag_filters="ttsim,${TAG_FILTER},${TAG_EXCLUDE}" \
               --test_output=errors \
               --jobs=auto \
               --local_test_jobs=4 \
@@ -300,7 +336,7 @@ jobs:
           set -euo pipefail
 
           TAG_FILTER="${{ inputs.test-tag-filter || 'post_commit' }}"
-          TAG_EXCLUDE="-frequently_hangs,-slow"
+          TAG_EXCLUDE="-frequently_hangs,-slow,-monolithic"
           # Select only tests tagged for N150
           HW_INCLUDE="requires_N150"
 
@@ -363,7 +399,7 @@ jobs:
           set -euo pipefail
 
           TAG_FILTER="${{ inputs.test-tag-filter || 'post_commit' }}"
-          TAG_EXCLUDE="-frequently_hangs,-slow"
+          TAG_EXCLUDE="-frequently_hangs,-slow,-monolithic"
           HW_INCLUDE="requires_N300"
 
           if [ "${{ needs.determine-targets.outputs.mode }}" = "FULL_CI" ]; then
@@ -429,7 +465,7 @@ jobs:
           set -euo pipefail
 
           TAG_FILTER="${{ inputs.test-tag-filter || 'post_commit' }}"
-          TAG_EXCLUDE="-frequently_hangs,-slow"
+          TAG_EXCLUDE="-frequently_hangs,-slow,-monolithic"
           # T3000 runs Wormhole tests that aren't specific to other topologies.
           # This includes tests tagged requires_T3000 and generic requires_wormhole_b0.
           # Perf tests are excluded here — they run on dedicated pipeline-perf runners.
@@ -496,7 +532,7 @@ jobs:
           set -euo pipefail
 
           TAG_FILTER="${{ inputs.test-tag-filter || 'post_commit' }}"
-          TAG_EXCLUDE="-frequently_hangs,-slow"
+          TAG_EXCLUDE="-frequently_hangs,-slow,-monolithic"
           # Select Blackhole tests that are not Galaxy
           HW_INCLUDE="requires_blackhole"
           HW_EXCLUDE="-requires_galaxy"
@@ -564,7 +600,7 @@ jobs:
           set -euo pipefail
 
           TAG_FILTER="${{ inputs.test-tag-filter || 'post_commit' }}"
-          TAG_EXCLUDE="-frequently_hangs,-slow"
+          TAG_EXCLUDE="-frequently_hangs,-slow,-monolithic"
           # requires_galaxy selects Galaxy tests; exclude Blackhole to keep only WH Galaxy.
           # Perf tests are excluded here — they run on dedicated pipeline-perf runners.
           HW_INCLUDE="requires_galaxy"
@@ -634,7 +670,7 @@ jobs:
           set -euo pipefail
 
           TAG_FILTER="${{ inputs.test-tag-filter || 'post_commit' }}"
-          TAG_EXCLUDE="-frequently_hangs,-slow"
+          TAG_EXCLUDE="-frequently_hangs,-slow,-monolithic"
           # requires_galaxy selects Galaxy tests; exclude Wormhole to keep only BH Galaxy
           HW_INCLUDE="requires_galaxy"
           HW_EXCLUDE="-requires_wormhole_b0"

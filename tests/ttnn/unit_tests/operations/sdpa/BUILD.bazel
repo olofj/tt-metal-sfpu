@@ -18,12 +18,34 @@ py_library(
     ],
 )
 
+# Split-module variant: uses ttnn_py_base (core only, no operations).
+py_library(
+    name = "sdpa_test_utils_base",
+    testonly = True,
+    srcs = ["sdpa_test_utils.py"],
+    deps = [
+        "//ttnn/ttnn:ttnn_py_base",
+        "@pip//torch",
+    ],
+)
+
 py_library(
     name = "mla_test_utils",
     testonly = True,
     srcs = ["mla_test_utils.py"],
     deps = [
         "//ttnn/ttnn:ttnn_py",
+        "@pip//torch",
+    ],
+)
+
+# Split-module variant: uses ttnn_py_base (core only, no operations).
+py_library(
+    name = "mla_test_utils_base",
+    testonly = True,
+    srcs = ["mla_test_utils.py"],
+    deps = [
+        "//ttnn/ttnn:ttnn_py_base",
         "@pip//torch",
     ],
 )
@@ -40,6 +62,36 @@ pytest_suite(
         "@pip//torch",
         "@pip//numpy",
         "@pip//loguru",
+    ],
+    markers = ["post_commit"],
+    tags = ["ttnn", "unit", "requires_wormhole_b0", "requires_blackhole", "monolithic"],
+)
+
+# Split-module variant: only loads the operation .so files actually needed
+# by SDPA tests. A C++ change to an unrelated operation (e.g. conv)
+# does NOT invalidate these test targets.
+pytest_suite(
+    name = "sdpa_tests_split",
+    srcs = glob(["test_*.py"]),
+    test_suffix = "_split",
+    deps = [
+        "//ttnn/ttnn:ttnn_py_base",
+        "//tests/ttnn:test_utils_base",
+        "//tests/ttnn/unit_tests/operations/sdpa:sdpa_test_utils_base",
+        "//tests/ttnn/unit_tests/operations/sdpa:mla_test_utils_base",
+        "//models/common:utility_functions_base",
+        "@pip//torch",
+        "@pip//numpy",
+        "@pip//loguru",
+    ],
+    ttnn_ops = [
+        "transformer",
+        "matmul",
+        "creation",
+        "data_movement",
+        "debug",
+        "binary",
+        "unary",
     ],
     markers = ["post_commit"],
     tags = ["ttnn", "unit", "requires_wormhole_b0", "requires_blackhole"],

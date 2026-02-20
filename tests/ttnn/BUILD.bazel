@@ -130,8 +130,26 @@ test_suite(
     visibility = ["//visibility:public"],
 )
 
+# TTSim tests — runnable on CPU-only systems with the TT simulator.
+# These reference split-module suites so each test only loads the .so files
+# it actually needs. On a CPU-only machine:
+#   bazel test //tests/ttnn:ttsim_tests
+# Note: sdpa_tests_split is excluded (no ttsim support).
 test_suite(
     name = "ttsim_tests",
-    tags = ["post_commit", "ttsim", "-slow", "-frequently_hangs"],
+    tests = [
+        "//tests/ttnn/unit_tests/operations/eltwise:eltwise_tests_split",
+        "//tests/ttnn/unit_tests/operations/matmul:matmul_tests_split",
+        "//tests/ttnn/unit_tests/operations/conv:conv_tests_split",
+        "//tests/ttnn/unit_tests/operations/conv/data_movement:conv_data_movement_tests_split",
+        "//tests/ttnn/unit_tests/operations/reduce:reduce_tests_split",
+        "//tests/ttnn/unit_tests/operations/pool:pool_tests_split",
+        "//tests/ttnn/unit_tests/operations/debug:debug_tests_split",
+        "//tests/ttnn/unit_tests/operations/fused:fused_tests_split",
+        "//tests/ttnn/unit_tests/operations/transformers:transformers_tests_split",
+        "//tests/ttnn/unit_tests/base_functionality:base_functionality_tests_split",
+        "//tests/ttnn/unit_tests/tensor:tensor_tests_split",
+    ],
+    tags = ["-slow", "-frequently_hangs"],
     visibility = ["//visibility:public"],
 )

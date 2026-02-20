@@ -14,6 +14,18 @@ py_library(
     ],
 )
 
+# Split-module variant: uses ttnn_py_base (core only, no operations).
+py_library(
+    name = "distributed_norm_test_utils_base",
+    testonly = True,
+    srcs = ["distributed_norm_test_utils.py"],
+    deps = [
+        "//ttnn/ttnn:ttnn_py_base",
+        "@pip//torch",
+        "@pip//loguru",
+    ],
+)
+
 py_library(
     name = "sharded_test_utils",
     testonly = True,
@@ -21,6 +33,18 @@ py_library(
     deps = [
         "//ttnn/ttnn:ttnn_py",
         "//models/common:utility_functions",
+        "@pip//torch",
+    ],
+)
+
+# Split-module variant: uses ttnn_py_base (core only, no operations).
+py_library(
+    name = "sharded_test_utils_base",
+    testonly = True,
+    srcs = ["sharded_test_utils.py"],
+    deps = [
+        "//ttnn/ttnn:ttnn_py_base",
+        "//models/common:utility_functions_base",
         "@pip//torch",
     ],
 )
@@ -38,6 +62,39 @@ pytest_suite(
         "@pip//torch",
         "@pip//numpy",
         "@pip//loguru",
+    ],
+    markers = ["post_commit"],
+    tags = ["ttnn", "unit", "requires_wormhole_b0", "requires_blackhole", "ttsim", "monolithic"],
+)
+
+# Split-module variant: only loads the operation .so files actually needed
+# by fused tests. A C++ change to an unrelated operation (e.g. matmul)
+# does NOT invalidate these test targets.
+pytest_suite(
+    name = "fused_tests_split",
+    srcs = glob(["test_*.py"]),
+    test_suffix = "_split",
+    deps = [
+        "//ttnn/ttnn:ttnn_py_base",
+        "//tests/ttnn:test_utils_base",
+        "//tests/ttnn/unit_tests/operations:test_utils_base",
+        "//tests/ttnn/unit_tests/operations/fused:distributed_norm_test_utils_base",
+        "//tests/ttnn/unit_tests/operations/fused:sharded_test_utils_base",
+        "//models/common:utility_functions_base",
+        "@pip//torch",
+        "@pip//numpy",
+        "@pip//loguru",
+    ],
+    ttnn_ops = [
+        "normalization",
+        "creation",
+        "data_movement",
+        "debug",
+        "binary",
+        "unary",
+        "full",
+        "full_like",
+        "reduction",
     ],
     markers = ["post_commit"],
     tags = ["ttnn", "unit", "requires_wormhole_b0", "requires_blackhole", "ttsim"],

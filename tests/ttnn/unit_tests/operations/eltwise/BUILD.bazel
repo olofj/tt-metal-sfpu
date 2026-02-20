@@ -14,7 +14,7 @@ pytest_suite(
         "@pip//loguru",
     ],
     markers = ["post_commit"],
-    tags = ["ttnn", "unit", "requires_wormhole_b0", "requires_blackhole", "ttsim"],
+    tags = ["ttnn", "unit", "requires_wormhole_b0", "requires_blackhole", "ttsim", "monolithic"],
 )
 
 # Split-module variant: only loads the operation .so files actually needed

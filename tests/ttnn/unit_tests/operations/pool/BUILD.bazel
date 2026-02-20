@@ -14,5 +14,31 @@ pytest_suite(
         "@pip//loguru",
     ],
     markers = ["post_commit"],
+    tags = ["ttnn", "unit", "requires_wormhole_b0", "requires_blackhole", "ttsim", "monolithic"],
+)
+
+# Split-module variant: only loads the operation .so files actually needed
+# by pool tests. A C++ change to an unrelated operation (e.g. matmul)
+# does NOT invalidate these test targets.
+pytest_suite(
+    name = "pool_tests_split",
+    srcs = glob(["test_*.py"]),
+    test_suffix = "_split",
+    deps = [
+        "//ttnn/ttnn:ttnn_py_base",
+        "//tests/ttnn:test_utils_base",
+        "//models/common:utility_functions_base",
+        "@pip//torch",
+        "@pip//numpy",
+        "@pip//loguru",
+    ],
+    ttnn_ops = [
+        "pool",
+        "sliding_window",
+        "creation",
+        "data_movement",
+        "debug",
+    ],
+    markers = ["post_commit"],
     tags = ["ttnn", "unit", "requires_wormhole_b0", "requires_blackhole", "ttsim"],
 )
