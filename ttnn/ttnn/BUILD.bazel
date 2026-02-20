@@ -7,8 +7,19 @@ load("@rules_python//python:py_library.bzl", "py_library")
 
 package(default_visibility = ["//visibility:public"])
 
+# Copy _ttnn.so into this package directory so that `import ttnn._ttnn`
+# resolves from the runfiles tree. The nanobind extension is built in the
+# parent package (//ttnn:_ttnn.so) but Python expects it at ttnn/ttnn/_ttnn.so.
+genrule(
+    name = "_ttnn_so",
+    srcs = ["//ttnn:_ttnn.so"],
+    outs = ["_ttnn.so"],
+    cmd = "cp $< $@",
+)
+
 py_library(
     name = "ttnn_py",
     srcs = glob(["**/*.py"]),
+    data = [":_ttnn_so"],
     imports = [".."],
 )
