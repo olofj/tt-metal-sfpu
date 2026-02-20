@@ -47,9 +47,9 @@ def main():
     if not has_rootdir:
         args = ["--rootdir", workspace_root] + args
 
-    # Replace $$BUILD_WORKSPACE_DIRECTORY placeholder with actual path.
-    # The Bazel macro uses $$ to escape the $ in .bzl files.
-    args = [a.replace("$$BUILD_WORKSPACE_DIRECTORY", workspace_root) for a in args]
+    # Replace $BUILD_WORKSPACE_DIRECTORY placeholder with actual path.
+    # The Bazel macro uses $$ in .bzl to produce a literal $ in the arg.
+    args = [a.replace("$BUILD_WORKSPACE_DIRECTORY", workspace_root) for a in args]
 
     # Import and run pytest.
     import pytest
