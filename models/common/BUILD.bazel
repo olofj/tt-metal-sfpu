@@ -16,3 +16,17 @@ py_library(
         "@pip//pytest",
     ],
 )
+
+# Split-module variant: uses ttnn_py_base (core only, no operations).
+py_library(
+    name = "utility_functions_base",
+    testonly = True,
+    srcs = ["utility_functions.py"],
+    deps = [
+        "//ttnn/ttnn:ttnn_py_base",
+        "@pip//numpy",
+        "@pip//torch",
+        "@pip//loguru",
+        "@pip//pytest",
+    ],
+)

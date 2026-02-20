@@ -12,7 +12,12 @@ from types import ModuleType
 
 from loguru import logger
 
-import ttnn._ttnn
+try:
+    import ttnn._ttnn
+except ImportError:
+    from ttnn._ttnn_split_loader import load_split_modules
+    load_split_modules()
+    import ttnn._ttnn  # resolves from sys.modules alias
 
 
 Config = ttnn._ttnn.core.Config
@@ -144,9 +149,12 @@ from ttnn._ttnn.operations.trace import (
     release_trace,
 )
 
-from ttnn._ttnn.operations.debug import (
-    apply_device_delay,
-)
+try:
+    from ttnn._ttnn.operations.debug import (
+        apply_device_delay,
+    )
+except (AttributeError, ImportError):
+    pass
 
 from ttnn._ttnn.global_circular_buffer import (
     create_global_circular_buffer,
@@ -372,14 +380,21 @@ import ttnn.experimental_loader.golden_functions
 
 import ttnn.operations
 
-from ttnn.operations.unary import SigmoidMode
+try:
+    from ttnn.operations.unary import SigmoidMode
+except (AttributeError, ImportError):
+    pass
 
-divide = ttnn.div
-sub = ttnn.subtract
-sub_ = ttnn.subtract_
-mul = ttnn.multiply
-mul_ = ttnn.multiply_
-div_ = ttnn.divide_
+for _alias, _target in [
+    ("divide", "div"),
+    ("sub", "subtract"),
+    ("sub_", "subtract_"),
+    ("mul", "multiply"),
+    ("mul_", "multiply_"),
+    ("div_", "divide_"),
+]:
+    if hasattr(ttnn, _target):
+        globals()[_alias] = getattr(ttnn, _target)
 
 
 # TODO: nanobind the overloaded operators below
@@ -398,85 +413,118 @@ ttnn.Tensor.__lt__ = lambda self, *args, **kwargs: ttnn.lt(self, *args, **kwargs
 ttnn.Tensor.__le__ = lambda self, *args, **kwargs: ttnn.le(self, *args, **kwargs)
 ttnn.Tensor.__getitem__ = lambda self, *args, **kwargs: ttnn.operations.core.__getitem__(self, *args, **kwargs)
 
-from ttnn.operations.matmul import (
-    MatmulMultiCoreReuseProgramConfig,
-    MatmulMultiCoreReuseMultiCastProgramConfig,
-    MatmulMultiCoreReuseMultiCast1DProgramConfig,
-    MatmulMultiCoreReuseMultiCastDRAMShardedProgramConfig,
-    MatmulMultiCoreReuseMultiCastBatchedDRAMShardedProgramConfig,
-)
+try:
+    from ttnn.operations.matmul import (
+        MatmulMultiCoreReuseProgramConfig,
+        MatmulMultiCoreReuseMultiCastProgramConfig,
+        MatmulMultiCoreReuseMultiCast1DProgramConfig,
+        MatmulMultiCoreReuseMultiCastDRAMShardedProgramConfig,
+        MatmulMultiCoreReuseMultiCastBatchedDRAMShardedProgramConfig,
+    )
+except (AttributeError, ImportError):
+    pass
 
-from ttnn.operations.normalization import (
-    SoftmaxProgramConfig,
-    SoftmaxDefaultProgramConfig,
-    SoftmaxShardedMultiCoreProgramConfig,
-    LayerNormDefaultProgramConfig,
-    LayerNormShardedMultiCoreProgramConfig,
-    LayerNormType,
-    DistributedLayerNormStage,
-    LayerNormParams,
-    LayerNormInputs,
-    LayerNormDeviceOperation,
-    LayerNormMultiCoreProgramFactory,
-    LayerNormShardedProgramFactory,
-    create_group_norm_input_mask,
-    create_group_norm_input_negative_mask,
-    create_group_norm_weight_bias_rm,
-    create_group_norm_reciprocals,
-    create_layer_norm_reciprocals,
-    determine_expected_group_norm_sharded_config_and_grid_size,
-    determine_expected_group_norm_dram_grid_size,
-    get_group_norm_cores_across_channel,
-    dram_group_norm_params_from_torch,
-    layernorm_default_compute_config,
-    rmsnorm_default_compute_config,
-    create_layernorm_program_config,
-)
+try:
+    from ttnn.operations.normalization import (
+        SoftmaxProgramConfig,
+        SoftmaxDefaultProgramConfig,
+        SoftmaxShardedMultiCoreProgramConfig,
+        LayerNormDefaultProgramConfig,
+        LayerNormShardedMultiCoreProgramConfig,
+        LayerNormType,
+        DistributedLayerNormStage,
+        LayerNormParams,
+        LayerNormInputs,
+        LayerNormDeviceOperation,
+        LayerNormMultiCoreProgramFactory,
+        LayerNormShardedProgramFactory,
+        create_group_norm_input_mask,
+        create_group_norm_input_negative_mask,
+        create_group_norm_weight_bias_rm,
+        create_group_norm_reciprocals,
+        create_layer_norm_reciprocals,
+        determine_expected_group_norm_sharded_config_and_grid_size,
+        determine_expected_group_norm_dram_grid_size,
+        get_group_norm_cores_across_channel,
+        dram_group_norm_params_from_torch,
+        layernorm_default_compute_config,
+        rmsnorm_default_compute_config,
+        create_layernorm_program_config,
+    )
+except (AttributeError, ImportError):
+    pass
 
-from ttnn.operations.embedding import (
-    EmbeddingsType,
-)
+try:
+    from ttnn.operations.embedding import (
+        EmbeddingsType,
+    )
+except (AttributeError, ImportError):
+    pass
 
-from ttnn.operations.losses import (
-    LossReductionMode,
-)
+try:
+    from ttnn.operations.losses import (
+        LossReductionMode,
+    )
+except (AttributeError, ImportError):
+    pass
 
-from ttnn.operations.reduction import (
-    ReduceType,
-)
+try:
+    from ttnn.operations.reduction import (
+        ReduceType,
+    )
+except (AttributeError, ImportError):
+    pass
 
-from ttnn.operations.ccl import Topology, DispatchAlgorithm, WorkerMode
+try:
+    from ttnn.operations.ccl import Topology, DispatchAlgorithm, WorkerMode
+except (AttributeError, ImportError):
+    pass
 
-from ttnn.operations.conv2d import (
-    Conv2dConfig,
-    get_conv_output_dim,
-    Conv2dSliceConfig,
-    Conv2dDRAMSliceHeight,
-    Conv2dDRAMSliceWidth,
-    Conv2dL1Full,
-    Conv2dL1FullSliceConfig,
-    prepare_conv_weights,
-    prepare_conv_bias,
-    prepare_conv_transpose2d_weights,
-    prepare_conv_transpose2d_bias,
-    SlidingWindowParallelConfig,
-    Op2DSliceConfig,
-    Op2DDRAMSliceHeight,
-    Op2DDRAMSliceWidth,
-    Op2DL1Full,
-    Op2DL1FullSliceConfig,
-)
+try:
+    from ttnn.operations.conv2d import (
+        Conv2dConfig,
+        get_conv_output_dim,
+        Conv2dSliceConfig,
+        Conv2dDRAMSliceHeight,
+        Conv2dDRAMSliceWidth,
+        Conv2dL1Full,
+        Conv2dL1FullSliceConfig,
+        prepare_conv_weights,
+        prepare_conv_bias,
+        prepare_conv_transpose2d_weights,
+        prepare_conv_transpose2d_bias,
+        SlidingWindowParallelConfig,
+        Op2DSliceConfig,
+        Op2DDRAMSliceHeight,
+        Op2DDRAMSliceWidth,
+        Op2DL1Full,
+        Op2DL1FullSliceConfig,
+    )
+except (AttributeError, ImportError):
+    pass
 
-from ttnn.operations.pool import (
-    prepare_grid_sample_grid,
-)
+try:
+    from ttnn.operations.pool import (
+        prepare_grid_sample_grid,
+    )
+except (AttributeError, ImportError):
+    pass
 
-from ttnn._ttnn.operations.experimental import Conv3dConfig
-from ttnn._ttnn.operations.experimental import MinimalMatmulConfig
+try:
+    from ttnn._ttnn.operations.experimental import Conv3dConfig
+    from ttnn._ttnn.operations.experimental import MinimalMatmulConfig
+except (AttributeError, ImportError):
+    pass
 
-Conv1dConfig = ttnn._ttnn.operations.conv.Conv2dConfig
+try:
+    Conv1dConfig = ttnn._ttnn.operations.conv.Conv2dConfig
+except AttributeError:
+    pass
 
-from ttnn.operations.transformer import SDPAProgramConfig
+try:
+    from ttnn.operations.transformer import SDPAProgramConfig
+except (AttributeError, ImportError):
+    pass
 
 import ttnn.graph
 
@@ -490,7 +538,10 @@ def get_arch_name():
     return _get_arch_name()
 
 
-from ttnn._ttnn.operations.data_movement import TileReshapeMapMode
+try:
+    from ttnn._ttnn.operations.data_movement import TileReshapeMapMode
+except (AttributeError, ImportError):
+    pass
 
 import pathlib
 import importlib.util

@@ -81,3 +81,12 @@ py_library(
     data = [":_ttnn_so"],
     imports = [".."],
 )
+
+# Split-module variant: only _ttnn_core.so (types/infrastructure, no operations).
+# Tests add per-op .so files via ttnn_ops parameter in pytest_test/pytest_suite.
+py_library(
+    name = "ttnn_py_base",
+    srcs = glob(["**/*.py"]),
+    data = [":_ttnn_core_so"],
+    imports = [".."],
+)

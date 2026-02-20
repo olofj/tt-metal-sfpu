@@ -54,6 +54,7 @@ def pytest_test(
         timeout_seconds = 300,
         tags = [],
         env = {},
+        ttnn_ops = None,
         **kwargs):
     """Run a Python test file through pytest inside Bazel.
 
@@ -68,6 +69,10 @@ def pytest_test(
             pytest.ini). Also used to select Bazel size/timeout.
         tags: Additional Bazel tags (merged with marker-derived tags).
         env: Environment variables to set for the test.
+        ttnn_ops: List of operation names for split-module builds. When set,
+            the listed per-operation .so files are added as data deps
+            (e.g., ttnn_ops = ["binary", "unary"] adds _ttnn_binary_so and
+            _ttnn_unary_so). Use with ttnn_py_base instead of ttnn_py.
         **kwargs: Passed through to native py_test.
     """
 
@@ -117,6 +122,10 @@ def pytest_test(
         "//tests/ttnn:conftest_files",
     ]
 
+    # Add per-operation split .so files when ttnn_ops is specified.
+    if ttnn_ops != None:
+        all_data += ["//ttnn/ttnn:_ttnn_%s_so" % op for op in ttnn_ops]
+
     # Core test deps: pytest runner, timeout plugin, and ttnn.
     all_deps = list(deps) + [
         "@pip//pytest",
@@ -148,7 +157,7 @@ def pytest_test(
         **kwargs
     )
 
-def pytest_suite(name, srcs, deps = [], data = [], markers = [], tags = [], **kwargs):
+def pytest_suite(name, srcs, deps = [], data = [], markers = [], tags = [], ttnn_ops = None, test_suffix = "", **kwargs):
     """Generate one pytest_test per test file, plus a test_suite grouping them.
 
     Convenience macro for directories with many test files that share the
@@ -162,11 +171,16 @@ def pytest_suite(name, srcs, deps = [], data = [], markers = [], tags = [], **kw
         data: Shared data files for all tests.
         markers: Shared markers for all tests.
         tags: Shared tags for all tests.
+        ttnn_ops: List of operation names for split-module builds (passed
+            through to each pytest_test).
+        test_suffix: Suffix appended to each generated test target name.
+            Useful when multiple suites share the same source files
+            (e.g., test_suffix = "_split" → "test_binary_split").
         **kwargs: Passed through to each pytest_test.
     """
     test_names = []
     for src in srcs:
-        test_name = src.replace(".py", "")
+        test_name = src.replace(".py", "") + test_suffix
         test_names.append(test_name)
         pytest_test(
             name = test_name,
@@ -175,6 +189,7 @@ def pytest_suite(name, srcs, deps = [], data = [], markers = [], tags = [], **kw
             data = data,
             markers = markers,
             tags = tags,
+            ttnn_ops = ttnn_ops,
             **kwargs
         )
 

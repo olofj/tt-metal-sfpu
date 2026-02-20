@@ -85,7 +85,10 @@ QueueId = ttnn._ttnn.types.QueueId
 
 UnaryWithParam = ttnn._ttnn.activation.UnaryWithParam
 UnaryOpType = ttnn._ttnn.activation.UnaryOpType
-BinaryOpType = ttnn._ttnn.operations.binary.BinaryOpType
+try:
+    BinaryOpType = ttnn._ttnn.operations.binary.BinaryOpType
+except AttributeError:
+    BinaryOpType = None
 
 BcastOpMath = ttnn._ttnn.types.BcastOpMath
 BcastOpDim = ttnn._ttnn.types.BcastOpDim

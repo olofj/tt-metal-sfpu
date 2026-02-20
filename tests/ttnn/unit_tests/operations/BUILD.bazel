@@ -18,6 +18,18 @@ py_library(
     ],
 )
 
+# Split-module variant: uses ttnn_py_base (core only, no operations).
+py_library(
+    name = "test_utils_base",
+    testonly = True,
+    srcs = ["test_utils.py"],
+    deps = [
+        "//ttnn/ttnn:ttnn_py_base",
+        "@pip//pytest",
+        "@pip//torch",
+    ],
+)
+
 py_library(
     name = "prefetcher_common",
     testonly = True,
