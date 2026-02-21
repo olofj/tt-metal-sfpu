@@ -43,6 +43,12 @@ build --per_file_copt=tests/.*@-Wno-c++11-narrowing,-Wno-narrowing
 build --workspace_status_command=bazel/stamp_version.sh
 build --nostamp
 
+# Runfiles optimization: skip symlink trees during `bazel build` (created
+# on-demand for test/run), and eliminate legacy duplicate external repo
+# symlinks which roughly double the symlink count for no benefit.
+build --nobuild_runfile_links
+build --nolegacy_external_runfiles
+
 # ===========================================================================
 # Build type configurations
 #
