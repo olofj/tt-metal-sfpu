@@ -10,5 +10,5 @@ pytest_suite(
         "@pip//torch",
     ],
     markers = ["post_commit", "models_performance_bare_metal"],
-    tags = ["ttnn", "unit", "benchmark", "requires_wormhole_b0", "requires_blackhole", "ttsim"],
+    tags = ["ttnn", "unit", "benchmark", "requires_wormhole_b0", "requires_blackhole", "ttsim", "monolithic"],
 )
