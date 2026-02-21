@@ -288,6 +288,20 @@ RunTimeOptions::RunTimeOptions() : system_kernel_dir("/usr/share/tenstorrent/ker
     }
 
     if (this->root_dir.empty()) {
+        // Bazel sets TEST_SRCDIR and TEST_WORKSPACE for sandboxed tests.
+        // The workspace root in the runfiles tree contains tt_metal/.
+        const char* test_srcdir = std::getenv("TEST_SRCDIR");
+        const char* test_workspace = std::getenv("TEST_WORKSPACE");
+        if (test_srcdir != nullptr && test_workspace != nullptr) {
+            std::filesystem::path bazel_root = std::filesystem::path(test_srcdir) / test_workspace;
+            if (std::filesystem::is_directory(bazel_root / "tt_metal")) {
+                this->root_dir = bazel_root.string();
+                log_debug(tt::LogMetal, "Bazel runfiles fallback root_dir: {}", this->root_dir);
+            }
+        }
+    }
+
+    if (this->root_dir.empty()) {
         log_critical(
             tt::LogMetal,
             "Failed to determine TT-Metal root directory. "
@@ -296,6 +310,7 @@ RunTimeOptions::RunTimeOptions() : system_kernel_dir("/usr/share/tenstorrent/ker
             "2. Set TT_METAL_RUNTIME_ROOT environment variable to the path containing tt_metal/\n"
             "3. Call RunTimeOptions::set_root_dir() API before creating RunTimeOptions\n"
             "4. Run from the root of the repository\n"
+            "5. Run via Bazel (TEST_SRCDIR/TEST_WORKSPACE runfiles)\n"
             "Current working directory: {}",
             std::filesystem::current_path().string());
     }
