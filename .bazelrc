@@ -338,6 +338,9 @@ test --test_env=TT_METAL_KERNEL_PATH
 
 test --test_tag_filters=-requires_wormhole_b0,-requires_blackhole,-requires_multi_device,-requires_galaxy,-requires_T3000,-requires_N150,-requires_N300,-ttsim
 
+# Only run one HW test at a time
+test --local_test_jobs=1
+
 # TTSim (CPU-only, simulated hardware)
 test:ttsim --test_tag_filters=ttsim,-slow,-frequently_hangs,-monolithic
 
