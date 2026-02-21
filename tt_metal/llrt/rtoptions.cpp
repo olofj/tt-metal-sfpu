@@ -288,16 +288,20 @@ RunTimeOptions::RunTimeOptions() : system_kernel_dir("/usr/share/tenstorrent/ker
     }
 
     if (this->root_dir.empty()) {
-        // Bazel sets TEST_SRCDIR and TEST_WORKSPACE for sandboxed tests.
-        // The workspace root in the runfiles tree contains tt_metal/.
-        const char* test_srcdir = std::getenv("TEST_SRCDIR");
-        const char* test_workspace = std::getenv("TEST_WORKSPACE");
-        if (test_srcdir != nullptr && test_workspace != nullptr) {
-            std::filesystem::path bazel_root = std::filesystem::path(test_srcdir) / test_workspace;
-            if (std::filesystem::is_directory(bazel_root / "tt_metal")) {
-                this->root_dir = bazel_root.string();
-                log_debug(tt::LogMetal, "Bazel runfiles fallback root_dir: {}", this->root_dir);
+        // Bazel sandboxed tests: the CWD is the runfiles directory which may
+        // not contain tt_metal/, but an ancestor (the execroot) does.  Walk
+        // up from CWD until we find the real tt_metal source tree (identified
+        // by tt_metal/soc_descriptors/ to avoid matching test directories
+        // like tests/tt_metal/tt_metal/).
+        std::filesystem::path dir = std::filesystem::current_path();
+        auto root = dir.root_path();
+        while (dir != root) {
+            if (std::filesystem::is_directory(dir / "tt_metal" / "soc_descriptors")) {
+                this->root_dir = dir.string();
+                log_debug(tt::LogMetal, "parent directory search fallback root_dir: {}", this->root_dir);
+                break;
             }
+            dir = dir.parent_path();
         }
     }
 
@@ -310,7 +314,7 @@ RunTimeOptions::RunTimeOptions() : system_kernel_dir("/usr/share/tenstorrent/ker
             "2. Set TT_METAL_RUNTIME_ROOT environment variable to the path containing tt_metal/\n"
             "3. Call RunTimeOptions::set_root_dir() API before creating RunTimeOptions\n"
             "4. Run from the root of the repository\n"
-            "5. Run via Bazel (TEST_SRCDIR/TEST_WORKSPACE runfiles)\n"
+            "5. Automatically found by walking up from the current working directory\n"
             "Current working directory: {}",
             std::filesystem::current_path().string());
     }

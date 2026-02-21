@@ -343,24 +343,30 @@ test:ttsim --test_tag_filters=ttsim,-slow,-frequently_hangs,-monolithic
 
 # Wormhole B0 single-card
 test:wormhole_b0 --test_tag_filters=requires_wormhole_b0,-requires_blackhole,-requires_multi_device,-requires_galaxy,-requires_T3000,-requires_N150,-requires_N300,-ttsim
+test:wormhole_b0 --strategy=TestRunner=local
 test:wormhole_b0 --test_env=ARCH_NAME=wormhole_b0
 
 # Blackhole single-card
 test:blackhole --test_tag_filters=requires_blackhole,-requires_multi_device,-requires_galaxy,-requires_T3000,-requires_N150,-requires_N300,-ttsim
+test:blackhole --strategy=TestRunner=local
 test:blackhole --test_env=ARCH_NAME=blackhole
 
 # N150 (1-chip Wormhole)
 test:n150 --test_tag_filters=requires_wormhole_b0,-requires_blackhole,-requires_multi_device,-requires_galaxy,-requires_T3000,-requires_N300,-ttsim
+test:n150 --strategy=TestRunner=local
 test:n150 --test_env=ARCH_NAME=wormhole_b0
 
 # N300 (2-chip Wormhole)
 test:n300 --test_tag_filters=requires_wormhole_b0,-requires_blackhole,-requires_galaxy,-requires_T3000,-requires_N150,-ttsim
+test:n300 --strategy=TestRunner=local
 test:n300 --test_env=ARCH_NAME=wormhole_b0
 
 # T3000 (8-chip Wormhole)
 test:t3000 --test_tag_filters=requires_T3000,-requires_blackhole,-requires_galaxy,-requires_N150,-requires_N300,-ttsim
+test:t3000 --strategy=TestRunner=local
 test:t3000 --test_env=ARCH_NAME=wormhole_b0
 
 # Galaxy (32+ chip Wormhole)
 test:galaxy --test_tag_filters=requires_galaxy,-requires_blackhole,-requires_T3000,-requires_N150,-requires_N300,-ttsim
+test:galaxy --strategy=TestRunner=local
 test:galaxy --test_env=ARCH_NAME=wormhole_b0
