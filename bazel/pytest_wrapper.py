@@ -30,6 +30,11 @@ def main():
         # or the current directory.
         workspace_root = os.environ.get("BUILD_WORKSPACE_DIRECTORY", os.getcwd())
 
+    # Ensure TT_METAL_RUNTIME_ROOT is set before any native module is loaded.
+    # In Bazel's sandbox the CWD-based fallback in rtoptions.cpp fails because
+    # the sandbox directory does not contain a tt_metal/ subdirectory.
+    os.environ.setdefault("TT_METAL_RUNTIME_ROOT", workspace_root)
+
     # Add workspace root to sys.path so that imports like
     # `from tests.ttnn.utils_for_testing import ...` resolve correctly.
     # This mimics the behavior of running pytest from the repo root.
