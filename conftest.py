@@ -538,7 +538,11 @@ def mesh_device(request, silicon_arch_name, device_params):
         mesh_device: Initialized device mesh object.
     """
     import ttnn
-    from models.tt_transformers.demo.trace_region_config import get_supported_trace_region_size
+
+    try:
+        from models.tt_transformers.demo.trace_region_config import get_supported_trace_region_size
+    except ImportError:
+        get_supported_trace_region_size = lambda request, param: None
     from tests.scripts.common import get_updated_device_params
 
     request.node.pci_ids = ttnn.get_pcie_device_ids()
@@ -845,59 +849,81 @@ ALL_ARCHS = set(
 )
 
 
+def _safe_addoption(parser, *args, **kwargs):
+    """Add a pytest option, silently skipping if already registered.
+
+    In Bazel's runfiles layout conftest.py can be discovered through both the
+    symlink and the real path, causing pytest_addoption to fire twice for the
+    same conftest module.
+    """
+    try:
+        parser.addoption(*args, **kwargs)
+    except ValueError:
+        pass
+
+
 def pytest_addoption(parser):
     import ttnn
 
-    parser.addoption(
+    _safe_addoption(
+        parser,
         "--tt-arch",
         choices=[*ALL_ARCHS],
         default=ttnn.get_arch_name(),
         help="Target arch, ex. grayskull, wormhole_b0, blackhole",
     )
-    parser.addoption(
+    _safe_addoption(
+        parser,
         "--pipeline-type",
         default="",
         help="Only `models_device_performance_bare_metal` should run `pytest_runtest_teardown`",
     )
-    parser.addoption(
+    _safe_addoption(
+        parser,
         "--device-id",
         type=int,
         default=0,
         help="Target device id",
     )
-    parser.addoption(
+    _safe_addoption(
+        parser,
         "--input-method",
         action="store",
         choices=["json", "cli"],
         default=None,
         help="Choose input method: 1) json or 2) cli",
     )
-    parser.addoption(
+    _safe_addoption(
+        parser,
         "--input-path",
         action="store",
         default="",
         help="Path to json file with inputs",
     )
-    parser.addoption("--cli-input", action="store", default=None, help="Enter prompt if --input-method=cli")
-    parser.addoption(
+    _safe_addoption(parser, "--cli-input", action="store", default=None, help="Enter prompt if --input-method=cli")
+    _safe_addoption(
+        parser,
         "--didt-workload-iterations",
         action="store",
         default=None,
         help="Number of workload iterations to run for didt tests",
     )
-    parser.addoption(
+    _safe_addoption(
+        parser,
         "--determinism-check-interval",
         action="store",
         default=None,
         help="Check determinism every nth iteration",
     )
-    parser.addoption(
+    _safe_addoption(
+        parser,
         "--grid-size",
         action="store",
         default=None,
         help="Size of chip grid for the test to run on. Grid size is defined by number of cores in row x number of cores in column, e.g., 8x8",
     )
-    parser.addoption(
+    _safe_addoption(
+        parser,
         "--trace-params",
         action="store_true",
         default=False,

@@ -117,29 +117,37 @@ def pytest_test(
     if "requires_fast_runtime_mode_off" in unique_tags:
         all_env.setdefault("TTNN_CONFIG_OVERRIDES", '{"enable_fast_runtime_mode": false}')
 
-    # All pytest tests depend on conftest files and the pytest runner.
+    # All pytest tests depend on conftest files, the pytest runner, and
+    # device descriptor YAML files needed by hardware tests at runtime.
     all_data = list(data) + [
         "//tests/ttnn:conftest_files",
+        "//tt_metal:wheel_data_local",
     ]
 
     # Add per-operation split .so files when ttnn_ops is specified.
     if ttnn_ops != None:
         all_data += ["//ttnn/ttnn:_ttnn_%s_so" % op for op in ttnn_ops]
 
-    # Core test deps: pytest runner, timeout plugin, and ttnn.
+    # Core test deps: pytest runner, timeout plugin, and conftest utilities.
+    # tests/scripts:common is imported by the root conftest.py's device fixture.
     all_deps = list(deps) + [
         "@pip//pytest",
         "@pip//pytest_timeout",
+        "//tests/scripts:common",
     ]
 
     # pytest args: match pytest.ini settings.
     # --rootdir ensures conftest.py discovery starts from the workspace root.
+    # --confcutdir prevents pytest from walking above rootdir into the Bazel
+    # execroot, which would discover conftest.py a second time (both the
+    # runfiles copy and the execroot symlink point to the same real file).
     # --override-ini sets timeout to match the requested value.
     pytest_args = [
         "--import-mode=importlib",
         "-vvs",
         "--timeout=%d" % timeout_seconds,
         "--rootdir=$$BUILD_WORKSPACE_DIRECTORY",
+        "--confcutdir=$$BUILD_WORKSPACE_DIRECTORY",
         "--override-ini=empty_parameter_set_mark=skip",
     ] + ["$(location %s)" % s for s in srcs]
 

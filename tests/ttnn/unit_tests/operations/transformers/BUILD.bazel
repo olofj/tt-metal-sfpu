@@ -8,6 +8,7 @@ pytest_suite(
     deps = [
         "//ttnn/ttnn:ttnn_py",
         "//tests/ttnn:test_utils",
+        "//tests/tt_eager:sweep_test_utils",
         "//tests/ttnn/unit_tests/operations:prefetcher_common",
         "//models/common:utility_functions",
         "@pip//torch",

@@ -9,7 +9,7 @@ load("//bazel:wheel_data.bzl", "wheel_remap")
 
 # Root conftest.py — defines device fixtures, arch parametrization, etc.
 # Referenced by //tests/ttnn:conftest_files filegroup.
-exports_files(["conftest.py"])
+exports_files(["conftest.py", "pytest.ini"])
 
 # ===========================================================================
 # ttnn wheel — Python distribution package

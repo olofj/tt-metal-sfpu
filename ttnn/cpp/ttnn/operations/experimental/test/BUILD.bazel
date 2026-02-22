@@ -4,6 +4,7 @@ ttnn_operation(
     name = "test",
     srcs = [
         "hang_device/hang_device_operation.cpp",
+        "hang_device/hang_device_program_factory.cpp",
     ],
     hdrs = glob(["**/*.hpp", "**/*.h"], allow_empty = True),
     kernel_hdrs = glob(

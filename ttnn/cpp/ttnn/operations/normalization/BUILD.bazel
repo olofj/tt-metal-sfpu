@@ -31,6 +31,8 @@ ttnn_operation(
         "layernorm_distributed/layernorm_post_all_gather.cpp",
         "layernorm_distributed/layernorm_pre_all_gather.cpp",
         "rmsnorm/rmsnorm.cpp",
+        "rmsnorm_distributed/rmsnorm_post_all_gather.cpp",
+        "rmsnorm_distributed/rmsnorm_pre_all_gather.cpp",
         "softmax/device/softmax_device_operation.cpp",
         "softmax/device/softmax_program_factory_attention_optimized.cpp",
         "softmax/device/softmax_program_factory_attention_optimized_sharded.cpp",

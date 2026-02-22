@@ -65,17 +65,54 @@ _SPLIT_OPS = [
 ]
 
 
+def _register_submodules(module, prefix, _seen=None):
+    """Recursively register nanobind submodules in sys.modules."""
+    if _seen is None:
+        _seen = set()
+    mod_id = id(module)
+    if mod_id in _seen:
+        return
+    _seen.add(mod_id)
+    for name in dir(module):
+        if name.startswith("_"):
+            continue
+        obj = getattr(module, name, None)
+        if type(obj).__name__ == "module":
+            key = f"{prefix}.{name}"
+            sys.modules[key] = obj
+            _register_submodules(obj, key, _seen)
+
+
 def load_split_modules():
     """Load _ttnn_core and graft available split operation modules."""
     import ttnn._ttnn_core
 
     sys.modules["ttnn._ttnn"] = ttnn._ttnn_core
+    # Also set the attribute on the ttnn package so that `import ttnn._ttnn`
+    # works during ttnn's own __init__.py (the module is partially initialized
+    # at this point, so Python can't resolve the attribute automatically).
+    import ttnn
+
+    ttnn._ttnn = ttnn._ttnn_core
+
+    # Register all nanobind submodules (multi_device, events, device,
+    # operations.trace, etc.) in sys.modules so that dotted imports like
+    # `from ttnn._ttnn.multi_device import ...` work. Walk recursively
+    # because some submodules (e.g. operations) contain nested submodules.
+    _register_submodules(ttnn._ttnn_core, "ttnn._ttnn")
 
     operations = ttnn._ttnn_core.operations
+    loaded_split_modules = []
     for name in _SPLIT_OPS:
         try:
             mod = importlib.import_module(f"ttnn._ttnn_{name}")
             setattr(operations, name, mod)
             sys.modules[f"ttnn._ttnn.operations.{name}"] = mod
+            loaded_split_modules.append(mod)
         except ImportError:
             pass
+
+    # Store for auto_register_ttnn_cpp_operations to use later, since
+    # dir() on a nanobind C module may not include dynamically-set attributes.
+    global _loaded_split_modules
+    _loaded_split_modules = loaded_split_modules

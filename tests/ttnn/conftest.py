@@ -78,5 +78,6 @@ def pre_and_post(request):
         ttnn.database.SQLITE_CONNECTION.close()
         ttnn.database.SQLITE_CONNECTION = None
 
-    ttnn.tracer.disable_tracing()
+    if hasattr(ttnn, "tracer"):
+        ttnn.tracer.disable_tracing()
     ttnn.CONFIG = original_config

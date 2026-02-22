@@ -23,7 +23,9 @@ py_library(
     ),
     deps = [
         "//ttnn/ttnn:ttnn_py",
+        "//ttnn:tt_lib_py",
         "//models/common:utility_functions",
+        "//models/common:helper_funcs",
         "//tests/ttnn:test_utils",
         "@pip//torch",
         "@pip//numpy",

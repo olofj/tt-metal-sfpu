@@ -375,6 +375,16 @@ def auto_register_ttnn_cpp_operations(module):
 
 auto_register_ttnn_cpp_operations(ttnn._ttnn)
 
+# In split-module builds, dir() on a nanobind C module may not include
+# dynamically-grafted operation modules. Walk them explicitly.
+try:
+    from ttnn._ttnn_split_loader import _loaded_split_modules as _split_mods
+    for _split_mod in _split_mods:
+        auto_register_ttnn_cpp_operations(_split_mod)
+    del _split_mods
+except ImportError:
+    pass
+
 import ttnn.experimental_loader
 import ttnn.experimental_loader.golden_functions
 
@@ -526,10 +536,16 @@ try:
 except (AttributeError, ImportError):
     pass
 
-import ttnn.graph
+try:
+    import ttnn.graph
+except ImportError:
+    pass
 
 if importlib.util.find_spec("torch") is not None:
-    import ttnn.tracer
+    try:
+        import ttnn.tracer
+    except ImportError:
+        pass
 
 from ttnn._ttnn.device import get_arch_name as _get_arch_name
 
