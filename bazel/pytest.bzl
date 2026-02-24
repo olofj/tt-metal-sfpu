@@ -89,9 +89,24 @@ def pytest_test(
             seen[tag] = True
             unique_tags.append(tag)
 
+    # Hardware tests must never run concurrently — they share a single PCIe
+    # device.  The "exclusive" tag tells Bazel to run the test in isolation
+    # (no other test may execute at the same time).  --local_test_jobs=1
+    # should achieve the same effect, but in practice Bazel still overlaps
+    # tests when remote-cache lookups are involved.
+    hw_tags = ["requires_blackhole", "requires_wormhole_b0", "requires_N150",
+               "requires_N300", "requires_T3000", "requires_galaxy"]
+    for t in hw_tags:
+        if t in unique_tags:
+            unique_tags.append("exclusive")
+            break
+
     # Select Bazel size/timeout based on test characteristics.
     # Bazel timeout limits: short=60s, moderate=300s, long=900s, eternal=3600s.
-    if "slow" in unique_tags or timeout_seconds > 300:
+    if timeout_seconds > 900:
+        size = "enormous"
+        timeout = "eternal"
+    elif "slow" in unique_tags or timeout_seconds > 300:
         size = "large"
         timeout = "long"
     elif timeout_seconds > 60:

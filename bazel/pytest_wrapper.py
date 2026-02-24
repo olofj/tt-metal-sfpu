@@ -48,6 +48,45 @@ def _resolve_source_root(workspace_root):
     return None
 
 
+class _SourceTreePathExtender:
+    """MetaPathFinder that extends package __path__ to include source tree dirs.
+
+    When a top-level package (e.g. models/) is found in the Bazel runfiles tree
+    first, Python won't search other sys.path entries for sub-packages.  This
+    finder is installed at position 0 in sys.meta_path and, for every import of
+    a dotted name (A.B), checks whether the parent package A already has its
+    __path__ extended.  If not, it appends the source-tree directory so that the
+    standard PathFinder can locate the sub-package.
+
+    It always returns None — the actual loading is delegated to the default
+    import machinery, which now sees the extended __path__.
+    """
+
+    def __init__(self, source_root):
+        self._source_root = source_root
+        self._extended = set()
+
+    def find_spec(self, fullname, path=None, target=None):
+        parts = fullname.split(".")
+        if len(parts) < 2:
+            return None
+
+        parent_name = ".".join(parts[:-1])
+        if parent_name in self._extended:
+            return None
+
+        parent = sys.modules.get(parent_name)
+        if parent is None or not hasattr(parent, "__path__"):
+            return None
+
+        source_parent_dir = os.path.join(self._source_root, *parts[:-1])
+        if os.path.isdir(source_parent_dir) and source_parent_dir not in parent.__path__:
+            parent.__path__.append(source_parent_dir)
+            self._extended.add(parent_name)
+
+        return None
+
+
 def main():
     # Bazel sets TEST_SRCDIR to the runfiles root. The workspace root within
     # runfiles is at $TEST_SRCDIR/$TEST_WORKSPACE.
@@ -88,6 +127,20 @@ def main():
     # This mimics the behavior of running pytest from the repo root.
     if workspace_root not in sys.path:
         sys.path.insert(0, workspace_root)
+
+    # For local-strategy tests (hardware tests), also add the resolved source
+    # root to sys.path. Test modules may import from packages that aren't
+    # declared as Bazel deps (e.g., model utilities). The source root has the
+    # full source tree, while the runfiles tree only contains declared deps.
+    if source_root and source_root != workspace_root and source_root not in sys.path:
+        sys.path.insert(1, source_root)
+        # Install a meta-path finder that extends package __path__ on demand.
+        # When a top-level package (e.g. models/) exists in both the runfiles
+        # tree and the source tree, Python only searches the first directory
+        # it finds. This finder adds the source tree directory to the parent
+        # package's __path__ so sub-packages (e.g. models.demos.bert) that
+        # only exist in the source tree can still be found.
+        sys.meta_path.insert(0, _SourceTreePathExtender(source_root))
 
     # Set rootdir for conftest.py discovery. pytest walks up from the test
     # file looking for conftest.py; without --rootdir, Bazel's runfiles
