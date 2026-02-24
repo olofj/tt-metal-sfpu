@@ -30,7 +30,10 @@ cc_library(
     copts = [
         "-fPIC",
         "-Os",  # nanobind_opt_size() equivalent
-        "-fvisibility=hidden",
+        # Note: -fvisibility=hidden is intentionally NOT used here.
+        # nanobind recommends it for single-module builds, but the split
+        # module architecture requires typeinfo symbols to be visible so
+        # that nb::cast<T>() can resolve types registered by other modules.
     ],
     defines = [
         "NB_STATIC",

@@ -53,7 +53,13 @@ def nanobind_extension(
             "@rules_python//python/cc:current_py_cc_headers",
         ],
         copts = copts + [
-            "-fvisibility=hidden",
+            # Note: -fvisibility=hidden is intentionally NOT used here.
+            # nanobind recommends it for single-module builds, but the split
+            # module architecture (core + per-operation .so files) requires
+            # RTTI typeinfo symbols to be shared across DSOs via RTLD_GLOBAL.
+            # Hidden visibility prevents typeinfo export, causing:
+            #   - std::bad_cast in nb::cast() (pool, experimental modules)
+            #   - HostBuffer::view_as() type_info mismatch (conv modules)
             "-Os",  # nanobind_opt_size() equivalent
             "-Wno-attributes",  # GCC visibility mismatch warnings (CMake: -Wno-attributes)
         ],

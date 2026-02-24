@@ -10,6 +10,7 @@
 #include <tt_stl/assert.hpp>
 #include <tt-metalium/memory_pin.hpp>
 
+#include <cstring>
 #include <functional>
 #include <memory>
 #include <typeinfo>
@@ -103,13 +104,21 @@ HostBuffer::HostBuffer(tt::stl::Span<T> borrowed_data, MemoryPin pin) :
 
 template <typename T>
 tt::stl::Span<T> HostBuffer::view_as() & {
-    TT_FATAL(*type_info_ == typeid(T), "Requested type T does not match the underlying buffer type.");
+    // Use name-based comparison instead of type_info::operator== because libc++
+    // on Linux x86_64 uses pointer-only comparison. With -fvisibility=hidden
+    // (used by nanobind split modules), each DSO gets its own typeinfo copy,
+    // causing pointer comparison to fail across module boundaries.
+    TT_FATAL(
+        std::strcmp(type_info_->name(), typeid(T).name()) == 0,
+        "Requested type T does not match the underlying buffer type.");
     return tt::stl::Span<T>(reinterpret_cast<T*>(view_.data()), view_.size() / sizeof(T));
 }
 
 template <typename T>
 tt::stl::Span<const T> HostBuffer::view_as() const& {
-    TT_FATAL(*type_info_ == typeid(T), "Requested type T does not match the underlying buffer type.");
+    TT_FATAL(
+        std::strcmp(type_info_->name(), typeid(T).name()) == 0,
+        "Requested type T does not match the underlying buffer type.");
     return tt::stl::Span<const T>(reinterpret_cast<const T*>(view_.data()), view_.size() / sizeof(T));
 }
 
