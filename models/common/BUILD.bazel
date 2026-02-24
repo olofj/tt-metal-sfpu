@@ -5,6 +5,12 @@ load("@rules_python//python:py_library.bzl", "py_library")
 package(default_visibility = ["//visibility:public"])
 
 py_library(
+    name = "lightweightmodule",
+    testonly = True,
+    srcs = ["lightweightmodule.py"],
+)
+
+py_library(
     name = "helper_funcs",
     testonly = True,
     srcs = ["helper_funcs.py"],

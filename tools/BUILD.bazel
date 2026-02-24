@@ -10,8 +10,11 @@ package(default_visibility = ["//visibility:public"])
 
 py_library(
     name = "tracy",
-    srcs = glob(["tracy/**/*.py"]),
+    # tracy/ is a separate Bazel package (has its own BUILD.bazel);
+    # re-export it so //tools:tracy still works for the wheel.
+    srcs = glob(["tracy/**/*.py"], allow_empty = True),
     imports = ["."],
+    deps = ["//tools/tracy"],
 )
 
 py_library(

@@ -1,0 +1,23 @@
+load("@rules_python//python:py_library.bzl", "py_library")
+
+py_library(
+    name = "ttnn_bert",
+    srcs = ["tt/ttnn_bert.py"],
+    imports = ["../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "//models/experimental/functional_common:attention_mask_functions",
+    ],
+)
+
+py_library(
+    name = "ttnn_optimized_bert",
+    srcs = ["tt/ttnn_optimized_bert.py"],
+    imports = ["../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "//models/experimental/functional_common:attention_mask_functions",
+    ],
+)

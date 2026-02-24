@@ -2,6 +2,23 @@
 
 load("//bazel:pytest.bzl", "pytest_suite")
 
+load("@rules_python//python:py_library.bzl", "py_library")
+
+# Shared pool test utility functions imported by unit tests.
+py_library(
+    name = "pool_test_utils",
+    testonly = True,
+    srcs = ["test_avgpool2d.py"],
+    visibility = ["//tests:__subpackages__"],
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "//tests/ttnn:test_utils",
+        "//models/common:utility_functions",
+        "@pip//torch",
+        "@pip//loguru",
+    ],
+)
+
 pytest_suite(
     name = "nightly_pool_tests",
     srcs = glob(["test_*.py"]),

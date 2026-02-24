@@ -35,7 +35,13 @@ py_library(
     srcs = ["mla_test_utils.py"],
     deps = [
         "//ttnn/ttnn:ttnn_py",
+        "//tests/tt_eager:sweep_test_utils",
+        "//models/common:utility_functions",
+        "//models/tt_transformers:tt_common",
         "@pip//torch",
+        "@pip//numpy",
+        "@pip//loguru",
+        "@pip//pytest",
     ],
 )
 
@@ -46,7 +52,13 @@ py_library(
     srcs = ["mla_test_utils.py"],
     deps = [
         "//ttnn/ttnn:ttnn_py_base",
+        "//tests/tt_eager:sweep_test_utils",
+        "//models/common:utility_functions_base",
+        "//models/tt_transformers:tt_common",
         "@pip//torch",
+        "@pip//numpy",
+        "@pip//loguru",
+        "@pip//pytest",
     ],
 )
 

@@ -1,16 +1,31 @@
 # Sweep framework integration test.
 
+load("@rules_python//python:py_library.bzl", "py_library")
 load("//bazel:pytest.bzl", "pytest_suite")
+
+py_library(
+    name = "sweep_utils",
+    testonly = True,
+    srcs = glob(["sweep_utils/**/*.py"]),
+    imports = [".."],
+    visibility = ["//tests:__subpackages__"],
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "//tests/ttnn:test_utils",
+        "@pip//torch",
+        "@pip//numpy",
+    ],
+)
 
 pytest_suite(
     name = "sweep_framework_tests",
     srcs = glob(["test_*.py"]),
     deps = [
         "//ttnn/ttnn:ttnn_py",
+        ":sweep_utils",
         "@pip//torch",
     ],
     data = glob([
-        "sweep_utils/**/*.py",
         "framework/**/*.py",
     ]),
     tags = ["sweep_framework", "requires_wormhole_b0"],

@@ -15,5 +15,7 @@ py_library(
         "//ttnn/ttnn:ttnn_py",
         "@pip//torch",
         "@pip//numpy",
+        "@pip//loguru",
+        "@pip//tqdm",
     ],
 )

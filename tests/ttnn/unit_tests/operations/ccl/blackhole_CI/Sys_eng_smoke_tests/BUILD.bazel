@@ -14,5 +14,5 @@ pytest_suite(
         "@pip//numpy",
         "@pip//loguru",
     ],
-    tags = ["ttnn", "unit", "ccl", "post_commit", "requires_blackhole"],
+    tags = ["ttnn", "unit", "ccl", "post_commit", "requires_blackhole", "requires_multi_device"],
 )

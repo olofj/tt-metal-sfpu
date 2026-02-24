@@ -1,4 +1,32 @@
-package(default_visibility = ["//models:__subpackages__"])
+# Performance benchmarking and profiling utilities.
 
-# py_library targets deferred — perf utils have tracy/gitpython deps not yet in Bazel pip.
-# Tests find these via sys.path injection in pytest_wrapper.py.
+load("@rules_python//python:py_library.bzl", "py_library")
+
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "benchmarking_utils",
+    testonly = True,
+    srcs = ["benchmarking_utils.py"],
+    imports = ["../.."],
+    deps = [
+        "@pip//loguru",
+        "@pip//pytz",
+    ],
+)
+
+py_library(
+    name = "perf_utils",
+    testonly = True,
+    srcs = [
+        "device_perf_utils.py",
+        "perf_utils.py",
+    ],
+    imports = ["../.."],
+    deps = [
+        ":benchmarking_utils",
+        "//tools/tracy",
+        "@pip//loguru",
+        "@pip//pandas",
+    ],
+)

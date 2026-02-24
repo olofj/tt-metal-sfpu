@@ -80,6 +80,10 @@ py_library(
     srcs = glob(["**/*.py"]),
     data = [":_ttnn_so"],
     imports = [".."],
+    deps = [
+        "@pip//graphviz",
+        "@pip//loguru",
+    ],
 )
 
 # Split-module variant: only _ttnn_core.so (types/infrastructure, no operations).
@@ -89,4 +93,8 @@ py_library(
     srcs = glob(["**/*.py"]),
     data = [":_ttnn_core_so"],
     imports = [".."],
+    deps = [
+        "@pip//graphviz",
+        "@pip//loguru",
+    ],
 )

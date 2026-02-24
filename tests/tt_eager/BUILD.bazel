@@ -26,6 +26,7 @@ py_library(
         "//ttnn:tt_lib_py",
         "//models/common:utility_functions",
         "//models/common:helper_funcs",
+        "//models/demos/metal_BERT_large_11:custom_matmuls",
         "//tests/ttnn:test_utils",
         "@pip//torch",
         "@pip//numpy",

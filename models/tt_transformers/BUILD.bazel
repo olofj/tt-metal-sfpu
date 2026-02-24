@@ -1,5 +1,20 @@
 # TT-Transformers model definitions.
 
+load("@rules_python//python:py_library.bzl", "py_library")
+
 package(default_visibility = ["//visibility:public"])
 
 exports_files(["conftest.py"])
+
+py_library(
+    name = "tt_common",
+    srcs = ["tt/common.py"],
+    imports = [".."],
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "@pip//pydantic",
+        "@pip//pillow",
+        "@pip//torch",
+        "@pip//loguru",
+    ],
+)

@@ -1,0 +1,11 @@
+load("@rules_python//python:py_library.bzl", "py_library")
+
+py_library(
+    name = "attention_mask_functions",
+    srcs = ["attention_mask_functions.py"],
+    imports = ["../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@pip//torch",
+    ],
+)

@@ -12,6 +12,8 @@ py_library(
     ],
     deps = [
         "//ttnn/ttnn:ttnn_py",
+        "//models/perf:benchmarking_utils",
+        "//tools/tracy",
         "@pip//torch",
     ],
 )
@@ -22,6 +24,9 @@ py_library(
     srcs = [
         "perf/async_perf_csv.py",
         "perf/perf_csv.py",
+    ],
+    deps = [
+        "@pip//pandas",
     ],
 )
 
@@ -34,10 +39,15 @@ pytest_suite(
         "//tests/ttnn/unit_tests/operations:test_utils",
         "//tests/tt_eager:sweep_test_utils",
         "//tests/ttnn/unit_tests/operations/ccl:fusion_subtests",
+        "//tests/ttnn/unit_tests/operations/ccl:perf_utils",
         "//models/common:utility_functions",
+        "//models/perf:benchmarking_utils",
+        "//tests/tests_common:skip_reasons",
+        "//tests/nightly/t3000/ccl:ccl_test_modules",
+        "//tools/tracy",
         "@pip//torch",
         "@pip//numpy",
         "@pip//loguru",
     ],
-    tags = ["ttnn", "unit", "ccl", "requires_wormhole_b0", "requires_blackhole"],
+    tags = ["ttnn", "unit", "ccl", "requires_wormhole_b0", "requires_blackhole", "requires_multi_device"],
 )

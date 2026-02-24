@@ -75,16 +75,23 @@ pytest_suite(
     name = "fused_tests_split",
     srcs = glob(["test_*.py"]),
     test_suffix = "_split",
+    data = [
+        "//tests/ttnn/unit_tests/base_functionality:test_bh_20_cores_sharding.py",
+    ],
     deps = [
         "//ttnn/ttnn:ttnn_py_base",
         "//tests/ttnn:test_utils_base",
         "//tests/ttnn/unit_tests/operations:test_utils_base",
+        "//tests/tt_eager:sweep_test_utils",
+        "//tests/ttnn/python_api_testing/sweep_tests:op_map",
         "//tests/ttnn/unit_tests/operations/fused:distributed_norm_test_utils_base",
         "//tests/ttnn/unit_tests/operations/fused:sharded_test_utils_base",
+        "//tests/tests_common:skip_reasons",
         "//models/common:utility_functions_base",
         "@pip//torch",
         "@pip//numpy",
         "@pip//loguru",
+        "@pip//transformers",
     ],
     ttnn_ops = [
         "normalization",

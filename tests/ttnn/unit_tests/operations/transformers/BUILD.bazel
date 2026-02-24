@@ -34,8 +34,11 @@ pytest_suite(
         "@pip//torch",
         "@pip//numpy",
         "@pip//loguru",
+        "@pip//pillow",
     ],
     ttnn_ops = [
+        "ccl",
+        "experimental",
         "transformer",
         "matmul",
         "creation",

@@ -8,8 +8,10 @@ pytest_suite(
     deps = [
         "//ttnn/ttnn:ttnn_py",
         "//tests/ttnn:test_utils",
+        "//tests/sweep_framework:sweep_utils",
         "//models/common:utility_functions",
         "@pip//torch",
+        "@pip//torchvision",
         "@pip//numpy",
         "@pip//loguru",
     ],
@@ -27,10 +29,14 @@ pytest_suite(
     deps = [
         "//ttnn/ttnn:ttnn_py_base",
         "//tests/ttnn:test_utils_base",
+        "//tests/sweep_framework:sweep_utils",
+        "//tests/ttnn/nightly/unit_tests/operations/pool:pool_test_utils",
         "//models/common:utility_functions_base",
         "@pip//torch",
+        "@pip//torchvision",
         "@pip//numpy",
         "@pip//loguru",
+        "@pip//safetensors",
     ],
     ttnn_ops = [
         "pool",
@@ -39,6 +45,7 @@ pytest_suite(
         "data_movement",
         "debug",
     ],
+    timeout_seconds = 900,
     markers = ["post_commit"],
     tags = ["ttnn", "unit", "requires_wormhole_b0", "requires_blackhole"],
 )

@@ -1,6 +1,23 @@
 # Nightly convolution operation tests (8 test files).
 
+load("@rules_python//python:py_library.bzl", "py_library")
 load("//bazel:pytest.bzl", "pytest_suite")
+
+# Shared test utility functions imported by unit tests (e.g. run_conv_transpose2d).
+py_library(
+    name = "conv_test_utils",
+    testonly = True,
+    srcs = ["test_conv_transpose2d.py"],
+    visibility = ["//tests:__subpackages__"],
+    deps = [
+        "//ttnn/ttnn:ttnn_py",
+        "//tests/ttnn:test_utils",
+        "//tests/ttnn/unit_tests/operations:test_utils",
+        "//models/common:utility_functions",
+        "@pip//torch",
+        "@pip//loguru",
+    ],
+)
 
 pytest_suite(
     name = "nightly_conv_tests",

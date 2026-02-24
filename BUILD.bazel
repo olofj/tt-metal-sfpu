@@ -125,7 +125,7 @@ py_wheel(
         # Python packages
         "//ttnn/ttnn:ttnn_py",
         "//ttnn:tt_lib_py",
-        "//tools:tracy",
+        "//tools/tracy",
         "//tools:triage",
         # Native extension (staged under ttnn/)
         ":wheel_extension",

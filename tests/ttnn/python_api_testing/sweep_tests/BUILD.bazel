@@ -17,6 +17,7 @@ py_library(
         "//tests/tt_eager:sweep_test_utils",
         "//ttnn/ttnn:ttnn_py",
         "@pip//torch",
+        "@pip//transformers",
     ],
     visibility = ["//tests:__subpackages__"],
 )

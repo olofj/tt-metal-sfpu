@@ -10,6 +10,11 @@
 
 load("//bazel:pytest.bzl", "pytest_suite")
 
+exports_files(
+    ["test_bh_20_cores_sharding.py"],
+    visibility = ["//tests:__subpackages__"],
+)
+
 pytest_suite(
     name = "base_functionality_tests",
     srcs = glob(["test_*.py"]),
@@ -17,9 +22,15 @@ pytest_suite(
         "//ttnn/ttnn:ttnn_py",
         "//tests/ttnn:test_utils",
         "//models/common:utility_functions",
+        "//tests/tests_common:skip_reasons",
+        "//models/demos/bert:ttnn_bert",
+        "//models/demos/bert:ttnn_optimized_bert",
         "@pip//torch",
+        "@pip//torchvision",
         "@pip//numpy",
         "@pip//loguru",
+        "@pip//transformers",
+        "@pip//networkx",
     ],
     markers = ["post_commit"],
     tags = ["ttnn", "unit", "requires_wormhole_b0", "requires_blackhole", "ttsim", "monolithic"],
@@ -36,9 +47,15 @@ pytest_suite(
         "//ttnn/ttnn:ttnn_py_base",
         "//tests/ttnn:test_utils_base",
         "//models/common:utility_functions_base",
+        "//tests/tests_common:skip_reasons",
+        "//models/demos/bert:ttnn_bert",
+        "//models/demos/bert:ttnn_optimized_bert",
         "@pip//torch",
+        "@pip//torchvision",
         "@pip//numpy",
         "@pip//loguru",
+        "@pip//transformers",
+        "@pip//networkx",
     ],
     ttnn_ops = [
         "creation",
@@ -48,6 +65,7 @@ pytest_suite(
         "unary",
         "copy",
     ],
+    timeout_seconds = 600,
     markers = ["post_commit"],
     tags = ["ttnn", "unit", "requires_wormhole_b0", "requires_blackhole"],
 )

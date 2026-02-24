@@ -33,7 +33,9 @@ pytest_suite(
         "@pip//loguru",
     ],
     ttnn_ops = [
+        "ccl",
         "conv",
+        "experimental",
         "sliding_window",
         "data_movement",
         "creation",

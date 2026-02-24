@@ -1,0 +1,10 @@
+# Shared test constants and utilities.
+
+load("@rules_python//python:py_library.bzl", "py_library")
+
+py_library(
+    name = "skip_reasons",
+    testonly = True,
+    srcs = ["skip_reasons.py"],
+    visibility = ["//visibility:public"],
+)
