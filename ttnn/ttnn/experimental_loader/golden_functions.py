@@ -4,6 +4,22 @@
 
 import ttnn
 
+
+def _try_attach(op_getter, golden_fn):
+    """Attach golden function, skipping if the operation doesn't exist.
+
+    op_getter is a callable that returns the operation object. This defers
+    attribute resolution so that partially-initialized modules (e.g. during
+    split-module loading) don't raise AttributeError at call-site.
+    """
+    try:
+        op = op_getter()
+        if op is not None:
+            ttnn.attach_golden_function(op, golden_fn)
+    except (AttributeError, TypeError):
+        pass
+
+
 # set golden functions
 
 
@@ -13,7 +29,7 @@ def _golden_function(input_tensor, *args, **kwargs):
     return torch.exp(input_tensor)
 
 
-ttnn.attach_golden_function(ttnn.exp, _golden_function)
+_try_attach(lambda: ttnn.exp, _golden_function)
 
 
 def _golden_function(
@@ -53,7 +69,7 @@ def _golden_function(
     return query, key, value
 
 
-ttnn.attach_golden_function(ttnn.experimental.create_qkv_heads_from_separate_tensors, _golden_function)
+_try_attach(lambda: getattr(getattr(ttnn, "experimental", None), "create_qkv_heads_from_separate_tensors", None), _golden_function)
 
 
 def _golden_function(tensor, grid_size, shard_spec, num_slices, slice, *args, **kwargs):
@@ -65,7 +81,7 @@ def _golden_function(tensor, grid_size, shard_spec, num_slices, slice, *args, **
     return tensor
 
 
-ttnn.attach_golden_function(ttnn.interleaved_to_sharded_partial, _golden_function)
+_try_attach(lambda: getattr(ttnn, "interleaved_to_sharded_partial", None), _golden_function)
 
 
 def _golden_function(slice, tensor, num_slices, slice_id, *args, **kwargs):
@@ -78,7 +94,7 @@ def _golden_function(slice, tensor, num_slices, slice_id, *args, **kwargs):
     return tensor.reshape(original_shape)
 
 
-ttnn.attach_golden_function(ttnn.sharded_to_interleaved_partial, _golden_function)
+_try_attach(lambda: getattr(ttnn, "sharded_to_interleaved_partial", None), _golden_function)
 
 
 def _golden_function(in0, in1, math_op, dim, *args, **kwargs):
@@ -115,14 +131,14 @@ def _golden_function(in0, in1, math_op, dim, *args, **kwargs):
         raise AssertionError("Invalid bcast dimension")
 
 
-ttnn.attach_golden_function(ttnn.bcast, _golden_function)
+_try_attach(lambda: getattr(ttnn, "bcast", None), _golden_function)
 
 
 def _nop_golden_function(input_tensor, *args, **kwargs):
     return input_tensor
 
 
-ttnn.attach_golden_function(ttnn.interleaved_to_sharded, _nop_golden_function)
-ttnn.attach_golden_function(ttnn.sharded_to_interleaved, _nop_golden_function)
-ttnn.attach_golden_function(ttnn.reshard, _nop_golden_function)
-ttnn.attach_golden_function(ttnn.tilize, _nop_golden_function)
+_try_attach(lambda: getattr(ttnn, "interleaved_to_sharded", None), _nop_golden_function)
+_try_attach(lambda: getattr(ttnn, "sharded_to_interleaved", None), _nop_golden_function)
+_try_attach(lambda: getattr(ttnn, "reshard", None), _nop_golden_function)
+_try_attach(lambda: getattr(ttnn, "tilize", None), _nop_golden_function)

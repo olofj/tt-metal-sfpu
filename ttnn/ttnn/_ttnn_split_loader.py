@@ -20,7 +20,9 @@ python_fully_qualified_name property is set by C++ template parameters
 (e.g. "ttnn::bernoulli" -> "ttnn.bernoulli"), not by module path.
 """
 
+import ctypes
 import importlib
+import os
 import sys
 
 _SPLIT_OPS = [
@@ -85,6 +87,17 @@ def _register_submodules(module, prefix, _seen=None):
 
 def load_split_modules():
     """Load _ttnn_core and graft available split operation modules."""
+    # Use RTLD_GLOBAL | RTLD_LAZY for ALL split modules including _ttnn_core:
+    # - RTLD_GLOBAL: symbols are shared across all split .so files so that
+    #   singletons like MetalContext::instance() have a single copy.  Without
+    #   this, each .so gets its own MetalContext, causing UMD CHIP_IN_USE
+    #   mutex deadlocks when multiple Cluster objects try to open the same
+    #   PCIe device.
+    # - RTLD_LAZY: defer symbol resolution (Python defaults to RTLD_NOW which
+    #   requires all symbols resolved at dlopen time).
+    old_flags = sys.getdlopenflags()
+    sys.setdlopenflags(ctypes.RTLD_GLOBAL | os.RTLD_LAZY)
+
     import ttnn._ttnn_core
 
     sys.modules["ttnn._ttnn"] = ttnn._ttnn_core
@@ -111,6 +124,8 @@ def load_split_modules():
             loaded_split_modules.append(mod)
         except ImportError:
             pass
+
+    sys.setdlopenflags(old_flags)
 
     # Store for auto_register_ttnn_cpp_operations to use later, since
     # dir() on a nanobind C module may not include dynamically-set attributes.

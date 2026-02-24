@@ -368,7 +368,8 @@ def auto_register_ttnn_cpp_operations(module):
             full_name = attribute.python_fully_qualified_name
             module_path, _, func_name = full_name.rpartition(".")
             target_module = create_module_if_not_exists(module_path)
-            register_cpp_operation(target_module, func_name, attribute)
+            if not hasattr(target_module, func_name):
+                register_cpp_operation(target_module, func_name, attribute)
         elif isinstance(attribute, ModuleType):
             auto_register_ttnn_cpp_operations(attribute)
 
@@ -384,7 +385,6 @@ try:
     del _split_mods
 except ImportError:
     pass
-
 import ttnn.experimental_loader
 import ttnn.experimental_loader.golden_functions
 

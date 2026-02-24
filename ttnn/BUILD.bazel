@@ -347,17 +347,24 @@ _TTNN_OP_MODULES = {
     "unary_backward": "//ttnn/cpp/ttnn/operations/eltwise/unary_backward",
 }
 
-# Operations that need extra runtime deps (link-only ops with no bindings).
+# Operations that need extra runtime deps beyond their own target.
+# These resolve cross-module symbol dependencies (e.g. binary ops calling
+# unary functions, unary ops referencing reduction, etc.).
 _TTNN_OP_EXTRA_DEPS = {
-    "binary": ["//ttnn/cpp/ttnn/operations/eltwise/binary_ng"],
+    "binary": [
+        "//ttnn/cpp/ttnn/operations/eltwise/binary_ng",
+        "//ttnn/cpp/ttnn/operations/eltwise/unary",
+    ],
     "complex": ["//ttnn/cpp/ttnn/operations/eltwise/complex_binary"],
+    "data_movement": ["//ttnn/cpp/ttnn/operations/core"],
+    "unary": ["//ttnn/cpp/ttnn/operations/reduction"],
 }
 
 [nanobind_extension(
     name = "_ttnn_" + name,
     srcs = ["cpp/ttnn-nanobind/" + name + "_module.cpp", target + ":nanobind_srcs"],
     hdrs = glob(["cpp/ttnn-nanobind/**/*.hpp"]),
-    deps = [":ttnn_core", target] + _TTNN_OP_EXTRA_DEPS.get(name, []),
+    deps = [":all_operations", target] + _TTNN_OP_EXTRA_DEPS.get(name, []),
 ) for name, target in _TTNN_OP_MODULES.items()]
 
 # --- Special-case split modules (non-standard binding patterns) ---
@@ -395,7 +402,7 @@ nanobind_extension(
         "cpp/ttnn/operations/experimental/experimental_nanobind.cpp",
     ] + [op + ":nanobind_srcs" for op in _TTNN_EXPERIMENTAL_OPS],
     hdrs = glob(["cpp/ttnn-nanobind/**/*.hpp"]),
-    deps = [":ttnn_core"] + _TTNN_EXPERIMENTAL_OPS,
+    deps = [":all_operations"] + _TTNN_EXPERIMENTAL_OPS,
 )
 
 nanobind_extension(
@@ -405,7 +412,10 @@ nanobind_extension(
         "cpp/ttnn-nanobind/operations/creation.cpp",
     ],
     hdrs = glob(["cpp/ttnn-nanobind/**/*.hpp"]),
-    deps = [":ttnn_core"],
+    deps = [
+        ":all_operations",
+        "//ttnn/cpp/ttnn/operations/eltwise/unary",
+    ],
 )
 
 nanobind_extension(
@@ -416,8 +426,9 @@ nanobind_extension(
     ],
     hdrs = glob(["cpp/ttnn-nanobind/**/*.hpp"]),
     deps = [
-        ":ttnn_core",
+        ":all_operations",
         "//ttnn/cpp/ttnn/operations/copy",
+        "//ttnn/cpp/ttnn/operations/core",
     ],
 )
 

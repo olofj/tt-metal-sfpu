@@ -437,19 +437,28 @@ def device(request, device_params):
         return
 
     device_id = request.config.getoption("device_id")
-    request.node.pci_ids = [ttnn.GetPCIeDeviceID(device_id)]
 
     # When initializing a single device on a TG system, we want to
     # target the first user exposed device, not device 0 (one of the
-    # 4 gateway devices)
-    if is_tg_cluster() and not device_id:
-        device_id = first_available_tg_device()
+    # 4 gateway devices).
+    #
+    # NOTE: is_tg_cluster() calls get_cluster_type() which opens a UMD
+    # connection. In split-module Bazel builds, this UMD connection holds
+    # the CHIP_IN_USE mutex, and the subsequent CreateDevice opens a
+    # separate connection that deadlocks trying to acquire the same mutex.
+    # To avoid this, skip the TG check when ARCH_NAME indicates a
+    # non-TG architecture (blackhole, wormhole_b0).
+    arch_name = os.environ.get("ARCH_NAME", "")
+    if not device_id and arch_name not in ("blackhole", "wormhole_b0", "grayskull"):
+        if is_tg_cluster():
+            device_id = first_available_tg_device()
 
     original_default_device = ttnn.GetDefaultDevice()
 
     updated_device_params = get_updated_device_params(device_params)
     device = ttnn.CreateDevice(device_id=device_id, **updated_device_params)
     ttnn.SetDefaultDevice(device)
+    request.node.pci_ids = [device_id]
 
     yield device
 

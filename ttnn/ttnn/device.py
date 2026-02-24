@@ -73,6 +73,10 @@ GetNumPCIeDevices = ttnn._ttnn.device.GetNumPCIeDevices
 def is_wormhole_b0(device=None):
     if device is not None:
         return device.arch() == ttnn._ttnn.device.Arch.WORMHOLE_B0
+    # Check env var first to avoid opening a UMD connection
+    arch_env = os.environ.get("ARCH_NAME", "")
+    if arch_env:
+        return "wormhole_b0" in arch_env
     ARCH_NAME = ttnn._ttnn.device.get_arch_name()
     return "wormhole_b0" in ARCH_NAME
 
@@ -80,11 +84,23 @@ def is_wormhole_b0(device=None):
 def is_blackhole(device=None):
     if device is not None:
         return device.arch() == ttnn._ttnn.device.Arch.BLACKHOLE
+    # Check env var first to avoid opening a UMD connection
+    arch_env = os.environ.get("ARCH_NAME", "")
+    if arch_env:
+        return "blackhole" in arch_env
     ARCH_NAME = ttnn._ttnn.device.get_arch_name()
     return "blackhole" in ARCH_NAME
 
 
 def get_default_dispatch_core_type():
+    # Blackhole and Grayskull always use WORKER dispatch core type (they are
+    # never N300/T3K/N300_2x2 clusters).  Check ARCH_NAME env var first to
+    # avoid calling get_cluster_type() which opens a UMD connection and
+    # acquires the CHIP_IN_USE mutex — a subsequent CreateDevice would
+    # deadlock trying to acquire the same non-reentrant mutex.
+    arch_env = os.environ.get("ARCH_NAME", "")
+    if arch_env in ("blackhole", "grayskull"):
+        return ttnn._ttnn.device.DispatchCoreType.WORKER
     eth_default_dispatch_clusters = [
         ttnn._ttnn.cluster.ClusterType.N300,
         ttnn._ttnn.cluster.ClusterType.T3K,
