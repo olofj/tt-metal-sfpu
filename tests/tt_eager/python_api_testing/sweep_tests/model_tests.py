@@ -6,7 +6,10 @@ import torch
 import ttnn
 from ttnn.tracer import trace, visualize
 from ttnn.model_preprocessing import preprocess_model
-from IPython.display import SVG
+try:
+    from IPython.display import SVG
+except ImportError:
+    SVG = None
 import transformers
 
 

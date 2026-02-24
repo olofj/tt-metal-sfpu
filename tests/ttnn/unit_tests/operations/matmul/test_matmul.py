@@ -2227,7 +2227,7 @@ def test_matmul_in0_in1_bias_sharded(
 
     input_shape = [1, 1, M, K]
     input_tensor = torch.randn(input_shape, dtype=torch.bfloat16)
-    tt_input_tensor = ttnn.as_tensor(
+    tt_input_tensor = ttnn.from_torch(
         input_tensor,
         dtype=in0_dtype,
         layout=ttnn.TILE_LAYOUT,
@@ -2236,7 +2236,7 @@ def test_matmul_in0_in1_bias_sharded(
     )
 
     weights_tensor = torch.randn([1, 1, K, N], dtype=torch.bfloat16)
-    weight_tt = ttnn.as_tensor(
+    weight_tt = ttnn.from_torch(
         weights_tensor,
         dtype=in1_dtype,
         layout=ttnn.TILE_LAYOUT,
@@ -2246,7 +2246,7 @@ def test_matmul_in0_in1_bias_sharded(
 
     if has_bias:
         bias_tensor = torch.randn([1, 1, 1, N], dtype=torch.bfloat16) * 2.0
-        bias_tt = ttnn.as_tensor(
+        bias_tt = ttnn.from_torch(
             bias_tensor,
             dtype=ttnn.bfloat16,
             layout=ttnn.TILE_LAYOUT,

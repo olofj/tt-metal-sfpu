@@ -13,7 +13,10 @@ from datetime import datetime
 
 import pandas as pd
 import numpy as np
-import seaborn as sns
+try:
+    import seaborn as sns
+except ImportError:
+    sns = None  # seaborn only needed for plotting, not for data processing
 import click
 from loguru import logger
 
