@@ -5,7 +5,7 @@ load("//bazel:pytest.bzl", "pytest_suite")
 
 pytest_suite(
     name = "mixtral8x7b_tests",
-    srcs = glob(["test_*.py"]),
+    srcs = glob(["test_*.py"], allow_empty = True),
     deps = [
         "//models/common:utility_functions",
         "//ttnn/ttnn:ttnn_py",

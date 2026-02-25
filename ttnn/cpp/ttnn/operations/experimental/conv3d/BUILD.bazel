@@ -6,6 +6,7 @@ ttnn_operation(
         "conv3d.cpp",
         "device/conv3d_device_operation.cpp",
         "device/conv3d_program_factory.cpp",
+        "prepare_conv3d_weights.cpp",
     ],
     hdrs = glob(
         ["**/*.hpp", "**/*.h"],

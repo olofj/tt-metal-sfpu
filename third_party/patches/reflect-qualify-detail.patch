@@ -1,0 +1,21 @@
+--- a/reflect
++++ b/reflect
+@@ -1470,11 +1470,11 @@
+   // diagnose_member_name
+   {
+     struct foo { bool flag; int bar; };
+-    static_assert(detail::diagnose_member_name<foo, "">() == "`foo` has no data member named ``. Did you mean `bar`?");
+-    static_assert(detail::diagnose_member_name<foo, "ba">() == "`foo` has no data member named `ba`. Did you mean `bar`?");
+-    static_assert(detail::diagnose_member_name<foo, "fl">() == "`foo` has no data member named `fl`. Did you mean `flag`?");
+-    static_assert(detail::diagnose_member_name<foo, "baz">() == "`foo` has no data member named `baz`. Did you mean `bar`?");
+-    static_assert(detail::diagnose_member_name<foo, "lag">() == "`foo` has no data member named `lag`. Did you mean `flag`?");
++    static_assert(::reflect::detail::diagnose_member_name<foo, "">() == "`foo` has no data member named ``. Did you mean `bar`?");
++    static_assert(::reflect::detail::diagnose_member_name<foo, "ba">() == "`foo` has no data member named `ba`. Did you mean `bar`?");
++    static_assert(::reflect::detail::diagnose_member_name<foo, "fl">() == "`foo` has no data member named `fl`. Did you mean `flag`?");
++    static_assert(::reflect::detail::diagnose_member_name<foo, "baz">() == "`foo` has no data member named `baz`. Did you mean `bar`?");
++    static_assert(::reflect::detail::diagnose_member_name<foo, "lag">() == "`foo` has no data member named `lag`. Did you mean `flag`?");
+
+     struct empty {};
+-    static_assert(detail::diagnose_member_name<empty, "any">() == "`empty` has no data members.");
++    static_assert(::reflect::detail::diagnose_member_name<empty, "any">() == "`empty` has no data members.");
+   }

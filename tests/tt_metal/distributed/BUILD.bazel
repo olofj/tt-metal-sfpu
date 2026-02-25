@@ -99,6 +99,21 @@ cc_library(
     "benchmark_distributed_host_buffer.cpp",
 ]]
 
+cc_test(
+    name = "benchmark_hd_sockets",
+    srcs = [
+        "benchmark_hd_sockets.cpp",
+        "hd_socket_test_utils.cpp",
+        "hd_socket_test_utils.hpp",
+    ],
+    deps = [
+        ":distributed_test_utils",
+        "//tests:test_common_libs",
+        "@google_benchmark//:benchmark",
+    ],
+    tags = ["benchmark", "distributed", "requires_multi_device"],
+)
+
 # --------------------------------------------------------------------------
 # Test suites for backward compatibility with CMake test groupings
 # --------------------------------------------------------------------------

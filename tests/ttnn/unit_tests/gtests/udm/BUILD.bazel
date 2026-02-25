@@ -36,7 +36,7 @@ cc_test(
     deps = [
         "//tests:test_common_libs",
         "//tests/tt_metal/tt_metal:test_fixtures",
-        "//tt_metal/experimental/udm:tt_metal_udm",
+        "//tt_metal/impl/experimental/udm:tt_metal_udm",
         "//tt_metal/programming_examples/matmul:matmul_common",
         "//ttnn:all_operations",
     ],

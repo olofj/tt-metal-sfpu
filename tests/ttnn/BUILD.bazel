@@ -46,7 +46,7 @@ filegroup(
         "//models/experimental/openvla:conftest.py",
         "//models/experimental/smolvla:conftest.py",
         "//models/experimental/speecht5_tts:conftest.py",
-        "//models/experimental/stable_diffusion_xl_base:conftest.py",
+        "//models/demos/stable_diffusion_xl_base:conftest.py",
         "//models/experimental/yunet/tests:conftest.py",
         "//models/tt_dit/tests/dataset_eval:conftest.py",
         "//models/tt_transformers:conftest.py",

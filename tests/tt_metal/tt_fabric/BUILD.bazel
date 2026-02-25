@@ -124,6 +124,7 @@ cc_library(
     "test_connection_mapping_logic.cpp",
     "test_fabric_builder_local_connections.cpp",
     "test_fabric_topology_helpers.cpp",
+    "test_physical_grouping_descriptor.cpp",
     # NOTE: test_control_plane_logical_to_physical.cpp excluded — references
     # non-existent function build_mesh_adjacency_map (broken source, not a BUILD issue).
 ]]
@@ -167,6 +168,7 @@ cc_test(
         "fabric_data_movement/test_basic_1d_fabric.cpp",
         "fabric_data_movement/test_basic_fabric_mux.cpp",
         "fabric_data_movement/test_fabric_traffic_generator_kernel.cpp",
+        "fabric_router/test_fabric_opt_level.cpp",
     ],
     # -isystem . : repo-root-relative angled includes like <tt_metal/fabric/...>
     # -I.../fabric_data_movement : for "kernels/..." includes
@@ -249,21 +251,6 @@ cc_test(
 # Fabric elastic channels host test (CMake target: fabric_elastic_channels_host_test)
 # Non-gtest standalone binary with main().
 # --------------------------------------------------------------------------
-
-cc_binary(
-    name = "fabric_elastic_channels_host_test",
-    testonly = True,
-    srcs = ["feature_bringup/fabric_elastic_channels_host_test.cpp"],
-    copts = ["-Wno-c++11-narrowing"],
-    data = [
-        ":test_data",
-        ":test_kernels",
-    ],
-    deps = [
-        "//tests:test_metal_common_libs",
-        "//tests/tt_metal:test_utils",
-    ],
-)
 
 # --------------------------------------------------------------------------
 # Addrgen write tests (CMake target: test_addrgen_write)

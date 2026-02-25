@@ -25,6 +25,7 @@ cc_library(
     includes = [".."],
     deps = [
         "//tt_metal/api:impl_api_hdrs",
+        "//tt_metal/common",
         "//tt_metal/hostdevcommon",
         "@umd//device",
         "//tt_stl",
@@ -40,6 +41,7 @@ cc_library(
     srcs = [
         "build.cpp",
         "build_env_manager.cpp",
+        "jit_device_config.cpp",
         "data_format.cpp",
         "depend.cpp",
         "genfiles.cpp",
@@ -47,6 +49,7 @@ cc_library(
         "jit_build_options.cpp",
         "jit_build_utils.cpp",
         "kernel_args.cpp",
+        "precompiled.cpp",
     ],
     copts = [
         # check_built_dir() is only used when GIT_COMMIT_HASH is defined.

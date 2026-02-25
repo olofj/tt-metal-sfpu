@@ -103,10 +103,13 @@ cc_library(
         "sub_device/sub_device_manager.cpp",
         # context
         "context/metal_context.cpp",
+        "context/metal_env.cpp",
         # device
         "device/experimental/device.cpp",
         "device/device.cpp",
+        "device/firmware/risc_firmware_initializer.cpp",
         "device/mock_device.cpp",
+        "device/mock_device_util.cpp",
         "device/device_manager.cpp",
         "device/dispatch.cpp",
         "device/firmware/command_queue_initializer.cpp",

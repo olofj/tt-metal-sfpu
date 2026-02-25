@@ -105,6 +105,8 @@ def _non_bcr_deps_impl(module_ctx):
         urls = ["https://github.com/boost-ext/reflect/archive/refs/tags/v1.2.6.tar.gz"],
         strip_prefix = "reflect-1.2.6",
         build_file = "//third_party:reflect.BUILD",
+        patches = ["//third_party/patches:reflect-qualify-detail.patch"],
+        patch_args = ["-p1"],
     )
 
     # enchantum — TT-used fork of magic_enum

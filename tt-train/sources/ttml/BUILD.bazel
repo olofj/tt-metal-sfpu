@@ -102,7 +102,6 @@ cc_library(
         "modules/layer_norm_module.cpp",
         "modules/linear_module.cpp",
         "modules/llama_block.cpp",
-        "modules/lora_linear_module.cpp",
         "modules/module_base.cpp",
         "modules/multi_head_attention.cpp",
         "modules/multi_layer_perceptron.cpp",
@@ -126,17 +125,20 @@ cc_library(
         "ops/rope_op.cpp",
         "ops/sampling_op.cpp",
         "ops/scaled_dot_product_attention.cpp",
+        "ops/softmax_backward_op.cpp",
         "ops/swiglu_op.cpp",
         "ops/unary_ops.cpp",
+        "ops/distributed/ring_attention_sdpa.cpp",
         # Optimizers
         "optimizers/adamw.cpp",
+        "optimizers/adamw_composite.cpp",
         "optimizers/adamw_full_precision.cpp",
-        "optimizers/adamw_fused.cpp",
         "optimizers/no_op.cpp",
         "optimizers/optimizer_base.cpp",
+        "optimizers/optimizer_registry.cpp",
         "optimizers/remote_optimizer.cpp",
         "optimizers/sgd.cpp",
-        "optimizers/sgd_fused.cpp",
+        "optimizers/sgd_composite.cpp",
         # Schedulers
         "schedulers/lambda_scheduler.cpp",
         "schedulers/linear_scheduler.cpp",
@@ -208,14 +210,28 @@ cc_library(
         "metal/ops/sdpa_bw/device/sdpa_bw_kv_program_factory.cpp",
         "metal/ops/sdpa_bw/device/sdpa_bw_q_device_operation.cpp",
         "metal/ops/sdpa_bw/device/sdpa_bw_q_program_factory.cpp",
+        # Softmax Backward
+        "metal/ops/softmax_backward/softmax_backward.cpp",
+        "metal/ops/softmax_backward/device/softmax_backward_device_operation.cpp",
+        "metal/ops/softmax_backward/device/softmax_backward_program_factory.cpp",
+        # Ring SDPA Forward
+        "metal/ops/ring_sdpa_fw/ring_sdpa_fw.cpp",
+        "metal/ops/ring_sdpa_fw/device/ring_sdpa_fw_device_operation.cpp",
+        "metal/ops/ring_sdpa_fw/device/ring_sdpa_fw_program_factory.cpp",
+        # Ring SDPA Backward
+        "metal/ops/ring_sdpa_bw/ring_sdpa_bw.cpp",
+        "metal/ops/ring_sdpa_bw/device/ring_sdpa_bw_kv_device_operation.cpp",
+        "metal/ops/ring_sdpa_bw/device/ring_sdpa_bw_kv_program_factory.cpp",
+        "metal/ops/ring_sdpa_bw/device/ring_sdpa_bw_q_device_operation.cpp",
+        "metal/ops/ring_sdpa_bw/device/ring_sdpa_bw_q_program_factory.cpp",
+        # SGD Optimizer
+        "metal/optimizers/sgd/sgd.cpp",
+        "metal/optimizers/sgd/device/sgd_device_operation.cpp",
+        "metal/optimizers/sgd/device/sgd_program_factory.cpp",
         # SwiGLU Forward
         "metal/ops/swiglu_fw/swiglu_fw.cpp",
         "metal/ops/swiglu_fw/device/swiglu_fw_device_operation.cpp",
         "metal/ops/swiglu_fw/device/swiglu_fw_program_factory.cpp",
-        # SGD Fused Optimizer
-        "metal/optimizers/sgd_fused/sgd_fused.cpp",
-        "metal/optimizers/sgd_fused/device/sgd_fused_device_operation.cpp",
-        "metal/optimizers/sgd_fused/device/sgd_fused_program_factory.cpp",
         # AdamW Optimizer
         "metal/optimizers/adamw/adamw.cpp",
         "metal/optimizers/adamw/device/adamw_device_operation.cpp",

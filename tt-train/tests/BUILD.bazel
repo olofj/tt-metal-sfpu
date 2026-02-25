@@ -49,11 +49,11 @@ cc_test(
         "datasets/random_split_test.cpp",
         "datasets/utils_test.cpp",
         # Optimizers
+        "optimizers/adamw_composite_test.cpp",
         "optimizers/adamw_full_precision_test.cpp",
-        "optimizers/adamw_fused_test.cpp",
         "optimizers/adamw_test.cpp",
         "optimizers/no_op_test.cpp",
-        "optimizers/sgd_fused_test.cpp",
+        "optimizers/sgd_test.cpp",
         # Modules
         "modules/distributed/linear_test.cpp",
         # Serialization
@@ -65,6 +65,7 @@ cc_test(
         "ops/cross_entropy_bw_op_test.cpp",
         "ops/cross_entropy_fw_op_test.cpp",
         "ops/distributed/comm_ops_test.cpp",
+        "ops/distributed/ring_sdpa_test.cpp",
         "ops/distributed/ring_shift_test.cpp",
         "ops/embedding_op_test.cpp",
         "ops/layer_norm_composite_test.cpp",
@@ -79,6 +80,7 @@ cc_test(
         "ops/sdpa_fw_op_test.cpp",
         "ops/silu_op_test.cpp",
         "ops/softmax_test.cpp",
+        "ops/softmax_backward_op_test.cpp",
         "ops/swiglu_op_test.cpp",
         "ops/unary_ops_test.cpp",
         # Utils
@@ -100,7 +102,10 @@ cc_test(
 
 cc_test(
     name = "ttml_benchmarks",
-    srcs = ["benchmark/matmuls_benchmark.cpp"],
+    srcs = [
+        "benchmark/matmuls_benchmark.cpp",
+        "benchmark/from_vector_benchmark.cpp",
+    ],
     tags = [
         "manual",
         "requires_wormhole_b0",

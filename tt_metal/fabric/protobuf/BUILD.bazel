@@ -6,6 +6,7 @@ cc_proto_library(
     srcs = [
         "intermesh_connection_table.proto",
         "mesh_graph_descriptor.proto",
+        "physical_grouping_descriptor.proto",
         "physical_system_descriptor.proto",
         "port_descriptor_table.proto",
         "router_port_directions.proto",
@@ -20,6 +21,7 @@ filegroup(
     srcs = [
         "intermesh_connection_table.proto",
         "mesh_graph_descriptor.proto",
+        "physical_grouping_descriptor.proto",
         "physical_system_descriptor.proto",
         "port_descriptor_table.proto",
         "router_port_directions.proto",

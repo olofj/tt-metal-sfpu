@@ -15,6 +15,7 @@ ttnn_operation(
         "groupnorm/device/groupnorm_program_utils.cpp",
         "groupnorm/device/groupnorm_sharded_program_factory.cpp",
         "groupnorm/groupnorm.cpp",
+        "groupnorm/groupnorm_grid_utils.cpp",
         "groupnorm/groupnorm_input_mask.cpp",
         "layernorm/device/layernorm_common.cpp",
         "layernorm/device/layernorm_device_operation.cpp",
