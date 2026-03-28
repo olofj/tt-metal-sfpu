@@ -109,24 +109,65 @@ void JitBuildEnv::init(
         this->gpp_ = "";
     }
 
-    // Use local sfpi for development
-    // Use system sfpi for production to avoid packaging it
-    // Ordered by precedence
-    const std::array<std::string, 2> sfpi_roots = {this->root_ + "runtime/sfpi", "/opt/tenstorrent/sfpi"};
+    // Compiler selection: LLVM/clang or GCC
+    const static bool use_llvm_sfpu = std::getenv("TT_METAL_USE_LLVM_SFPU") != nullptr;
 
-    bool sfpi_found = false;
-    for (unsigned i = 0; i < 2; ++i) {
-        auto gxx = sfpi_roots[i] + "/compiler/bin/riscv-tt-elf-g++";
-        if (std::filesystem::exists(gxx)) {
-            this->gpp_ += gxx + " ";
-            this->gpp_include_dir_ = sfpi_roots[i] + "/include";
-            log_debug(tt::LogBuildKernels, "Using {} sfpi at {}", i ? "system" : "local", sfpi_roots[i]);
-            sfpi_found = true;
-            break;
+    if (use_llvm_sfpu) {
+        // LLVM clang compiler for SFPU kernels
+        const std::array<std::string, 3> llvm_paths = {
+            this->root_ + "runtime/llvm-sfpu/bin/clang++",
+            "/opt/tenstorrent/llvm-sfpu/bin/clang++",
+            "clang++",  // system PATH fallback
+        };
+
+        bool found = false;
+        for (const auto& clang_path : llvm_paths) {
+            if (clang_path == "clang++" || std::filesystem::exists(clang_path)) {
+                this->gpp_ += clang_path + " ";
+                this->gpp_ += "--target=riscv32-unknown-elf ";
+
+                // C++ stdlib from GCC 12 sysroot (compatible with clang;
+                // GCC 15 headers use GCC-specific builtins clang lacks)
+                auto gcc12_sysroot = "/opt/tenstorrent/sfpi/compiler/"
+                                     "riscv32-unknown-elf/include/c++/12.4.0";
+                this->gpp_ += "-isystem " + std::string(gcc12_sysroot) + " ";
+                this->gpp_ += "-isystem " + std::string(gcc12_sysroot)
+                             + "/riscv32-unknown-elf ";
+                // Bare-metal C headers
+                this->gpp_ += "-isystem /opt/tenstorrent/sfpi/compiler/"
+                               "riscv32-unknown-elf/include ";
+
+                // SFPI compatibility header location
+                this->gpp_include_dir_ = this->root_ + "runtime/llvm-sfpu/include";
+
+                log_debug(tt::LogBuildKernels,
+                          "Using LLVM SFPU compiler at {}", clang_path);
+                found = true;
+                break;
+            }
         }
-    }
-    if (!sfpi_found) {
-        TT_THROW("sfpi not found at {} or {}", sfpi_roots[0], sfpi_roots[1]);
+        if (!found) {
+            TT_THROW("LLVM sfpu compiler not found; "
+                     "unset TT_METAL_USE_LLVM_SFPU to use GCC");
+        }
+    } else {
+        // GCC compiler (original path)
+        const std::array<std::string, 2> sfpi_roots = {this->root_ + "runtime/sfpi", "/opt/tenstorrent/sfpi"};
+
+        bool sfpi_found = false;
+        for (unsigned i = 0; i < 2; ++i) {
+            auto gxx = sfpi_roots[i] + "/compiler/bin/riscv-tt-elf-g++";
+            if (std::filesystem::exists(gxx)) {
+                this->gpp_ += gxx + " ";
+                this->gpp_include_dir_ = sfpi_roots[i] + "/include";
+                log_debug(tt::LogBuildKernels, "Using {} sfpi at {}", i ? "system" : "local", sfpi_roots[i]);
+                sfpi_found = true;
+                break;
+            }
+        }
+        if (!sfpi_found) {
+            TT_THROW("sfpi not found at {} or {}", sfpi_roots[0], sfpi_roots[1]);
+        }
     }
 
     // Read the sfpi version file tracked in the repo.  This captures the

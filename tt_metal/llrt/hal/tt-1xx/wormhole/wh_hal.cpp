@@ -161,10 +161,29 @@ public:
     }
 
     std::string common_flags(const Params& params) const override {
-        std::string cflags = params.core_type == HalProgrammableCoreType::TENSIX &&
-                                     params.processor_class == HalProcessorClassType::COMPUTE
-                                 ? "-mcpu=tt-wh-tensix "
-                                 : "-mcpu=tt-wh ";
+        const static bool use_llvm = std::getenv("TT_METAL_USE_LLVM_SFPU") != nullptr;
+        std::string cflags;
+
+        if (params.core_type == HalProgrammableCoreType::TENSIX &&
+            params.processor_class == HalProcessorClassType::COMPUTE) {
+            if (use_llvm) {
+                cflags = "-march=rv32imac_xttsfpu_xttsfpuwh "
+                         "-mabi=ilp32 "
+                         "-D__SFPU_WH__ "
+                         "-include sfpi_compat.h "
+                         "-Wno-builtin-macro-redefined "
+                         "-Wno-macro-redefined "
+                         "-Wno-unknown-attributes ";
+            } else {
+                cflags = "-mcpu=tt-wh-tensix ";
+            }
+        } else {
+            if (use_llvm) {
+                cflags = "-march=rv32imac -mabi=ilp32 ";
+            } else {
+                cflags = "-mcpu=tt-wh ";
+            }
+        }
         if (params.core_type == HalProgrammableCoreType::ACTIVE_ETH) {
             cflags += "-fno-delete-null-pointer-checks ";
         } else if (

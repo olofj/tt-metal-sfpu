@@ -180,10 +180,29 @@ public:
     }
 
     std::string common_flags(const Params& params) const override {
-        std::string cflags = params.core_type == HalProgrammableCoreType::TENSIX &&
-                                     params.processor_class == HalProcessorClassType::COMPUTE
-                                 ? "-mcpu=tt-bh-tensix "
-                                 : "-mcpu=tt-bh ";
+        const static bool use_llvm = std::getenv("TT_METAL_USE_LLVM_SFPU") != nullptr;
+        std::string cflags;
+
+        if (params.core_type == HalProgrammableCoreType::TENSIX &&
+            params.processor_class == HalProcessorClassType::COMPUTE) {
+            if (use_llvm) {
+                cflags = "-march=rv32imac_xttsfpu_xttsfpubh "
+                         "-mabi=ilp32 "
+                         "-D__SFPU_BH__ -DARCH_BLACKHOLE "
+                         "-include sfpi_compat.h "
+                         "-Wno-builtin-macro-redefined "
+                         "-Wno-macro-redefined "
+                         "-Wno-unknown-attributes ";
+            } else {
+                cflags = "-mcpu=tt-bh-tensix ";
+            }
+        } else {
+            if (use_llvm) {
+                cflags = "-march=rv32imac -mabi=ilp32 ";
+            } else {
+                cflags = "-mcpu=tt-bh ";
+            }
+        }
         if (!(params.core_type == HalProgrammableCoreType::TENSIX &&
               params.processor_class == HalProcessorClassType::COMPUTE)) {
             cflags += "-fno-tree-loop-distribute-patterns ";  // don't use memcpy for cpy loops
