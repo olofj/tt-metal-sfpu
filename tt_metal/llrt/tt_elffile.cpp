@@ -524,6 +524,12 @@ void ElfFile::Impl::Elf<Is64>::LoadImage() {
                 // debug printing, and are not mapped into memory.
                 continue;
             }
+            if (section.sh_size == 0) {
+                // Empty allocatable sections (e.g., .data when all data
+                // goes to .sdata) may not be assigned to a segment by
+                // the linker. Safe to skip since there's nothing to load.
+                continue;
+            }
             TT_THROW(
                 "{}: allocatable section {} [{:#x},+{:#x})@{:#x} is not in known segment",
                 path_,

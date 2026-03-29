@@ -9,7 +9,7 @@ int __attribute__((noinline)) main();
 
 static std::jmp_buf gJumpBuf;
 
-static void return_to_base_fw();
+[[gnu::noreturn]] static void return_to_base_fw();
 
 // Pointer to exit routine, (so it may be called from a kernel).  USED
 // attribute is needed to keep this as an symbol that kernels may

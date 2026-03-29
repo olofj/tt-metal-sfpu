@@ -128,6 +128,20 @@ void JitBuildEnv::init(
                 this->gpp_ += "--target=riscv32-unknown-elf ";
                 this->gpp_ += "-Wno-unknown-warning-option ";
                 this->gpp_ += "-Wno-unused-command-line-argument ";
+                this->gpp_ += "-Wno-macro-redefined ";
+                // Match GCC's type mapping so C++ name mangling is compatible
+                // with pre-compiled firmware objects (GCC: int32_t=long)
+                this->gpp_ += "-D__INT32_TYPE__=long ";
+                this->gpp_ += "-D'__UINT32_TYPE__=unsigned long' ";
+                // Section GC to reduce code size (clang generates slightly
+                // larger code than GCC without LTO)
+                this->gpp_ += "-ffunction-sections ";
+                // Use GCC's ld for linking (lld can't handle the firmware
+                // linker scripts with high addresses in 32-bit address space)
+                auto gcc_ld = std::string("/opt/tenstorrent/sfpi/compiler/bin/riscv-tt-elf-ld");
+                if (std::filesystem::exists(gcc_ld)) {
+                    this->gpp_ += "-fuse-ld=" + gcc_ld + " ";
+                }
 
                 // Detect sysroot: try GCC 15 (riscv-tt-elf), fall back to GCC 12
                 const std::array<std::pair<std::string, std::string>, 2> sysroots = {{
@@ -155,8 +169,10 @@ void JitBuildEnv::init(
                     }
                 }
 
-                // SFPI compatibility header location
+                // SFPI headers: our compat layer + system SFPI headers (lltt.h etc.)
                 this->gpp_include_dir_ = this->root_ + "runtime/llvm-sfpu/include";
+                // Also add runtime/sfpi/include for headers like lltt.h
+                this->gpp_ += "-I" + this->root_ + "runtime/sfpi/include ";
                 // ckernel.h wrapper must come first to shadow the real one
                 this->gpp_ += "-I" + this->root_ + "runtime/llvm-sfpu/clang_include ";
 
@@ -360,7 +376,13 @@ void JitBuildEnv::init(
     if (this->is_llvm_) {
         // Use -nodefaultlibs instead of -nostdlib to keep crt0 but skip
         // libc++/libc. Link the GCC runtime for memset/memcpy builtins.
-        this->lflags_ += "-nodefaultlibs ";
+        this->lflags_ += "-nodefaultlibs -Wl,--gc-sections ";
+        // Symbol alias for l1_to_local_mem_copy: GCC mangles rvtt_l1_ptr
+        // attribute into the name, clang doesn't. Provide an alias so the
+        // clang-mangled reference resolves to the GCC-compiled symbol.
+        this->lflags_ +=
+            "-Wl,--defsym=_Z20l1_to_local_mem_copyPmS_l="
+            "_Z20l1_to_local_mem_copyPmU11rvtt_l1_ptrS_l ";
         // Provide stubs for newlib syscalls that don't exist on bare-metal.
         this->lflags_ += "-Wl,--defsym=_exit=0 -Wl,--defsym=_sbrk=0 "
                           "-Wl,--defsym=_write=0 -Wl,--defsym=_close=0 "
@@ -651,6 +673,7 @@ void JitBuildState::compile_one(const string& out_dir, const JitBuildSettings* s
         filtered_cflags += "-Wno-unused-but-set-variable -Wno-constant-logical-operand ";
         filtered_cflags += "-Wno-unused-private-field -Wno-mismatched-tags ";
         filtered_cflags += "-Wno-incompatible-function-pointer-types ";
+        filtered_cflags += "-Wno-ignored-attributes ";
         cmd += filtered_cflags;
     } else {
         cmd += this->cflags_;
@@ -744,7 +767,19 @@ void JitBuildState::link(const string& out_dir, const JitBuildSettings* settings
     }
 
     // Append common args provided by the build state
-    cmd += lflags;
+    // Filter LTO flags from link command when using LLVM (GCC LTO not compatible)
+    if (env_.is_llvm_) {
+        std::istringstream iss(lflags);
+        std::string filtered, token;
+        while (iss >> token) {
+            if (token == "-flto=auto") continue;
+            if (token.rfind("-fdump-", 0) == 0) continue;
+            filtered += token + " ";
+        }
+        cmd += filtered;
+    } else {
+        cmd += lflags;
+    }
     cmd += this->extra_link_objs_;
     cmd += link_objs;
     // Append bare-metal libs AFTER objects so archive symbol resolution works
