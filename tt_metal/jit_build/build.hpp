@@ -93,6 +93,8 @@ private:
     // Tools
     std::string gpp_;
     std::string gpp_include_dir_;
+    bool is_llvm_ = false;
+    std::string llvm_link_libs_;  // libc.a + libgcc.a, appended last in link
 
     // Compilation options
     std::string cflags_;

@@ -15,6 +15,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -125,20 +126,41 @@ void JitBuildEnv::init(
             if (clang_path == "clang++" || std::filesystem::exists(clang_path)) {
                 this->gpp_ += clang_path + " ";
                 this->gpp_ += "--target=riscv32-unknown-elf ";
+                this->gpp_ += "-Wno-unknown-warning-option ";
+                this->gpp_ += "-Wno-unused-command-line-argument ";
 
-                // C++ stdlib from GCC 12 sysroot (compatible with clang;
-                // GCC 15 headers use GCC-specific builtins clang lacks)
-                auto gcc12_sysroot = "/opt/tenstorrent/sfpi/compiler/"
-                                     "riscv32-unknown-elf/include/c++/12.4.0";
-                this->gpp_ += "-isystem " + std::string(gcc12_sysroot) + " ";
-                this->gpp_ += "-isystem " + std::string(gcc12_sysroot)
-                             + "/riscv32-unknown-elf ";
-                // Bare-metal C headers
-                this->gpp_ += "-isystem /opt/tenstorrent/sfpi/compiler/"
-                               "riscv32-unknown-elf/include ";
+                // Detect sysroot: try GCC 15 (riscv-tt-elf), fall back to GCC 12
+                const std::array<std::pair<std::string, std::string>, 2> sysroots = {{
+                    {"/opt/tenstorrent/sfpi/compiler/riscv-tt-elf/include",
+                     "riscv-tt-elf/bh-ilp32"},
+                    {"/opt/tenstorrent/sfpi/compiler/riscv32-unknown-elf/include",
+                     "riscv32-unknown-elf"},
+                }};
+                for (const auto& [base, target_subdir] : sysroots) {
+                    // Find highest C++ version directory
+                    std::string cxx_dir;
+                    auto cxx_base = base + "/c++";
+                    if (std::filesystem::exists(cxx_base)) {
+                        for (auto& entry : std::filesystem::directory_iterator(cxx_base)) {
+                            if (entry.is_directory()) cxx_dir = entry.path().string();
+                        }
+                    }
+                    if (!cxx_dir.empty()) {
+                        this->gpp_ += "-isystem " + cxx_dir + " ";
+                        auto target_dir = cxx_dir + "/" + target_subdir;
+                        if (std::filesystem::exists(target_dir))
+                            this->gpp_ += "-isystem " + target_dir + " ";
+                        this->gpp_ += "-isystem " + base + " ";
+                        break;
+                    }
+                }
 
                 // SFPI compatibility header location
                 this->gpp_include_dir_ = this->root_ + "runtime/llvm-sfpu/include";
+                // ckernel.h wrapper must come first to shadow the real one
+                this->gpp_ += "-I" + this->root_ + "runtime/llvm-sfpu/clang_include ";
+
+                this->is_llvm_ = true;
 
                 log_debug(tt::LogBuildKernels,
                           "Using LLVM SFPU compiler at {}", clang_path);
@@ -335,6 +357,38 @@ void JitBuildEnv::init(
 
     this->lflags_ = common_flags;
     this->lflags_ += "-Wl,-z,max-page-size=16 -Wl,-z,common-page-size=16 -nostartfiles ";
+    if (this->is_llvm_) {
+        // Use -nodefaultlibs instead of -nostdlib to keep crt0 but skip
+        // libc++/libc. Link the GCC runtime for memset/memcpy builtins.
+        this->lflags_ += "-nodefaultlibs ";
+        // Provide stubs for newlib syscalls that don't exist on bare-metal.
+        this->lflags_ += "-Wl,--defsym=_exit=0 -Wl,--defsym=_sbrk=0 "
+                          "-Wl,--defsym=_write=0 -Wl,--defsym=_close=0 "
+                          "-Wl,--defsym=_lseek=0 -Wl,--defsym=_read=0 "
+                          "-Wl,--defsym=_fstat=0 -Wl,--defsym=_isatty=0 "
+                          "-Wl,--defsym=_kill=0 -Wl,--defsym=_getpid=0 ";
+        // libc and libgcc are stored in llvm_link_libs_ and appended at end
+        // of link command (after all .o files) so archive symbol resolution works.
+        for (const auto& libdir : {
+            "/opt/tenstorrent/sfpi/compiler/riscv-tt-elf/lib/bh-ilp32",
+            "/opt/tenstorrent/sfpi/compiler/riscv-tt-elf/lib",
+        }) {
+            auto libc = std::string(libdir) + "/libc.a";
+            if (std::filesystem::exists(libc)) {
+                this->llvm_link_libs_ = libc + " ";
+                break;
+            }
+        }
+        for (const auto& path : {
+            "/opt/tenstorrent/sfpi/compiler/lib/gcc/riscv-tt-elf/15.1.0/bh-ilp32/libgcc.a",
+            "/opt/tenstorrent/sfpi/compiler/lib/gcc/riscv-tt-elf/15.1.0/libgcc.a",
+        }) {
+            if (std::filesystem::exists(path)) {
+                this->llvm_link_libs_ += std::string(path) + " ";
+                break;
+            }
+        }
+    }
 
     // Need to capture more info in build key to prevent stale binaries from being reused.
     tt::FNV1a hasher;
@@ -408,6 +462,20 @@ JitBuildState::JitBuildState(const JitBuildEnv& env, const JitBuiltStateConfig& 
     // Flags
     {
         auto common_flags = jit_build_query.common_flags(params);
+        // Filter GCC-only flags when using LLVM/clang.
+        // The HAL already provides correct -march flags for clang;
+        // we only need to strip GCC-specific flags it also adds.
+        if (env_.is_llvm_) {
+            std::istringstream iss(common_flags);
+            std::string filtered, token;
+            while (iss >> token) {
+                if (token == "-fno-tree-loop-distribute-patterns") continue;
+                if (token == "-flto=auto") continue;
+                if (token.rfind("-fdump-", 0) == 0) continue;
+                filtered += token + " ";
+            }
+            common_flags = filtered;
+        }
         this->cflags_ += common_flags;
         this->lflags_ += common_flags;
     }
@@ -563,7 +631,30 @@ void JitBuildState::compile_one(const string& out_dir, const JitBuildSettings* s
     std::string obj_path = out_dir + this->objs_[src_index];
     std::string obj_temp_path = out_dir + this->temp_objs_[src_index];
     std::string temp_d_path = fs::path(obj_temp_path).replace_extension("d").string();
-    cmd += this->cflags_;
+    // Filter GCC-only flags when using LLVM/clang
+    if (env_.is_llvm_) {
+        std::string filtered_cflags;
+        std::istringstream iss(this->cflags_);
+        std::string token;
+        while (iss >> token) {
+            // Skip GCC-only flags that clang doesn't support
+            if (token == "-fno-tree-loop-distribute-patterns") continue;
+            if (token == "-flto=auto") continue;  // GCC LTO incompatible with LLVM
+            if (token.rfind("-fdump-", 0) == 0) continue;
+            if (token == "-Wno-error=multistatement-macros") continue;
+            if (token == "-Wno-error=unused-but-set-variable") continue;
+            filtered_cflags += token + " ";
+        }
+        // Append clang-specific overrides AFTER -Werror (last wins)
+        filtered_cflags += "-Wno-unknown-attributes ";
+        filtered_cflags += "-Wno-empty-body -Wno-c99-designator -Wno-c++11-narrowing ";
+        filtered_cflags += "-Wno-unused-but-set-variable -Wno-constant-logical-operand ";
+        filtered_cflags += "-Wno-unused-private-field -Wno-mismatched-tags ";
+        filtered_cflags += "-Wno-incompatible-function-pointer-types ";
+        cmd += filtered_cflags;
+    } else {
+        cmd += this->cflags_;
+    }
     cmd += this->includes_;
     // Add kernel-specific include paths (e.g., kernel source directory for relative includes)
     if (settings) {
@@ -656,6 +747,8 @@ void JitBuildState::link(const string& out_dir, const JitBuildSettings* settings
     cmd += lflags;
     cmd += this->extra_link_objs_;
     cmd += link_objs;
+    // Append bare-metal libs AFTER objects so archive symbol resolution works
+    cmd += env_.llvm_link_libs_;
     std::string elf_name = out_dir + this->target_name_ + ".elf";
     jit_build::utils::FileRenamer elf_file(elf_name);
     cmd += "-o " + elf_file.path();
