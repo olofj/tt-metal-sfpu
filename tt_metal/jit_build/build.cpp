@@ -147,7 +147,7 @@ void JitBuildEnv::init(
                 this->llvm_gpp_ += "-Wno-macro-redefined ";
                 this->llvm_gpp_ += "-D__INT32_TYPE__=long ";
                 this->llvm_gpp_ += "-D'__UINT32_TYPE__=unsigned long' ";
-                this->llvm_gpp_ += "-ffunction-sections ";
+                this->llvm_gpp_ += "-ffunction-sections -g0 ";
                 // Use GCC's ld for linking
                 auto gcc_ld = std::string("/opt/tenstorrent/sfpi/compiler/bin/riscv-tt-elf-ld");
                 if (std::filesystem::exists(gcc_ld))
@@ -463,6 +463,7 @@ JitBuildState::JitBuildState(const JitBuildEnv& env, const JitBuiltStateConfig& 
                 if (token == "-fno-tree-loop-distribute-patterns") continue;
                 if (token == "-flto=auto") continue;
                 if (token.rfind("-fdump-", 0) == 0) continue;
+                if (token == "-g" || token == "-g1" || token == "-g2" || token == "-g3") continue;
                 filtered += token + " ";
             }
             common_flags = filtered;
@@ -631,6 +632,7 @@ void JitBuildState::compile_one(const string& out_dir, const JitBuildSettings* s
             // Skip GCC-only flags that clang doesn't support
             if (token == "-fno-tree-loop-distribute-patterns") continue;
             if (token == "-flto=auto") continue;  // GCC LTO incompatible with LLVM
+            if (token == "-g" || token == "-g1" || token == "-g2" || token == "-g3") continue;  // debug info crashes on __xtt_vector
             if (token.rfind("-fdump-", 0) == 0) continue;
             if (token == "-Wno-error=multistatement-macros") continue;
             if (token == "-Wno-error=unused-but-set-variable") continue;
