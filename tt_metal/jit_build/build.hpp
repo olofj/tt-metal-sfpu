@@ -90,11 +90,13 @@ private:
     std::string out_kernel_root_;
     std::string firmware_binary_root_;
 
-    // Tools
-    std::string gpp_;
-    std::string gpp_include_dir_;
-    bool is_llvm_ = false;
-    std::string llvm_link_libs_;  // libc.a + libgcc.a, appended last in link
+    // Tools — GCC is always available; LLVM is optional for SFPU
+    std::string gpp_;              // GCC compiler command prefix
+    std::string gpp_include_dir_;  // GCC SFPI include dir
+    std::string llvm_gpp_;         // LLVM compiler command prefix (empty if not available)
+    std::string llvm_include_dir_; // LLVM SFPI include dir
+    bool has_llvm_ = false;
+    std::string llvm_link_libs_;   // libc.a + libgcc.a for LLVM link
 
     // Compilation options
     std::string cflags_;
@@ -112,6 +114,7 @@ protected:
     const JitBuildEnv& env_;
 
     bool is_fw_;
+    bool use_llvm_{};  // true for SFPU/COMPUTE processors when LLVM is available
     bool process_defines_at_compile_{};
     bool firmware_is_kernel_object_{};
 

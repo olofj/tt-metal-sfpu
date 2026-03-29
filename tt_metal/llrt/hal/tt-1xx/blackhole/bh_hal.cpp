@@ -186,7 +186,7 @@ public:
         if (params.core_type == HalProgrammableCoreType::TENSIX &&
             params.processor_class == HalProcessorClassType::COMPUTE) {
             if (use_llvm) {
-                cflags = "-march=rv32imac_xttsfpu_xttsfpubh "
+                cflags = "-march=rv32im_zba_zbb_xttsfpu_xttsfpubh "
                          "-mabi=ilp32 "
                          "-D__SFPU_BH__ -DARCH_BLACKHOLE "
                          "-include sfpi_compat.h "
@@ -198,7 +198,7 @@ public:
             }
         } else {
             if (use_llvm) {
-                cflags = "-march=rv32imac -mabi=ilp32 ";
+                cflags = "-march=rv32im -mabi=ilp32 ";
             } else {
                 cflags = "-mcpu=tt-bh ";
             }

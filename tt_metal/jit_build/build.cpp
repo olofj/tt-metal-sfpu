@@ -110,86 +110,8 @@ void JitBuildEnv::init(
         this->gpp_ = "";
     }
 
-    // Compiler selection: LLVM/clang or GCC
-    const static bool use_llvm_sfpu = std::getenv("TT_METAL_USE_LLVM_SFPU") != nullptr;
-
-    if (use_llvm_sfpu) {
-        // LLVM clang compiler for SFPU kernels
-        const std::array<std::string, 3> llvm_paths = {
-            this->root_ + "runtime/llvm-sfpu/bin/clang++",
-            "/opt/tenstorrent/llvm-sfpu/bin/clang++",
-            "clang++",  // system PATH fallback
-        };
-
-        bool found = false;
-        for (const auto& clang_path : llvm_paths) {
-            if (clang_path == "clang++" || std::filesystem::exists(clang_path)) {
-                this->gpp_ += clang_path + " ";
-                this->gpp_ += "--target=riscv32-unknown-elf ";
-                this->gpp_ += "-Wno-unknown-warning-option ";
-                this->gpp_ += "-Wno-unused-command-line-argument ";
-                this->gpp_ += "-Wno-macro-redefined ";
-                // Match GCC's type mapping so C++ name mangling is compatible
-                // with pre-compiled firmware objects (GCC: int32_t=long)
-                this->gpp_ += "-D__INT32_TYPE__=long ";
-                this->gpp_ += "-D'__UINT32_TYPE__=unsigned long' ";
-                // Section GC to reduce code size (clang generates slightly
-                // larger code than GCC without LTO)
-                this->gpp_ += "-ffunction-sections ";
-                // Use GCC's ld for linking (lld can't handle the firmware
-                // linker scripts with high addresses in 32-bit address space)
-                auto gcc_ld = std::string("/opt/tenstorrent/sfpi/compiler/bin/riscv-tt-elf-ld");
-                if (std::filesystem::exists(gcc_ld)) {
-                    this->gpp_ += "-fuse-ld=" + gcc_ld + " ";
-                }
-
-                // Detect sysroot: try GCC 15 (riscv-tt-elf), fall back to GCC 12
-                const std::array<std::pair<std::string, std::string>, 2> sysroots = {{
-                    {"/opt/tenstorrent/sfpi/compiler/riscv-tt-elf/include",
-                     "riscv-tt-elf/bh-ilp32"},
-                    {"/opt/tenstorrent/sfpi/compiler/riscv32-unknown-elf/include",
-                     "riscv32-unknown-elf"},
-                }};
-                for (const auto& [base, target_subdir] : sysroots) {
-                    // Find highest C++ version directory
-                    std::string cxx_dir;
-                    auto cxx_base = base + "/c++";
-                    if (std::filesystem::exists(cxx_base)) {
-                        for (auto& entry : std::filesystem::directory_iterator(cxx_base)) {
-                            if (entry.is_directory()) cxx_dir = entry.path().string();
-                        }
-                    }
-                    if (!cxx_dir.empty()) {
-                        this->gpp_ += "-isystem " + cxx_dir + " ";
-                        auto target_dir = cxx_dir + "/" + target_subdir;
-                        if (std::filesystem::exists(target_dir))
-                            this->gpp_ += "-isystem " + target_dir + " ";
-                        this->gpp_ += "-isystem " + base + " ";
-                        break;
-                    }
-                }
-
-                // SFPI headers: our compat layer + system SFPI headers (lltt.h etc.)
-                this->gpp_include_dir_ = this->root_ + "runtime/llvm-sfpu/include";
-                // Also add runtime/sfpi/include for headers like lltt.h
-                this->gpp_ += "-I" + this->root_ + "runtime/sfpi/include ";
-                // ckernel.h wrapper must come first to shadow the real one
-                this->gpp_ += "-I" + this->root_ + "runtime/llvm-sfpu/clang_include ";
-
-                this->is_llvm_ = true;
-
-                log_debug(tt::LogBuildKernels,
-                          "Using LLVM SFPU compiler at {}", clang_path);
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            TT_THROW("LLVM sfpu compiler not found; "
-                     "unset TT_METAL_USE_LLVM_SFPU to use GCC");
-        }
-    } else {
-        // GCC compiler (original path)
+    // GCC compiler — always set up (used for brisc/ncrisc/erisc firmware)
+    {
         const std::array<std::string, 2> sfpi_roots = {this->root_ + "runtime/sfpi", "/opt/tenstorrent/sfpi"};
 
         bool sfpi_found = false;
@@ -205,6 +127,84 @@ void JitBuildEnv::init(
         }
         if (!sfpi_found) {
             TT_THROW("sfpi not found at {} or {}", sfpi_roots[0], sfpi_roots[1]);
+        }
+    }
+
+    // LLVM/clang compiler — optional, for SFPU (trisc) kernels only
+    const static bool use_llvm_sfpu = std::getenv("TT_METAL_USE_LLVM_SFPU") != nullptr;
+    if (use_llvm_sfpu) {
+        const std::array<std::string, 3> llvm_paths = {
+            this->root_ + "runtime/llvm-sfpu/bin/clang++",
+            "/opt/tenstorrent/llvm-sfpu/bin/clang++",
+            "clang++",
+        };
+        for (const auto& clang_path : llvm_paths) {
+            if (clang_path == "clang++" || std::filesystem::exists(clang_path)) {
+                this->llvm_gpp_ += clang_path + " ";
+                this->llvm_gpp_ += "--target=riscv32-unknown-elf ";
+                this->llvm_gpp_ += "-Wno-unknown-warning-option ";
+                this->llvm_gpp_ += "-Wno-unused-command-line-argument ";
+                this->llvm_gpp_ += "-Wno-macro-redefined ";
+                this->llvm_gpp_ += "-D__INT32_TYPE__=long ";
+                this->llvm_gpp_ += "-D'__UINT32_TYPE__=unsigned long' ";
+                this->llvm_gpp_ += "-ffunction-sections ";
+                // Use GCC's ld for linking
+                auto gcc_ld = std::string("/opt/tenstorrent/sfpi/compiler/bin/riscv-tt-elf-ld");
+                if (std::filesystem::exists(gcc_ld))
+                    this->llvm_gpp_ += "-fuse-ld=" + gcc_ld + " ";
+                // Sysroot detection
+                for (const auto& [base, target_subdir] : std::array<std::pair<std::string, std::string>, 2>{{
+                    {"/opt/tenstorrent/sfpi/compiler/riscv-tt-elf/include", "riscv-tt-elf/bh-ilp32"},
+                    {"/opt/tenstorrent/sfpi/compiler/riscv32-unknown-elf/include", "riscv32-unknown-elf"},
+                }}) {
+                    std::string cxx_dir;
+                    auto cxx_base = base + "/c++";
+                    if (std::filesystem::exists(cxx_base))
+                        for (auto& e : std::filesystem::directory_iterator(cxx_base))
+                            if (e.is_directory()) cxx_dir = e.path().string();
+                    if (!cxx_dir.empty()) {
+                        this->llvm_gpp_ += "-isystem " + cxx_dir + " ";
+                        auto td = cxx_dir + "/" + target_subdir;
+                        if (std::filesystem::exists(td))
+                            this->llvm_gpp_ += "-isystem " + td + " ";
+                        this->llvm_gpp_ += "-isystem " + base + " ";
+                        break;
+                    }
+                }
+                this->llvm_include_dir_ = this->root_ + "runtime/llvm-sfpu/include";
+                this->llvm_gpp_ += "-I" + this->root_ + "runtime/sfpi/include ";
+                this->llvm_gpp_ += "-I" + this->root_ + "runtime/llvm-sfpu/clang_include ";
+                this->has_llvm_ = true;
+                // Link libs for LLVM builds
+                this->llvm_link_libs_ += "-nodefaultlibs -Wl,--gc-sections ";
+                this->llvm_link_libs_ +=
+                    "-Wl,--defsym=_Z20l1_to_local_mem_copyPmS_l="
+                    "_Z20l1_to_local_mem_copyPmU11rvtt_l1_ptrS_l ";
+                this->llvm_link_libs_ +=
+                    "-Wl,--defsym=_exit=0 -Wl,--defsym=_sbrk=0 "
+                    "-Wl,--defsym=_write=0 -Wl,--defsym=_close=0 "
+                    "-Wl,--defsym=_lseek=0 -Wl,--defsym=_read=0 "
+                    "-Wl,--defsym=_fstat=0 -Wl,--defsym=_isatty=0 "
+                    "-Wl,--defsym=_kill=0 -Wl,--defsym=_getpid=0 ";
+                for (const auto& libdir : {
+                    "/opt/tenstorrent/sfpi/compiler/riscv-tt-elf/lib/bh-ilp32",
+                    "/opt/tenstorrent/sfpi/compiler/riscv-tt-elf/lib",
+                }) {
+                    auto libc = std::string(libdir) + "/libc.a";
+                    if (std::filesystem::exists(libc)) { this->llvm_link_libs_ += libc + " "; break; }
+                }
+                for (const auto& p : {
+                    "/opt/tenstorrent/sfpi/compiler/lib/gcc/riscv-tt-elf/15.1.0/bh-ilp32/libgcc.a",
+                    "/opt/tenstorrent/sfpi/compiler/lib/gcc/riscv-tt-elf/15.1.0/libgcc.a",
+                }) {
+                    if (std::filesystem::exists(p)) { this->llvm_link_libs_ += std::string(p) + " "; break; }
+                }
+                log_debug(tt::LogBuildKernels, "LLVM SFPU compiler: {}", clang_path);
+                break;
+            }
+        }
+        if (!this->has_llvm_) {
+            TT_THROW("LLVM sfpu compiler not found; unset TT_METAL_USE_LLVM_SFPU to use GCC");
         }
     }
 
@@ -373,44 +373,6 @@ void JitBuildEnv::init(
 
     this->lflags_ = common_flags;
     this->lflags_ += "-Wl,-z,max-page-size=16 -Wl,-z,common-page-size=16 -nostartfiles ";
-    if (this->is_llvm_) {
-        // Use -nodefaultlibs instead of -nostdlib to keep crt0 but skip
-        // libc++/libc. Link the GCC runtime for memset/memcpy builtins.
-        this->lflags_ += "-nodefaultlibs -Wl,--gc-sections ";
-        // Symbol alias for l1_to_local_mem_copy: GCC mangles rvtt_l1_ptr
-        // attribute into the name, clang doesn't. Provide an alias so the
-        // clang-mangled reference resolves to the GCC-compiled symbol.
-        this->lflags_ +=
-            "-Wl,--defsym=_Z20l1_to_local_mem_copyPmS_l="
-            "_Z20l1_to_local_mem_copyPmU11rvtt_l1_ptrS_l ";
-        // Provide stubs for newlib syscalls that don't exist on bare-metal.
-        this->lflags_ += "-Wl,--defsym=_exit=0 -Wl,--defsym=_sbrk=0 "
-                          "-Wl,--defsym=_write=0 -Wl,--defsym=_close=0 "
-                          "-Wl,--defsym=_lseek=0 -Wl,--defsym=_read=0 "
-                          "-Wl,--defsym=_fstat=0 -Wl,--defsym=_isatty=0 "
-                          "-Wl,--defsym=_kill=0 -Wl,--defsym=_getpid=0 ";
-        // libc and libgcc are stored in llvm_link_libs_ and appended at end
-        // of link command (after all .o files) so archive symbol resolution works.
-        for (const auto& libdir : {
-            "/opt/tenstorrent/sfpi/compiler/riscv-tt-elf/lib/bh-ilp32",
-            "/opt/tenstorrent/sfpi/compiler/riscv-tt-elf/lib",
-        }) {
-            auto libc = std::string(libdir) + "/libc.a";
-            if (std::filesystem::exists(libc)) {
-                this->llvm_link_libs_ = libc + " ";
-                break;
-            }
-        }
-        for (const auto& path : {
-            "/opt/tenstorrent/sfpi/compiler/lib/gcc/riscv-tt-elf/15.1.0/bh-ilp32/libgcc.a",
-            "/opt/tenstorrent/sfpi/compiler/lib/gcc/riscv-tt-elf/15.1.0/libgcc.a",
-        }) {
-            if (std::filesystem::exists(path)) {
-                this->llvm_link_libs_ += std::string(path) + " ";
-                break;
-            }
-        }
-    }
 
     // Need to capture more info in build key to prevent stale binaries from being reused.
     tt::FNV1a hasher;
@@ -438,12 +400,19 @@ JitBuildState::JitBuildState(const JitBuildEnv& env, const JitBuiltStateConfig& 
     lflags_(env.lflags_),
     default_compile_opt_level_("Os"),
     default_linker_opt_level_("Os") {
+    // Use LLVM only for SFPU/COMPUTE (trisc) — other processors use GCC
+    // because their firmware has tight code size limits that require LTO.
+    if (env.has_llvm_ &&
+        build_config.core_type == HalProgrammableCoreType::TENSIX &&
+        build_config.processor_class == HalProcessorClassType::COMPUTE) {
+        this->use_llvm_ = true;
+    }
     // Anything that is arch-specific should be added to HalJitBuildQueryInterface instead of here.
     if (build_config.core_type == HalProgrammableCoreType::TENSIX &&
         build_config.processor_class == HalProcessorClassType::COMPUTE) {
         this->default_compile_opt_level_ = "O3";
         this->default_linker_opt_level_ = "O3";
-        this->includes_ += "-I" + env_.gpp_include_dir_ + " ";
+        this->includes_ += "-I" + (use_llvm_ ? env_.llvm_include_dir_ : env_.gpp_include_dir_) + " ";
         this->process_defines_at_compile_ = false;
     } else if (build_config.core_type == HalProgrammableCoreType::ACTIVE_ETH && build_config.is_cooperative) {
         // Only cooperative active ethernet needs "-L <root>/tt_metal/hw/toolchain",
@@ -487,7 +456,7 @@ JitBuildState::JitBuildState(const JitBuildEnv& env, const JitBuiltStateConfig& 
         // Filter GCC-only flags when using LLVM/clang.
         // The HAL already provides correct -march flags for clang;
         // we only need to strip GCC-specific flags it also adds.
-        if (env_.is_llvm_) {
+        if (this->use_llvm_) {
             std::istringstream iss(common_flags);
             std::string filtered, token;
             while (iss >> token) {
@@ -603,7 +572,7 @@ void JitBuildState::write_build_state_hash(const string& out_dir) const {
 void JitBuildState::compile_one(const string& out_dir, const JitBuildSettings* settings, size_t src_index) const {
     // ZoneScoped;
 
-    string cmd{"cd " + out_dir + " && " + env_.gpp_};
+    string cmd{"cd " + out_dir + " && " + (this->use_llvm_ ? env_.llvm_gpp_ : env_.gpp_)};
     string defines = this->defines_;
 
     if (env_.get_rtoptions().get_build_map_enabled()) {
@@ -654,7 +623,7 @@ void JitBuildState::compile_one(const string& out_dir, const JitBuildSettings* s
     std::string obj_temp_path = out_dir + this->temp_objs_[src_index];
     std::string temp_d_path = fs::path(obj_temp_path).replace_extension("d").string();
     // Filter GCC-only flags when using LLVM/clang
-    if (env_.is_llvm_) {
+    if (this->use_llvm_) {
         std::string filtered_cflags;
         std::istringstream iss(this->cflags_);
         std::string token;
@@ -674,6 +643,8 @@ void JitBuildState::compile_one(const string& out_dir, const JitBuildSettings* s
         filtered_cflags += "-Wno-unused-private-field -Wno-mismatched-tags ";
         filtered_cflags += "-Wno-incompatible-function-pointer-types ";
         filtered_cflags += "-Wno-ignored-attributes ";
+        filtered_cflags += "-Wno-missing-braces ";
+        filtered_cflags += "-Wno-unused-lambda-capture -Wno-nan-infinity-disabled ";
         cmd += filtered_cflags;
     } else {
         cmd += this->cflags_;
@@ -744,7 +715,7 @@ bool JitBuildState::need_link(const string& out_dir) const {
 }
 
 void JitBuildState::link(const string& out_dir, const JitBuildSettings* settings, const string& link_objs) const {
-    string cmd{"cd " + out_dir + " && " + env_.gpp_};
+    string cmd{"cd " + out_dir + " && " + (this->use_llvm_ ? env_.llvm_gpp_ : env_.gpp_)};
     string lflags = this->lflags_;
     if (env_.get_rtoptions().get_build_map_enabled()) {
         lflags += "-Wl,-Map=" + out_dir + this->target_name_ + ".map ";
@@ -768,7 +739,7 @@ void JitBuildState::link(const string& out_dir, const JitBuildSettings* settings
 
     // Append common args provided by the build state
     // Filter LTO flags from link command when using LLVM (GCC LTO not compatible)
-    if (env_.is_llvm_) {
+    if (this->use_llvm_) {
         std::istringstream iss(lflags);
         std::string filtered, token;
         while (iss >> token) {
@@ -782,8 +753,9 @@ void JitBuildState::link(const string& out_dir, const JitBuildSettings* settings
     }
     cmd += this->extra_link_objs_;
     cmd += link_objs;
-    // Append bare-metal libs AFTER objects so archive symbol resolution works
-    cmd += env_.llvm_link_libs_;
+    // For LLVM builds, append bare-metal libs AFTER objects
+    if (this->use_llvm_)
+        cmd += env_.llvm_link_libs_;
     std::string elf_name = out_dir + this->target_name_ + ".elf";
     jit_build::utils::FileRenamer elf_file(elf_name);
     cmd += "-o " + elf_file.path();
