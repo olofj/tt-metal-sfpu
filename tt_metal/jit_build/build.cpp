@@ -400,8 +400,7 @@ JitBuildState::JitBuildState(const JitBuildEnv& env, const JitBuiltStateConfig& 
     lflags_(env.lflags_),
     default_compile_opt_level_("Os"),
     default_linker_opt_level_("Os") {
-    // Use LLVM only for SFPU/COMPUTE (trisc) — other processors use GCC
-    // because their firmware has tight code size limits that require LTO.
+    // Use LLVM for all COMPUTE (trisc) processors.
     if (env.has_llvm_ &&
         build_config.core_type == HalProgrammableCoreType::TENSIX &&
         build_config.processor_class == HalProcessorClassType::COMPUTE) {
