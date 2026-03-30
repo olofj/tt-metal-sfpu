@@ -197,11 +197,8 @@ public:
                 cflags = "-mcpu=tt-bh-tensix ";
             }
         } else {
-            if (use_llvm) {
-                cflags = "-march=rv32im -mabi=ilp32 ";
-            } else {
-                cflags = "-mcpu=tt-bh ";
-            }
+            // Always use GCC-native flags for DM cores
+            cflags = "-mcpu=tt-bh ";
         }
         if (!(params.core_type == HalProgrammableCoreType::TENSIX &&
               params.processor_class == HalProcessorClassType::COMPUTE)) {

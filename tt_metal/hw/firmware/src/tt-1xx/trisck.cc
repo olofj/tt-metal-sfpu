@@ -58,8 +58,19 @@ uint32_t _start() {
     ckernel::wait(KERNEL_RUN_TIME);
 #endif
 #else
-    extern uint32_t __kernel_data_lma[];
-    do_crt1((uint32_t tt_l1_ptr*)__kernel_data_lma);
+    // Compute __kernel_data_lma using PC-relative addressing.
+    // The binary may be loaded at a different address than the linker
+    // assigned (e.g. kernel_config_buffer at MEM_MAP_END, not at
+    // __fw_export_text_end), so the absolute address from the linker
+    // script would point to stale firmware code instead of the data.
+    // auipc+addi gives the correct runtime address regardless of
+    // where the binary is loaded.
+    uint32_t* data_lma;
+    asm volatile(
+        "1: auipc %0, %%pcrel_hi(__kernel_data_lma)\n"
+        "   addi  %0, %0, %%pcrel_lo(1b)\n"
+        : "=r"(data_lma));
+    do_crt1((uint32_t tt_l1_ptr*)data_lma);
 
 #if defined(UCK_CHLKC_UNPACK)
     // Make sure DBG_FEATURE_DISABLE register is cleared before every kernel is executed

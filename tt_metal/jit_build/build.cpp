@@ -176,7 +176,7 @@ void JitBuildEnv::init(
                 this->llvm_gpp_ += "-I" + this->root_ + "runtime/llvm-sfpu/clang_include ";
                 this->has_llvm_ = true;
                 // Link libs for LLVM builds
-                this->llvm_link_libs_ += "-nodefaultlibs -Wl,--gc-sections ";
+                this->llvm_link_libs_ += "-nostartfiles -nodefaultlibs -Wl,--gc-sections ";
                 this->llvm_link_libs_ +=
                     "-Wl,--defsym=_Z20l1_to_local_mem_copyPmS_l="
                     "_Z20l1_to_local_mem_copyPmU11rvtt_l1_ptrS_l ";
