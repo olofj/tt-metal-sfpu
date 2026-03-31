@@ -186,7 +186,7 @@ public:
         if (params.core_type == HalProgrammableCoreType::TENSIX &&
             params.processor_class == HalProcessorClassType::COMPUTE) {
             if (use_llvm && !params.is_fw) {
-                // LLVM flags only for kernel compilation, not firmware
+                // LLVM flags for kernel compilation (firmware stays on GCC)
                 cflags = "-march=rv32im_zba_zbb_xttsfpu_xttsfpubh "
                          "-mabi=ilp32 "
                          "-D__SFPU_BH__ -DARCH_BLACKHOLE "
