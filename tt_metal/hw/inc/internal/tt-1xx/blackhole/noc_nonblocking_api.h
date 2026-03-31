@@ -111,7 +111,7 @@ struct NocBarrierCounter {
 static_assert(sizeof(NocBarrierCounter) == 80, "NocBarrierCounter size is not 80 bytes");
 
 template <uint8_t proc_t, NocBarrierType barrier_type>
-inline __attribute__((always_inline)) uint32_t get_noc_counter_address(uint32_t noc) {
+inline __attribute__((always_inline)) uint32_t get_noc_counter_address(noc_index_t noc) {
     static_assert(proc_t < MaxDMProcessorsPerCoreType);
     static_assert(static_cast<std::underlying_type_t<NocBarrierType>>(barrier_type) < NUM_BARRIER_TYPES);
 #if defined(COMPILE_FOR_AERISC)
@@ -135,25 +135,25 @@ inline __attribute__((always_inline)) uint32_t get_noc_counter_address(uint32_t 
 
 // noc_nonposted_writes_acked
 template <uint8_t proc_t, NocBarrierType barrier_type>
-inline __attribute__((always_inline)) uint32_t get_noc_counter_val(uint32_t noc) {
+inline __attribute__((always_inline)) uint32_t get_noc_counter_val(noc_index_t noc) {
     uint32_t counter_addr = get_noc_counter_address<proc_t, barrier_type>(noc);
     return *reinterpret_cast<volatile tt_l1_ptr uint32_t*>(counter_addr);
 }
 
 template <uint8_t proc_t, NocBarrierType barrier_type>
-inline __attribute__((always_inline)) void inc_noc_counter_val(uint32_t noc, uint32_t inc = 1) {
+inline __attribute__((always_inline)) void inc_noc_counter_val(noc_index_t noc, uint32_t inc = 1) {
     uint32_t counter_addr = get_noc_counter_address<proc_t, barrier_type>(noc);
     *reinterpret_cast<volatile tt_l1_ptr uint32_t*>(counter_addr) += inc;
 }
 
 template <uint8_t proc_t, NocBarrierType barrier_type>
-inline __attribute__((always_inline)) void set_noc_counter_val(uint32_t noc, uint32_t val) {
+inline __attribute__((always_inline)) void set_noc_counter_val(noc_index_t noc, uint32_t val) {
     uint32_t counter_addr = get_noc_counter_address<proc_t, barrier_type>(noc);
     *reinterpret_cast<volatile tt_l1_ptr uint32_t*>(counter_addr) = val;
 }
 
 inline __attribute__((always_inline)) void NOC_CMD_BUF_WRITE_REG(
-    uint32_t noc, uint32_t buf, uint32_t addr, uint32_t val) {
+    noc_index_t noc, uint32_t buf, uint32_t addr, uint32_t val) {
 #if defined(WATCHER_ENABLE_NOC_SANITIZE_LINKED_TRANSACTION)
     if (addr == NOC_CTRL) {
         auto* watcher_msg = GET_MAILBOX_ADDRESS_DEV(watcher);
@@ -165,29 +165,29 @@ inline __attribute__((always_inline)) void NOC_CMD_BUF_WRITE_REG(
     *ptr = val;
 }
 
-inline __attribute__((always_inline)) uint32_t NOC_CMD_BUF_READ_REG(uint32_t noc, uint32_t buf, uint32_t addr) {
+inline __attribute__((always_inline)) uint32_t NOC_CMD_BUF_READ_REG(noc_index_t noc, uint32_t buf, uint32_t addr) {
     uint32_t offset = (buf << NOC_CMD_BUF_OFFSET_BIT) + (noc << NOC_INSTANCE_OFFSET_BIT) + addr;
     volatile uint32_t* ptr = (volatile uint32_t*)offset;
     return *ptr;
 }
 
-inline __attribute__((always_inline)) uint32_t NOC_STATUS_READ_REG(uint32_t noc, uint32_t reg_id) {
+inline __attribute__((always_inline)) uint32_t NOC_STATUS_READ_REG(noc_index_t noc, uint32_t reg_id) {
     uint32_t offset = (noc << NOC_INSTANCE_OFFSET_BIT) + NOC_STATUS(reg_id);
     volatile uint32_t* ptr = (volatile uint32_t*)offset;
     return *ptr;
 }
 
-inline __attribute__((always_inline)) uint32_t NOC_CFG_READ_REG(uint32_t noc, uint32_t reg_id) {
+inline __attribute__((always_inline)) uint32_t NOC_CFG_READ_REG(noc_index_t noc, uint32_t reg_id) {
     uint32_t offset = (noc << NOC_INSTANCE_OFFSET_BIT) + NOC_CFG(reg_id);
     volatile uint32_t* ptr = (volatile uint32_t*)offset;
     return *ptr;
 }
 
-inline __attribute__((always_inline)) bool noc_cmd_buf_ready(uint32_t noc, uint32_t cmd_buf) {
+inline __attribute__((always_inline)) bool noc_cmd_buf_ready(noc_index_t noc, uint32_t cmd_buf) {
     return (NOC_CMD_BUF_READ_REG(noc, cmd_buf, NOC_CMD_CTRL) == NOC_CTRL_STATUS_READY);
 }
 
-inline __attribute__((always_inline)) void noc_clear_outstanding_req_cnt(uint32_t noc, uint32_t id_mask) {
+inline __attribute__((always_inline)) void noc_clear_outstanding_req_cnt(noc_index_t noc, uint32_t id_mask) {
     uint32_t offset = (noc << NOC_INSTANCE_OFFSET_BIT) + NOC_CLEAR_OUTSTANDING_REQ_CNT;
     volatile uint32_t* ptr = (volatile uint32_t*)offset;
     *ptr = id_mask;
@@ -210,7 +210,7 @@ struct NocCmdBufState {
 
 // Saves all cmd_buf registers into state; clears reserved NOC_CTRL bits in the saved state.
 inline __attribute__((always_inline)) void noc_cmd_buf_save_state(
-    uint32_t noc, uint32_t cmd_buf, NocCmdBufState* state) {
+    noc_index_t noc, uint32_t cmd_buf, NocCmdBufState* state) {
     state->ctrl = NOC_CMD_BUF_READ_REG(noc, cmd_buf, NOC_CTRL);
     // Clear reserved bits in NOC_CTRL so they are not restored.
     constexpr uint32_t noc_ctrl_reserved_bit_mask = ((1u << 27) - (1u << 18)) | (1u << 31);
@@ -227,13 +227,13 @@ inline __attribute__((always_inline)) void noc_cmd_buf_save_state(
 }
 
 // Clears NOC_PACKET_TAG register for the specified cmd_buf.
-inline __attribute__((always_inline)) void noc_clear_packet_tag(uint32_t noc, uint32_t cmd_buf) {
+inline __attribute__((always_inline)) void noc_clear_packet_tag(noc_index_t noc, uint32_t cmd_buf) {
     NOC_CMD_BUF_WRITE_REG(noc, cmd_buf, NOC_PACKET_TAG, 0);
 }
 
 // Restores cmd_buf from state; waits for cmd_buf ready before writing.
 inline __attribute__((always_inline)) void noc_cmd_buf_restore_state(
-    uint32_t noc, uint32_t cmd_buf, const NocCmdBufState* state) {
+    noc_index_t noc, uint32_t cmd_buf, const NocCmdBufState* state) {
     while (!noc_cmd_buf_ready(noc, cmd_buf));
     NOC_CMD_BUF_WRITE_REG(noc, cmd_buf, NOC_CTRL, state->ctrl);
     NOC_CMD_BUF_WRITE_REG(noc, cmd_buf, NOC_RET_ADDR_COORDINATE, state->ret_addr_coord);
@@ -256,7 +256,7 @@ inline __attribute__((always_inline)) void noc_cmd_buf_restore_state(
  * |----------|----------------------------|-----------|-------------|----------|
  * | noc      | NOC index                  | uint32_t  | 0 or 1      | True     |
  */
-inline __attribute__((always_inline)) uint32_t noc_get_reads_issued(uint32_t noc) { return noc_reads_num_issued[noc]; }
+inline __attribute__((always_inline)) uint32_t noc_get_reads_issued(noc_index_t noc) { return noc_reads_num_issued[noc]; }
 
 /**
  * Returns the number of nonposted write transactions issued on this NOC.
@@ -267,7 +267,7 @@ inline __attribute__((always_inline)) uint32_t noc_get_reads_issued(uint32_t noc
  * |----------|----------------------------|-----------|-------------|----------|
  * | noc      | NOC index                  | uint32_t  | 0 or 1      | True     |
  */
-inline __attribute__((always_inline)) uint32_t noc_get_nonposted_writes_issued(uint32_t noc) {
+inline __attribute__((always_inline)) uint32_t noc_get_nonposted_writes_issued(noc_index_t noc) {
     return noc_nonposted_writes_num_issued[noc];
 }
 
@@ -280,7 +280,7 @@ inline __attribute__((always_inline)) uint32_t noc_get_nonposted_writes_issued(u
  * |----------|----------------------------|-----------|-------------|----------|
  * | noc      | NOC index                  | uint32_t  | 0 or 1      | True     |
  */
-inline __attribute__((always_inline)) uint32_t noc_get_nonposted_writes_acked(uint32_t noc) {
+inline __attribute__((always_inline)) uint32_t noc_get_nonposted_writes_acked(noc_index_t noc) {
     return noc_nonposted_writes_acked[noc];
 }
 
@@ -293,7 +293,7 @@ inline __attribute__((always_inline)) uint32_t noc_get_nonposted_writes_acked(ui
  * |----------|----------------------------|-----------|-------------|----------|
  * | noc      | NOC index                  | uint32_t  | 0 or 1      | True     |
  */
-inline __attribute__((always_inline)) uint32_t noc_get_nonposted_atomics_acked(uint32_t noc) {
+inline __attribute__((always_inline)) uint32_t noc_get_nonposted_atomics_acked(noc_index_t noc) {
     return noc_nonposted_atomics_acked[noc];
 }
 
@@ -306,7 +306,7 @@ inline __attribute__((always_inline)) uint32_t noc_get_nonposted_atomics_acked(u
  * |----------|----------------------------|-----------|-------------|----------|
  * | noc      | NOC index                  | uint32_t  | 0 or 1      | True     |
  */
-inline __attribute__((always_inline)) uint32_t noc_get_posted_writes_issued(uint32_t noc) {
+inline __attribute__((always_inline)) uint32_t noc_get_posted_writes_issued(noc_index_t noc) {
     return noc_posted_writes_num_issued[noc];
 }
 
@@ -321,7 +321,7 @@ inline __attribute__((always_inline)) uint32_t noc_get_posted_writes_issued(uint
  * | noc      | NOC index                                      | uint32_t  | 0 or 1      | True     |
  * | delta    | Amount to increment the counter by             | uint32_t  | 0..2^32-1   | True     |
  */
-inline __attribute__((always_inline)) void noc_increment_nonposted_writes_acked(uint32_t noc, uint32_t delta) {
+inline __attribute__((always_inline)) void noc_increment_nonposted_writes_acked(noc_index_t noc, uint32_t delta) {
     noc_nonposted_writes_acked[noc] += delta;
 }
 
@@ -336,12 +336,12 @@ inline __attribute__((always_inline)) void noc_increment_nonposted_writes_acked(
  * | noc      | NOC index                                      | uint32_t  | 0 or 1      | True     |
  * | delta    | Amount to increment the counter by             | uint32_t  | 0..2^32-1   | True     |
  */
-inline __attribute__((always_inline)) void noc_increment_nonposted_writes_issued(uint32_t noc, uint32_t delta) {
+inline __attribute__((always_inline)) void noc_increment_nonposted_writes_issued(noc_index_t noc, uint32_t delta) {
     noc_nonposted_writes_num_issued[noc] += delta;
 }
 
 // True if hardware nonposted-writes-sent count has reached expected_count (wrap-around safe).
-inline __attribute__((always_inline)) bool noc_nonposted_writes_sent_at_count(uint32_t noc, uint32_t expected_count) {
+inline __attribute__((always_inline)) bool noc_nonposted_writes_sent_at_count(noc_index_t noc, uint32_t expected_count) {
     uint32_t sent = NOC_STATUS_READ_REG(noc, NIU_MST_NONPOSTED_WR_REQ_SENT);
     return (int32_t)(sent - expected_count) >= 0;
 }
@@ -359,7 +359,7 @@ inline __attribute__((always_inline)) bool noc_nonposted_writes_sent_at_count(ui
  * | coord    | Packed NOC coordinates from NOC_XY_COORD(x, y)     | uint32_t  | 0..2^32-1   | True     |
  */
 inline __attribute__((always_inline)) void noc_cmd_buf_set_targ_addr_coordinate(
-    uint32_t noc, uint32_t cmd_buf, uint32_t coord) {
+    noc_index_t noc, uint32_t cmd_buf, uint32_t coord) {
     NOC_CMD_BUF_WRITE_REG(noc, cmd_buf, NOC_TARG_ADDR_COORDINATE, coord);
 }
 
@@ -376,7 +376,7 @@ inline __attribute__((always_inline)) void noc_cmd_buf_set_targ_addr_coordinate(
  * | targ_addr | Full NOC address from NOC_XY_ADDR(x, y, addr)      | uint64_t  | 0..2^64-1   | True     |
  */
 inline __attribute__((always_inline)) void noc_cmd_buf_set_targ_addr(
-    uint32_t noc, uint32_t cmd_buf, uint64_t targ_addr) {
+    noc_index_t noc, uint32_t cmd_buf, uint64_t targ_addr) {
     NOC_CMD_BUF_WRITE_REG(noc, cmd_buf, NOC_TARG_ADDR_LO, (uint32_t)(targ_addr & 0xFFFFFFFF));
     NOC_CMD_BUF_WRITE_REG(noc, cmd_buf, NOC_TARG_ADDR_MID, (uint32_t)(targ_addr >> 32) & NOC_PCIE_MASK);
     NOC_CMD_BUF_WRITE_REG(noc, cmd_buf, NOC_TARG_ADDR_COORDINATE, (uint32_t)(targ_addr >> NOC_ADDR_COORD_SHIFT));
@@ -395,7 +395,7 @@ inline __attribute__((always_inline)) void noc_cmd_buf_set_targ_addr(
  * | coord    | Packed NOC coordinates from NOC_XY_COORD(x, y)     | uint32_t  | 0..2^32-1   | True     |
  */
 inline __attribute__((always_inline)) void noc_cmd_buf_set_ret_addr_coordinate(
-    uint32_t noc, uint32_t cmd_buf, uint32_t coord) {
+    noc_index_t noc, uint32_t cmd_buf, uint32_t coord) {
     NOC_CMD_BUF_WRITE_REG(noc, cmd_buf, NOC_RET_ADDR_COORDINATE, coord);
 }
 
@@ -412,18 +412,18 @@ inline __attribute__((always_inline)) void noc_cmd_buf_set_ret_addr_coordinate(
  * | cmd_buf  | Command buffer index                               | uint32_t  | 0 - 3       | True     |
  * | ret_addr | Full NOC address from NOC_XY_ADDR(x, y, addr)      | uint64_t  | 0..2^64-1   | True     |
  */
-inline __attribute__((always_inline)) void noc_cmd_buf_set_ret_addr(uint32_t noc, uint32_t cmd_buf, uint64_t ret_addr) {
+inline __attribute__((always_inline)) void noc_cmd_buf_set_ret_addr(noc_index_t noc, uint32_t cmd_buf, uint64_t ret_addr) {
     NOC_CMD_BUF_WRITE_REG(noc, cmd_buf, NOC_RET_ADDR_LO, (uint32_t)(ret_addr & 0xFFFFFFFF));
     NOC_CMD_BUF_WRITE_REG(noc, cmd_buf, NOC_RET_ADDR_MID, (uint32_t)(ret_addr >> 32) & NOC_PCIE_MASK);
     NOC_CMD_BUF_WRITE_REG(noc, cmd_buf, NOC_RET_ADDR_COORDINATE, (uint32_t)(ret_addr >> NOC_ADDR_COORD_SHIFT));
 }
 
 // Debug only: returns NOC_AT_LEN_BE for cmd_buf (transaction length). Requires NOC_LOGGING_ENABLED.
-inline __attribute__((always_inline)) uint32_t noc_debug_read_at_len_be(uint32_t noc, uint32_t cmd_buf) {
+inline __attribute__((always_inline)) uint32_t noc_debug_read_at_len_be(noc_index_t noc, uint32_t cmd_buf) {
     return NOC_CMD_BUF_READ_REG(noc, cmd_buf, NOC_AT_LEN_BE);
 }
 
-inline __attribute__((always_inline)) uint32_t noc_get_interim_inline_value_addr(uint32_t noc, uint64_t dst_noc_addr) {
+inline __attribute__((always_inline)) uint32_t noc_get_interim_inline_value_addr(noc_index_t noc, uint64_t dst_noc_addr) {
     // On Blackhole issuing inline writes and atomics requires all 4 memory ports to accept the transaction at the same
     // time. If one port on the recipient has no back-pressure then the transaction will hang because there is no
     // mechanism to allow one memory port to move ahead of another. To workaround this hang, we emulate inline writes on
@@ -449,9 +449,9 @@ inline __attribute__((always_inline)) uint32_t noc_get_interim_inline_value_addr
     return src_addr;
 }
 
-template <uint8_t noc_mode = DM_DEDICATED_NOC>
+template <noc_index_t noc_mode = DM_DEDICATED_NOC>
 inline __attribute__((always_inline)) void ncrisc_noc_fast_read(
-    uint32_t noc,
+    noc_index_t noc,
     uint32_t cmd_buf,
     uint64_t src_addr,
     uint32_t dest_addr,
@@ -477,29 +477,29 @@ inline __attribute__((always_inline)) void ncrisc_noc_fast_read(
     }
 }
 
-inline __attribute__((always_inline)) bool ncrisc_dynamic_noc_reads_flushed(uint32_t noc) {
+inline __attribute__((always_inline)) bool ncrisc_dynamic_noc_reads_flushed(noc_index_t noc) {
     uint32_t status_reg_val = NOC_STATUS_READ_REG(noc, NIU_MST_RD_RESP_RECEIVED);
     uint32_t self_risc_acked = get_noc_counter_val<proc_type, NocBarrierType::READS_NUM_ISSUED>(noc);
     uint32_t other_risc_acked = get_noc_counter_val<1 - proc_type, NocBarrierType::READS_NUM_ISSUED>(noc);
     return (status_reg_val == (self_risc_acked + other_risc_acked));
 }
 
-inline __attribute__((always_inline)) bool ncrisc_noc_reads_flushed(uint32_t noc) {
+inline __attribute__((always_inline)) bool ncrisc_noc_reads_flushed(noc_index_t noc) {
     return (NOC_STATUS_READ_REG(noc, NIU_MST_RD_RESP_RECEIVED) == noc_reads_num_issued[noc]);
 }
 
 inline __attribute__((always_inline)) bool ncrisc_noc_read_with_transaction_id_flushed(
-    uint32_t noc, uint32_t transcation_id) {
+    noc_index_t noc, uint32_t transcation_id) {
     return (NOC_STATUS_READ_REG(noc, NIU_MST_REQS_OUTSTANDING_ID(transcation_id)) == 0);
 }
 
-inline __attribute__((always_inline)) uint32_t noc_available_transactions(uint32_t noc, uint32_t trid) {
+inline __attribute__((always_inline)) uint32_t noc_available_transactions(noc_index_t noc, uint32_t trid) {
     return NOC_MAX_TRANSACTION_ID_COUNT - NOC_STATUS_READ_REG(noc, NIU_MST_REQS_OUTSTANDING_ID(trid));
 }
 
-template <uint8_t noc_mode = DM_DEDICATED_NOC, bool use_trid = false, bool update_counter = true>
+template <noc_index_t noc_mode = DM_DEDICATED_NOC, bool use_trid = false, bool update_counter = true>
 inline __attribute__((always_inline)) void ncrisc_noc_fast_write(
-    uint32_t noc,
+    noc_index_t noc,
     uint32_t cmd_buf,
     uint32_t src_addr,
     uint64_t dest_addr,
@@ -547,9 +547,9 @@ inline __attribute__((always_inline)) void ncrisc_noc_fast_write(
     }
 }
 
-template <uint8_t noc_mode = DM_DEDICATED_NOC>
+template <noc_index_t noc_mode = DM_DEDICATED_NOC>
 inline __attribute__((always_inline)) void ncrisc_noc_fast_write_loopback_src(
-    uint32_t noc,
+    noc_index_t noc,
     uint32_t cmd_buf,
     uint32_t src_addr,
     uint64_t dest_addr,
@@ -582,10 +582,10 @@ inline __attribute__((always_inline)) void ncrisc_noc_fast_write_loopback_src(
     }
 }
 
-template <uint8_t noc_mode = DM_DEDICATED_NOC>
+template <noc_index_t noc_mode = DM_DEDICATED_NOC>
 [[deprecated("unused function, use async write instead")]]
 inline __attribute__((always_inline)) void ncrisc_noc_blitz_write_setup(
-    uint32_t noc, uint32_t cmd_buf, uint64_t dest_addr, uint32_t len_bytes, uint32_t vc, uint32_t num_times_to_write) {
+    noc_index_t noc, uint32_t cmd_buf, uint64_t dest_addr, uint32_t len_bytes, uint32_t vc, uint32_t num_times_to_write) {
     if constexpr (noc_mode == DM_DYNAMIC_NOC) {
         inc_noc_counter_val<proc_type, NocBarrierType::NONPOSTED_WRITES_NUM_ISSUED>(noc, num_times_to_write);
         inc_noc_counter_val<proc_type, NocBarrierType::NONPOSTED_WRITES_ACKED>(noc, num_times_to_write);
@@ -604,57 +604,57 @@ inline __attribute__((always_inline)) void ncrisc_noc_blitz_write_setup(
     }
 }
 
-inline __attribute__((always_inline)) bool ncrisc_dynamic_noc_nonposted_writes_sent(uint32_t noc) {
+inline __attribute__((always_inline)) bool ncrisc_dynamic_noc_nonposted_writes_sent(noc_index_t noc) {
     uint32_t status_reg_val = NOC_STATUS_READ_REG(noc, NIU_MST_NONPOSTED_WR_REQ_SENT);
     uint32_t self_risc_acked = get_noc_counter_val<proc_type, NocBarrierType::NONPOSTED_WRITES_NUM_ISSUED>(noc);
     uint32_t other_risc_acked = get_noc_counter_val<1 - proc_type, NocBarrierType::NONPOSTED_WRITES_NUM_ISSUED>(noc);
     return (status_reg_val == (self_risc_acked + other_risc_acked));
 }
 
-inline __attribute__((always_inline)) bool ncrisc_noc_nonposted_writes_sent(uint32_t noc) {
+inline __attribute__((always_inline)) bool ncrisc_noc_nonposted_writes_sent(noc_index_t noc) {
     return (NOC_STATUS_READ_REG(noc, NIU_MST_NONPOSTED_WR_REQ_SENT) == noc_nonposted_writes_num_issued[noc]);
 }
 
-inline __attribute__((always_inline)) bool ncrisc_dynamic_noc_posted_writes_sent(uint32_t noc) {
+inline __attribute__((always_inline)) bool ncrisc_dynamic_noc_posted_writes_sent(noc_index_t noc) {
     uint32_t status_reg_val = NOC_STATUS_READ_REG(noc, NIU_MST_POSTED_WR_REQ_SENT);
     uint32_t self_risc_acked = get_noc_counter_val<proc_type, NocBarrierType::POSTED_WRITES_NUM_ISSUED>(noc);
     uint32_t other_risc_acked = get_noc_counter_val<1 - proc_type, NocBarrierType::POSTED_WRITES_NUM_ISSUED>(noc);
     return (status_reg_val == (self_risc_acked + other_risc_acked));
 }
 
-inline __attribute__((always_inline)) bool ncrisc_noc_posted_writes_sent(uint32_t noc) {
+inline __attribute__((always_inline)) bool ncrisc_noc_posted_writes_sent(noc_index_t noc) {
     return (NOC_STATUS_READ_REG(noc, NIU_MST_POSTED_WR_REQ_SENT) == noc_posted_writes_num_issued[noc]);
 }
 
-inline __attribute__((always_inline)) bool ncrisc_dynamic_noc_nonposted_writes_flushed(uint32_t noc) {
+inline __attribute__((always_inline)) bool ncrisc_dynamic_noc_nonposted_writes_flushed(noc_index_t noc) {
     uint32_t status_reg_val = NOC_STATUS_READ_REG(noc, NIU_MST_WR_ACK_RECEIVED);
     uint32_t self_risc_acked = get_noc_counter_val<proc_type, NocBarrierType::NONPOSTED_WRITES_ACKED>(noc);
     uint32_t other_risc_acked = get_noc_counter_val<1 - proc_type, NocBarrierType::NONPOSTED_WRITES_ACKED>(noc);
     return (status_reg_val == (self_risc_acked + other_risc_acked));
 }
 
-inline __attribute__((always_inline)) bool ncrisc_noc_nonposted_writes_flushed(uint32_t noc) {
+inline __attribute__((always_inline)) bool ncrisc_noc_nonposted_writes_flushed(noc_index_t noc) {
     return (NOC_STATUS_READ_REG(noc, NIU_MST_WR_ACK_RECEIVED) == noc_nonposted_writes_acked[noc]);
 }
 
 inline __attribute__((always_inline)) bool ncrisc_noc_nonposted_write_with_transaction_id_sent(
-    uint32_t noc, uint32_t transcation_id) {
+    noc_index_t noc, uint32_t transcation_id) {
     return (NOC_STATUS_READ_REG(noc, NIU_MST_WRITE_REQS_OUTGOING_ID(transcation_id)) == 0);
 }
 
 inline __attribute__((always_inline)) bool ncrisc_noc_nonposted_write_with_transaction_id_flushed(
-    uint32_t noc, uint32_t transcation_id) {
+    noc_index_t noc, uint32_t transcation_id) {
     return (NOC_STATUS_READ_REG(noc, NIU_MST_REQS_OUTSTANDING_ID(transcation_id)) == 0);
 }
 
-inline __attribute__((always_inline)) bool ncrisc_dynamic_noc_nonposted_atomics_flushed(uint32_t noc) {
+inline __attribute__((always_inline)) bool ncrisc_dynamic_noc_nonposted_atomics_flushed(noc_index_t noc) {
     uint32_t status_reg_val = NOC_STATUS_READ_REG(noc, NIU_MST_ATOMIC_RESP_RECEIVED);
     uint32_t self_risc_acked = get_noc_counter_val<proc_type, NocBarrierType::NONPOSTED_ATOMICS_ACKED>(noc);
     uint32_t other_risc_acked = get_noc_counter_val<1 - proc_type, NocBarrierType::NONPOSTED_ATOMICS_ACKED>(noc);
     return (status_reg_val == (self_risc_acked + other_risc_acked));
 }
 
-inline __attribute__((always_inline)) bool ncrisc_noc_nonposted_atomics_flushed(uint32_t noc) {
+inline __attribute__((always_inline)) bool ncrisc_noc_nonposted_atomics_flushed(noc_index_t noc) {
     return (NOC_STATUS_READ_REG(noc, NIU_MST_ATOMIC_RESP_RECEIVED) == noc_nonposted_atomics_acked[noc]);
 }
 
@@ -829,9 +829,9 @@ inline __attribute__((always_inline)) void ncrisc_noc_full_sync() {
     }
 }
 
-template <uint8_t noc_mode = DM_DEDICATED_NOC>
+template <noc_index_t noc_mode = DM_DEDICATED_NOC>
 inline __attribute__((always_inline)) void ncrisc_noc_fast_read_any_len(
-    uint32_t noc,
+    noc_index_t noc,
     uint32_t cmd_buf,
     uint64_t src_addr,
     uint32_t dest_addr,
@@ -848,9 +848,9 @@ inline __attribute__((always_inline)) void ncrisc_noc_fast_read_any_len(
     ncrisc_noc_fast_read<noc_mode>(noc, cmd_buf, src_addr, dest_addr, len_bytes, read_req_vc);
 }
 
-template <uint8_t noc_mode = DM_DEDICATED_NOC, bool use_trid = false, bool one_packet = false>
+template <noc_index_t noc_mode = DM_DEDICATED_NOC, bool use_trid = false, bool one_packet = false>
 inline __attribute__((always_inline)) void ncrisc_noc_fast_write_any_len(
-    uint32_t noc,
+    noc_index_t noc,
     uint32_t cmd_buf,
     uint32_t src_addr,
     uint64_t dest_addr,
@@ -899,9 +899,9 @@ inline __attribute__((always_inline)) void ncrisc_noc_fast_write_any_len(
         trid);
 }
 
-template <uint8_t noc_mode = DM_DEDICATED_NOC>
+template <noc_index_t noc_mode = DM_DEDICATED_NOC>
 inline __attribute__((always_inline)) void ncrisc_noc_fast_write_any_len_loopback_src(
-    uint32_t noc,
+    noc_index_t noc,
     uint32_t cmd_buf,
     uint32_t src_addr,
     uint64_t dest_addr,
@@ -933,9 +933,9 @@ inline __attribute__((always_inline)) void ncrisc_noc_fast_write_any_len_loopbac
         noc, cmd_buf, src_addr, dest_addr, len_bytes, vc, mcast, linked, num_dests, multicast_path_reserve);
 }
 
-template <uint8_t noc_mode = DM_DEDICATED_NOC, bool flush = true>
+template <noc_index_t noc_mode = DM_DEDICATED_NOC, bool flush = true>
 inline __attribute__((always_inline)) void noc_fast_spoof_write_dw_inline(
-    uint32_t noc,
+    noc_index_t noc,
     uint32_t cmd_buf,
     uint32_t val,
     uint64_t dest_addr,
@@ -1003,9 +1003,9 @@ inline __attribute__((always_inline)) void noc_fast_spoof_write_dw_inline(
     );
 }
 
-template <uint8_t noc_mode = DM_DEDICATED_NOC>
+template <noc_index_t noc_mode = DM_DEDICATED_NOC>
 inline __attribute__((always_inline)) void noc_fast_default_write_dw_inline(
-    uint32_t noc,
+    noc_index_t noc,
     uint32_t cmd_buf,
     uint32_t val,
     uint64_t dest_addr,
@@ -1052,9 +1052,9 @@ inline __attribute__((always_inline)) void noc_fast_default_write_dw_inline(
     }
 }
 
-template <uint8_t noc_mode = DM_DEDICATED_NOC, InlineWriteDst dst_type = InlineWriteDst::DEFAULT, bool flush = true>
+template <noc_index_t noc_mode = DM_DEDICATED_NOC, InlineWriteDst dst_type = InlineWriteDst::DEFAULT, bool flush = true>
 inline __attribute__((always_inline)) void noc_fast_write_dw_inline(
-    uint32_t noc,
+    noc_index_t noc,
     uint32_t cmd_buf,
     uint32_t val,
     uint64_t dest_addr,
@@ -1079,9 +1079,9 @@ inline __attribute__((always_inline)) void noc_fast_write_dw_inline(
     }
 }
 
-template <uint8_t noc_mode = DM_DEDICATED_NOC, bool program_ret_addr = false>
+template <noc_index_t noc_mode = DM_DEDICATED_NOC, bool program_ret_addr = false>
 inline __attribute__((always_inline)) void noc_fast_atomic_increment(
-    uint32_t noc,
+    noc_index_t noc,
     uint32_t cmd_buf,
     uint64_t addr,
     uint32_t vc,
@@ -1132,9 +1132,9 @@ inline __attribute__((always_inline)) void noc_fast_atomic_increment(
     }
 }
 
-template <uint8_t noc_mode = DM_DEDICATED_NOC>
+template <noc_index_t noc_mode = DM_DEDICATED_NOC>
 inline __attribute__((always_inline)) void noc_fast_multicast_atomic_increment(
-    uint32_t noc,
+    noc_index_t noc,
     uint32_t cmd_buf,
     uint64_t addr,
     uint32_t vc,
@@ -1189,9 +1189,9 @@ inline __attribute__((always_inline)) void noc_fast_multicast_atomic_increment(
 }
 
 // issue noc reads while wait for outstanding transactions done
-template <uint8_t noc_mode = DM_DEDICATED_NOC, bool skip_ptr_update = false, bool skip_cmdbuf_chk = false>
+template <noc_index_t noc_mode = DM_DEDICATED_NOC, bool skip_ptr_update = false, bool skip_cmdbuf_chk = false>
 inline __attribute__((always_inline)) void ncrisc_noc_fast_read_with_transaction_id(
-    uint32_t noc, uint32_t cmd_buf, uint32_t src_base_addr, uint32_t src_addr, uint32_t dest_addr, uint32_t trid) {
+    noc_index_t noc, uint32_t cmd_buf, uint32_t src_base_addr, uint32_t src_addr, uint32_t dest_addr, uint32_t trid) {
     if constexpr (noc_mode == DM_DYNAMIC_NOC && !skip_ptr_update) {
         inc_noc_counter_val<proc_type, NocBarrierType::READS_NUM_ISSUED>(noc, 1);
     }
@@ -1227,7 +1227,7 @@ inline __attribute__((always_inline)) void ncrisc_noc_fast_read_with_transaction
  */
 // clang-format on
 inline __attribute__((always_inline)) void ncrisc_noc_set_transaction_id(
-    uint32_t noc, uint32_t cmd_buf, uint32_t trid) {
+    noc_index_t noc, uint32_t cmd_buf, uint32_t trid) {
     while (!noc_cmd_buf_ready(noc, cmd_buf));
     NOC_CMD_BUF_WRITE_REG(noc, cmd_buf, NOC_PACKET_TAG, NOC_PACKET_TAG_TRANSACTION_ID(trid));
 }
@@ -1255,9 +1255,9 @@ inline __attribute__((always_inline)) void ncrisc_noc_set_transaction_id(
  * | use_vc (template parameter)     | Use custom VC, enables vc parameter                | bool      | true or false                                            | False    |
  */
 // clang-format on
-template <uint8_t noc_mode = DM_DEDICATED_NOC, bool one_packet = false, bool use_vc = false>
+template <noc_index_t noc_mode = DM_DEDICATED_NOC, bool one_packet = false, bool use_vc = false>
 inline __attribute__((always_inline)) void ncrisc_noc_read_set_state(
-    uint32_t noc, uint32_t cmd_buf, uint64_t src_noc_addr, uint32_t len_bytes = 0, const uint32_t vc = 0) {
+    noc_index_t noc, uint32_t cmd_buf, uint64_t src_noc_addr, uint32_t len_bytes = 0, const uint32_t vc = 0) {
     while (!noc_cmd_buf_ready(noc, cmd_buf));
 
     if constexpr (noc_mode == DM_DYNAMIC_NOC) {
@@ -1303,9 +1303,9 @@ inline __attribute__((always_inline)) void ncrisc_noc_read_set_state(
  * | one_packet (template parameter)     | Whether transaction size is <= NOC_MAX_BURST_SIZE  | bool      | true or false                                            | False    |
  */
 // clang-format on
-template <uint8_t noc_mode = DM_DEDICATED_NOC, bool inc_num_issued = true, bool one_packet = false>
+template <noc_index_t noc_mode = DM_DEDICATED_NOC, bool inc_num_issued = true, bool one_packet = false>
 inline __attribute__((always_inline)) void ncrisc_noc_read_with_state(
-    uint32_t noc, uint32_t cmd_buf, uint32_t src_local_addr, uint32_t dst_local_addr, uint32_t len_bytes = 0) {
+    noc_index_t noc, uint32_t cmd_buf, uint32_t src_local_addr, uint32_t dst_local_addr, uint32_t len_bytes = 0) {
     if constexpr (inc_num_issued && noc_mode == DM_DYNAMIC_NOC) {
         inc_noc_counter_val<proc_type, NocBarrierType::READS_NUM_ISSUED>(noc, 1);
     }
@@ -1342,9 +1342,9 @@ inline __attribute__((always_inline)) void ncrisc_noc_read_with_state(
  * | inc_num_issued (template parameter) | Increment enable for transaction issued counters   | bool      | true or false                                            | False    |
  */
 // clang-format on
-template <uint8_t noc_mode = DM_DEDICATED_NOC, bool inc_num_issued = true>
+template <noc_index_t noc_mode = DM_DEDICATED_NOC, bool inc_num_issued = true>
 inline __attribute__((always_inline)) void ncrisc_noc_read_any_len_with_state(
-    uint32_t noc, uint32_t cmd_buf, uint32_t src_local_addr, uint32_t dst_local_addr, uint32_t len_bytes) {
+    noc_index_t noc, uint32_t cmd_buf, uint32_t src_local_addr, uint32_t dst_local_addr, uint32_t len_bytes) {
     if (len_bytes > NOC_MAX_BURST_SIZE) {
         // Set data size for while loop
         NOC_CMD_BUF_WRITE_REG(noc, cmd_buf, NOC_AT_LEN_BE, NOC_MAX_BURST_SIZE);
@@ -1388,7 +1388,7 @@ inline __attribute__((always_inline)) void ncrisc_noc_read_any_len_with_state(
 // clang-format on
 template <bool posted = false, bool one_packet = false>
 inline __attribute__((always_inline)) void ncrisc_noc_write_set_state(
-    uint32_t noc, uint32_t cmd_buf, uint64_t dst_noc_addr, uint32_t len_bytes = 0, const uint32_t vc = 0) {
+    noc_index_t noc, uint32_t cmd_buf, uint64_t dst_noc_addr, uint32_t len_bytes = 0, const uint32_t vc = 0) {
     while (!noc_cmd_buf_ready(noc, cmd_buf));
 
     uint32_t noc_cmd_field = NOC_CMD_CPY | NOC_CMD_WR | NOC_CMD_VC_STATIC | NOC_CMD_STATIC_VC(vc) |
@@ -1431,9 +1431,9 @@ inline __attribute__((always_inline)) void ncrisc_noc_write_set_state(
  * | one_packet (template parameter)     | Whether transaction size is <= NOC_MAX_BURST_SIZE        | bool      | true or false                                            | False    |
  */
 // clang-format on
-template <uint8_t noc_mode = DM_DEDICATED_NOC, bool posted = false, bool update_counter = true, bool one_packet = false>
+template <noc_index_t noc_mode = DM_DEDICATED_NOC, bool posted = false, bool update_counter = true, bool one_packet = false>
 inline __attribute__((always_inline)) void ncrisc_noc_write_with_state(
-    uint32_t noc, uint32_t cmd_buf, uint32_t src_local_addr, uint32_t dst_local_addr, uint32_t len_bytes = 0) {
+    noc_index_t noc, uint32_t cmd_buf, uint32_t src_local_addr, uint32_t dst_local_addr, uint32_t len_bytes = 0) {
     if constexpr (update_counter && noc_mode == DM_DYNAMIC_NOC) {
         if constexpr (posted) {
             inc_noc_counter_val<proc_type, NocBarrierType::POSTED_WRITES_NUM_ISSUED>(noc, 1);
@@ -1481,9 +1481,9 @@ inline __attribute__((always_inline)) void ncrisc_noc_write_with_state(
  * | update_counter (template parameter) | Whether to increment write counters                      | bool      | true or false                                            | False    |
  */
 // clang-format on
-template <uint8_t noc_mode = DM_DEDICATED_NOC, bool posted = false, bool update_counter = true>
+template <noc_index_t noc_mode = DM_DEDICATED_NOC, bool posted = false, bool update_counter = true>
 inline __attribute__((always_inline)) void ncrisc_noc_write_any_len_with_state(
-    uint32_t noc, uint32_t cmd_buf, uint32_t src_local_addr, uint32_t dst_local_addr, uint32_t len_bytes) {
+    noc_index_t noc, uint32_t cmd_buf, uint32_t src_local_addr, uint32_t dst_local_addr, uint32_t len_bytes) {
     if (len_bytes > NOC_MAX_BURST_SIZE) {
         // Set data size for while loop
         NOC_CMD_BUF_WRITE_REG(noc, cmd_buf, NOC_AT_LEN_BE, NOC_MAX_BURST_SIZE);
@@ -1530,7 +1530,7 @@ inline __attribute__((always_inline)) void ncrisc_noc_write_any_len_with_state(
 // clang-format on
 template <bool posted = false, bool set_val = false>
 inline __attribute__((always_inline)) void noc_fast_write_dw_inline_set_state(
-    uint32_t noc, uint32_t cmd_buf, uint64_t dest_addr, uint32_t be, uint32_t static_vc, uint32_t val = 0) {
+    noc_index_t noc, uint32_t cmd_buf, uint64_t dest_addr, uint32_t be, uint32_t static_vc, uint32_t val = 0) {
     while (!noc_cmd_buf_ready(noc, cmd_buf));
 
     if constexpr (set_val) {
@@ -1588,7 +1588,7 @@ template <
     bool update_counter = true,
     InlineWriteDst dst_type = InlineWriteDst::DEFAULT>
 inline __attribute__((always_inline)) void noc_fast_write_dw_inline_with_state(
-    uint32_t noc, uint32_t cmd_buf, uint32_t val = 0, uint64_t dest_addr = 0) {
+    noc_index_t noc, uint32_t cmd_buf, uint32_t val = 0, uint64_t dest_addr = 0) {
     static_assert("Error: Only High or Low address update is supported" && (update_addr_lo && update_addr_hi) == 0);
     if constexpr (update_counter && noc_mode == DM_DYNAMIC_NOC) {
         if constexpr (posted) {
@@ -1742,7 +1742,7 @@ enum CQNocSend {
  */
 // clang-format on
 template <uint32_t cmd_buf>
-inline __attribute__((always_inline)) void noc_read_init_state(uint32_t noc) {
+inline __attribute__((always_inline)) void noc_read_init_state(noc_index_t noc) {
     uint32_t noc_rd_cmd_field =
         NOC_CMD_CPY | NOC_CMD_RD | NOC_CMD_RESP_MARKED | NOC_CMD_VC_STATIC | NOC_CMD_STATIC_VC(1);
 
@@ -1776,8 +1776,8 @@ inline __attribute__((always_inline)) void noc_read_init_state(uint32_t noc) {
  * | wait (template parameter)     | Whether to wait for command buffer readiness             | enum CQNocWait   | CQ_NOC_WAIT or CQ_NOC_wait                               | False    |
  */
 // clang-format on
-template <uint8_t noc_mode, uint32_t cmd_buf, enum CQNocFlags flags, enum CQNocSend send, enum CQNocWait wait>
-inline __attribute__((always_inline)) void noc_common_read_with_state(uint32_t noc, uint32_t dst_addr, uint32_t size) {
+template <noc_index_t noc_mode, uint32_t cmd_buf, enum CQNocFlags flags, enum CQNocSend send, enum CQNocWait wait>
+inline __attribute__((always_inline)) void noc_common_read_with_state(noc_index_t noc, uint32_t dst_addr, uint32_t size) {
     if constexpr (send) {
         if constexpr (noc_mode == DM_DYNAMIC_NOC) {
             inc_noc_counter_val<proc_type, NocBarrierType::READS_NUM_ISSUED>(noc, 1);
@@ -1803,7 +1803,7 @@ template <
     enum CQNocSend send = CQ_NOC_SEND,
     enum CQNocWait wait = CQ_NOC_WAIT>
 inline __attribute__((always_inline)) void noc_read_with_state(
-    uint32_t noc, uint64_t src_addr, uint32_t dst_addr, uint32_t size) {
+    noc_index_t noc, uint64_t src_addr, uint32_t dst_addr, uint32_t size) {
     noc_common_read_with_state<noc_mode, cmd_buf, flags, send, wait>(noc, dst_addr, size);
     if constexpr (flags & CQ_NOC_FLAG_SRC) {
         NOC_CMD_BUF_WRITE_REG(noc, cmd_buf, NOC_TARG_ADDR_LO, (uint32_t)src_addr);
@@ -1828,7 +1828,7 @@ template <
     enum CQNocSend send = CQ_NOC_SEND,
     enum CQNocWait wait = CQ_NOC_WAIT>
 inline __attribute__((always_inline)) void noc_read_with_state(
-    uint32_t noc, uint32_t src_noc_addr, uint64_t src_addr, uint32_t dst_addr, uint32_t size) {
+    noc_index_t noc, uint32_t src_noc_addr, uint64_t src_addr, uint32_t dst_addr, uint32_t size) {
     noc_common_read_with_state<noc_mode, cmd_buf, flags, send, wait>(noc, dst_addr, size);
     if constexpr (flags & CQ_NOC_FLAG_SRC) {
         NOC_CMD_BUF_WRITE_REG(noc, cmd_buf, NOC_TARG_ADDR_LO, (uint32_t)src_addr);
@@ -1860,7 +1860,7 @@ inline __attribute__((always_inline)) void noc_read_with_state(
  */
 // clang-format on
 template <uint32_t cmd_buf, enum CQNocCmdFlags cmd_flags = CQ_NOC_mkp>
-inline __attribute__((always_inline)) void noc_write_init_state(uint32_t noc, uint32_t vc) {
+inline __attribute__((always_inline)) void noc_write_init_state(noc_index_t noc, uint32_t vc) {
     constexpr bool multicast_path_reserve = true;
     uint32_t noc_cmd_field = NOC_CMD_CPY | NOC_CMD_WR | NOC_CMD_VC_STATIC | NOC_CMD_STATIC_VC(vc) |
                              ((cmd_flags & CQ_NOC_CMD_FLAG_LINKED) ? NOC_CMD_VC_LINKED : 0x0) |
@@ -1910,7 +1910,7 @@ template <
     bool update_counter,
     bool posted>
 inline __attribute__((always_inline)) void noc_common_write_with_state(
-    uint32_t noc, uint32_t src_addr, uint32_t size, uint32_t ndests) {
+    noc_index_t noc, uint32_t src_addr, uint32_t size, uint32_t ndests) {
     if constexpr (update_counter && noc_mode == DM_DYNAMIC_NOC) {
         if constexpr (posted) {
             inc_noc_counter_val<proc_type, NocBarrierType::POSTED_WRITES_NUM_ISSUED>(noc, 1);
@@ -1947,7 +1947,7 @@ template <
     bool update_counter = true,
     bool posted = false>
 inline __attribute__((always_inline)) void noc_write_with_state(
-    uint32_t noc, uint32_t src_addr, uint64_t dst_addr, uint32_t size = 0, uint32_t ndests = 1) {
+    noc_index_t noc, uint32_t src_addr, uint64_t dst_addr, uint32_t size = 0, uint32_t ndests = 1) {
     noc_common_write_with_state<noc_mode, cmd_buf, flags, wait, update_counter, posted>(noc, src_addr, size, ndests);
     if constexpr (flags & CQ_NOC_FLAG_DST) {
         NOC_CMD_BUF_WRITE_REG(noc, cmd_buf, NOC_RET_ADDR_LO, (uint32_t)dst_addr);
@@ -1976,7 +1976,7 @@ template <
     bool update_counter = true,
     bool posted = false>
 inline __attribute__((always_inline)) void noc_wwrite_with_state(
-    uint32_t noc, uint32_t src_addr, uint32_t dst_noc_addr, uint64_t dst_addr, uint32_t size = 0, uint32_t ndests = 1) {
+    noc_index_t noc, uint32_t src_addr, uint32_t dst_noc_addr, uint64_t dst_addr, uint32_t size = 0, uint32_t ndests = 1) {
     noc_common_write_with_state<noc_mode, cmd_buf, flags, wait, update_counter, posted>(noc, src_addr, size, ndests);
     if constexpr (flags & CQ_NOC_FLAG_DST) {
         NOC_CMD_BUF_WRITE_REG(noc, cmd_buf, NOC_RET_ADDR_LO, (uint32_t)dst_addr);
@@ -1993,7 +1993,7 @@ inline __attribute__((always_inline)) void noc_wwrite_with_state(
 
 template <uint8_t MAX_NOCS_TO_INIT = NUM_NOCS>
 inline __attribute__((always_inline)) void ncrisc_dynamic_noc_full_sync() {
-    for (uint32_t noc = 0; noc < MAX_NOCS_TO_INIT; noc++) {
+    for (noc_index_t noc = 0; noc < MAX_NOCS_TO_INIT; noc++) {
         while (!ncrisc_dynamic_noc_reads_flushed(noc)) {
             invalidate_l1_cache();
         }
@@ -2013,7 +2013,7 @@ inline __attribute__((always_inline)) void ncrisc_dynamic_noc_full_sync() {
 }
 
 template <bool write, bool posted>
-inline __attribute__((always_inline)) uint32_t get_noc_counter_for_debug(uint32_t noc) {
+inline __attribute__((always_inline)) uint32_t get_noc_counter_for_debug(noc_index_t noc) {
     if constexpr (write) {
         if constexpr (posted) {
             return NOC_STATUS_READ_REG(noc, NIU_MST_POSTED_WR_REQ_SENT);

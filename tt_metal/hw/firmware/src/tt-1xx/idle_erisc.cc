@@ -27,7 +27,7 @@
 #include "api/debug/device_print.h"
 #include "internal/debug/stack_usage.h"
 
-uint8_t noc_index;
+noc_index_t noc_index;
 
 uint32_t noc_reads_num_issued[NUM_NOCS] __attribute__((used));
 uint32_t noc_nonposted_writes_num_issued[NUM_NOCS] __attribute__((used));

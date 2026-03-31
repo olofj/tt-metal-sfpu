@@ -36,8 +36,8 @@
 // clang-format on
 
 // Global so triage can see these values.
-uint8_t noc_index;
-uint8_t noc_mode = DM_DEDICATED_NOC;
+noc_index_t noc_index;
+noc_index_t noc_mode = DM_DEDICATED_NOC;
 
 constexpr uint32_t RISCV_IC_BRISC_MASK = 0x1;
 constexpr uint32_t RISCV_IC_NCRISC_MASK = 0x10;
@@ -331,7 +331,7 @@ inline void wait_ncrisc_trisc() {
 
 inline void trigger_sync_register_init() { subordinate_sync->trisc0 = RUN_SYNC_MSG_INIT_SYNC_REGISTERS; }
 
-inline void barrier_remote_cb_interface_setup(uint8_t noc_index, uint32_t noc_mode, uint32_t end_cb_index) {
+inline void barrier_remote_cb_interface_setup(noc_index_t noc_index, uint32_t noc_mode, uint32_t end_cb_index) {
 #if defined(ARCH_BLACKHOLE)
     // cq_dispatch does not update noc transaction counts so skip this barrier on the dispatch core
     if (end_cb_index != NUM_CIRCULAR_BUFFERS) {

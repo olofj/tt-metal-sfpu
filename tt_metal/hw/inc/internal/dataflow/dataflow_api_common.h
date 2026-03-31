@@ -7,11 +7,18 @@
 #include <noc/noc_parameters.h>
 
 #if defined(KERNEL_BUILD)
-constexpr uint8_t noc_index = NOC_INDEX;
-constexpr uint8_t noc_mode = NOC_MODE;
+// Default NOC_INDEX/NOC_MODE for dispatch kernels that don't provide them
+#ifndef NOC_INDEX
+#define NOC_INDEX 0
+#endif
+#ifndef NOC_MODE
+#define NOC_MODE 0  /* DM_DEDICATED_NOC */
+#endif
+constexpr noc_index_t noc_index = NOC_INDEX;
+constexpr noc_index_t noc_mode = NOC_MODE;
 #else
 
-extern uint8_t noc_index;
+extern noc_index_t noc_index;
 // noc_mode may switch dynamically while in the firmware, so we can't define it here.
 #endif
 extern uint16_t dram_bank_to_noc_xy[NUM_NOCS][NUM_DRAM_BANKS];

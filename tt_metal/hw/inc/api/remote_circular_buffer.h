@@ -45,14 +45,14 @@ FORCE_INLINE void update_pages_sent(
         *pages_sent_ptr += aligned_page_adjustment;
         uint64_t remote_ack_ptr_addr = get_noc_addr_helper(remote_noc_xy, (uint32_t)pages_sent_ptr);
         noc_fast_atomic_increment<nm>(
-            noc,
-            cmd_buf,
+            (noc_index_t)noc,
+            (uint32_t)cmd_buf,
             remote_ack_ptr_addr,
-            NOC_UNICAST_WRITE_VC,
-            aligned_page_adjustment,
+            (uint32_t)NOC_UNICAST_WRITE_VC,
+            (uint32_t)aligned_page_adjustment,
             31 /*wrap*/,
             false /*linked*/,
-            posted /*posted*/,
+            (bool)posted /*posted*/,
             MEM_NOC_ATOMIC_RET_VAL_ADDR);
         pages_sent_ptr += 2 * L1_ALIGNMENT / sizeof(uint32_t);
         remote_noc_xy_ptr += 2;
@@ -503,7 +503,7 @@ public:
     void set_sender_page_size(
         experimental::Noc& noc,
         uint32_t page_size,
-        uint8_t noc_mode = detail::default_noc_mode,
+        noc_index_t noc_mode = detail::default_noc_mode,
         bool posted = true,
         uint8_t cmd_buf = detail::default_cmd_buf) {
         resize_remote_receiver_cb_interface<update_remote_pointer == RemotePointerUpdate::UPDATE_OVER_NOC>(
@@ -552,7 +552,7 @@ public:
     void set_receiver_page_size(
         experimental::Noc& noc,
         uint32_t page_size,
-        uint8_t noc_mode = detail::default_noc_mode,
+        noc_index_t noc_mode = detail::default_noc_mode,
         Noc::ResponseMode response_mode = Noc::ResponseMode::POSTED,
         uint8_t cmd_buf = detail::default_cmd_buf) {
         resize_remote_sender_cb_interface<update_remote_pointer == RemotePointerUpdate::UPDATE_OVER_NOC>(

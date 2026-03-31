@@ -460,6 +460,8 @@ void DispatchKernel::CreateKernel() {
         {"MY_NOC_X", std::to_string(my_virtual_noc_coords.x)},
         {"MY_NOC_Y", std::to_string(my_virtual_noc_coords.y)},
         {"UPSTREAM_NOC_INDEX", std::to_string(noc_selection_.upstream_noc)},
+        {"NOC_INDEX", std::to_string(noc_selection_.upstream_noc)},
+        {"NOC_MODE", std::to_string(static_cast<uint32_t>(NOC_MODE::DM_DEDICATED_NOC))},
         {"UPSTREAM_NOC_X", std::to_string(upstream_virtual_noc_coords.x)},
         {"UPSTREAM_NOC_Y", std::to_string(upstream_virtual_noc_coords.y)},
         {"DOWNSTREAM_NOC_X", std::to_string(downstream_virtual_noc_coords.x)},

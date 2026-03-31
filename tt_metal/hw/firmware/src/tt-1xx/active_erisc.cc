@@ -29,7 +29,7 @@
 #include "api/debug/waypoint.h"
 #include "api/debug/device_print.h"
 
-uint8_t noc_index;
+noc_index_t noc_index;
 // Renamed to kg_noc_mode to avoid conflict with noc_mode in dataflow_api_comon
 // noc_mode is the same for all erisc kernels in the program
 uint8_t kg_noc_mode;

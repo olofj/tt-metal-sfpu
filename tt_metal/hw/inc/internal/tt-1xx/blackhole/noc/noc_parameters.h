@@ -10,6 +10,13 @@
 #define COORDINATE_VIRTUALIZATION_ENABLED 1
 
 #define NUM_NOCS 2
+
+// NOC index type — used consistently across NOC API functions and callers.
+// Avoids uint8_t/uint32_t mismatch that causes GCC 15 template body errors.
+#ifdef __cplusplus
+#include <cstdint>
+using noc_index_t = uint32_t;
+#endif
 #define NUM_TENSIXES 140
 
 #define NOC_MAX_TRANSACTION_ID 0xF

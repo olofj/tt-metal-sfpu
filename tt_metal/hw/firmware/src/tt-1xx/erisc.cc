@@ -21,7 +21,7 @@ uint32_t traceCount __attribute__((used));
 }  // namespace kernel_profiler
 #endif
 
-uint8_t noc_index = 0;  // TODO: remove hardcoding
+noc_index_t noc_index = 0;  // TODO: remove hardcoding
 
 uint8_t my_x[NUM_NOCS] __attribute__((used));
 uint8_t my_y[NUM_NOCS] __attribute__((used));
