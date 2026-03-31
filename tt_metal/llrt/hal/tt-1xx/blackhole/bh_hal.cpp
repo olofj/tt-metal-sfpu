@@ -197,7 +197,8 @@ public:
                 cflags = "-mcpu=tt-bh-tensix ";
             }
         } else {
-            // Always use GCC-native flags for DM cores
+            // DM cores (brisc/ncrisc) — always GCC (LLVM code is too large
+            // for the tight firmware regions)
             cflags = "-mcpu=tt-bh ";
         }
         if (!(params.core_type == HalProgrammableCoreType::TENSIX &&

@@ -401,7 +401,9 @@ JitBuildState::JitBuildState(const JitBuildEnv& env, const JitBuiltStateConfig& 
     lflags_(env.lflags_),
     default_compile_opt_level_("Os"),
     default_linker_opt_level_("Os") {
-    // Use LLVM for COMPUTE (trisc) — both kernels and firmware.
+    // Use LLVM for COMPUTE (trisc) cores — both kernels and firmware.
+    // DM cores (brisc/ncrisc) stay on GCC: LLVM's code generation is ~2.4x
+    // larger, exceeding the tight firmware code regions (brisc: 8.5KB).
     if (env.has_llvm_ &&
         build_config.core_type == HalProgrammableCoreType::TENSIX &&
         build_config.processor_class == HalProcessorClassType::COMPUTE) {
@@ -412,6 +414,9 @@ JitBuildState::JitBuildState(const JitBuildEnv& env, const JitBuiltStateConfig& 
         build_config.processor_class == HalProcessorClassType::COMPUTE) {
         this->default_compile_opt_level_ = "O3";
         this->default_linker_opt_level_ = "O3";
+    }
+    if (build_config.core_type == HalProgrammableCoreType::TENSIX &&
+        build_config.processor_class == HalProcessorClassType::COMPUTE) {
         this->includes_ += "-I" + (use_llvm_ ? env_.llvm_include_dir_ : env_.gpp_include_dir_) + " ";
         this->process_defines_at_compile_ = false;
     } else if (build_config.core_type == HalProgrammableCoreType::ACTIVE_ETH && build_config.is_cooperative) {
