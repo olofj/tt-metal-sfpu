@@ -101,7 +101,36 @@ namespace ckernel { static volatile unsigned int instrn_buffer[1] = {0}; }
 /* sfpi_builtins.h lines 14-16 define macros like:
  *   __builtin_rvtt_sfpxicmps(v,i,mod1) → __builtin_rvtt_sfpxicmps(buf,v,i,0,0,mod1)
  * The self-reference prevention causes the 6-arg form to survive as a function
- * call. We provide inline functions matching the 6-arg signature. */
+ * call. We provide inline functions matching the 6-arg signature.
+ * WITHOUT THESE, the 6-arg builtins are undefined and clang generates wrong code. */
+__attribute__((always_inline)) inline int __builtin_rvtt_sfpxfcmps(
+    volatile unsigned* buf, unsigned v, unsigned f, int x1, int x2, unsigned mod) {
+    return (__builtin_riscv_tt_sfpxfcmps(v, f, mod), 0);
+}
+__attribute__((always_inline)) inline int __builtin_rvtt_sfpxicmps(
+    volatile unsigned* buf, unsigned v, unsigned i, int x1, int x2, unsigned mod) {
+    return (__builtin_riscv_tt_sfpxfcmps(v, i, mod), 0);
+}
+__attribute__((always_inline)) inline unsigned __builtin_rvtt_sfpxloadi(
+    volatile unsigned* buf, unsigned imm, int x1, int x2, unsigned mod0) {
+    return __builtin_riscv_tt_sfploadi(mod0, imm);
+}
+__attribute__((always_inline)) inline unsigned __builtin_rvtt_sfpxiadd_i(
+    volatile unsigned* buf, unsigned src, unsigned imm, int x1, int x2, unsigned mod) {
+    return __builtin_riscv_tt_sfpiadd(src, imm, mod);
+}
+__attribute__((always_inline)) inline void __builtin_rvtt_sfpshft_i(
+    volatile unsigned* buf, unsigned src, unsigned imm, int x1, int x2, unsigned mod) {
+    __builtin_riscv_tt_sfpshft(src, imm, mod);
+}
+__attribute__((always_inline)) inline unsigned __builtin_rvtt_sfpload(
+    volatile unsigned* buf, unsigned addr, int x1, int x2, unsigned mod0, unsigned mode) {
+    return __builtin_riscv_tt_sfpload(mod0, mode, addr);
+}
+__attribute__((always_inline)) inline void __builtin_rvtt_sfpstore(
+    volatile unsigned* buf, unsigned src, unsigned addr, int x1, int x2, unsigned mod0, unsigned mode) {
+    __builtin_riscv_tt_sfpstore(src, mod0, mode, addr);
+}
 #endif /* __cplusplus */
 
 /* ---- Known ckernel.h incompatibility ---- */
