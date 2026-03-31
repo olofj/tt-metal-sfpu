@@ -187,7 +187,10 @@ void JitBuildEnv::init(
                     "-Wl,--defsym=_write=0 -Wl,--defsym=_close=0 "
                     "-Wl,--defsym=_lseek=0 -Wl,--defsym=_read=0 "
                     "-Wl,--defsym=_fstat=0 -Wl,--defsym=_isatty=0 "
-                    "-Wl,--defsym=_kill=0 -Wl,--defsym=_getpid=0 ";
+                    "-Wl,--defsym=_kill=0 -Wl,--defsym=_getpid=0 "
+                    // Wormhole-only symbols referenced in tunneling.h but
+                    // unused on Blackhole; GCC's LTO removes them.
+                    "-Wl,--defsym=__erisc_jump_table=0 ";
                 for (const auto& libdir : {
                     "/opt/tenstorrent/sfpi/compiler/riscv-tt-elf/lib/bh-ilp32",
                     "/opt/tenstorrent/sfpi/compiler/riscv-tt-elf/lib",
@@ -404,13 +407,13 @@ JitBuildState::JitBuildState(const JitBuildEnv& env, const JitBuiltStateConfig& 
     default_compile_opt_level_("Os"),
     default_linker_opt_level_("Os") {
     // Use LLVM for COMPUTE (trisc) cores — both kernels and firmware.
-    // Use LLVM for TENSIX COMPUTE cores (kernels + firmware) and
-    // TENSIX DM firmware. DM kernels stay on GCC (dispatch kernels
-    // need defines not available in the LLVM compilation path).
+    // Use LLVM for all firmware and TENSIX COMPUTE kernels.
+    // DM/ETH kernels stay on GCC (dispatch kernels need defines
+    // not available in the LLVM compilation path).
     if (env.has_llvm_ &&
-        build_config.core_type == HalProgrammableCoreType::TENSIX &&
-        (build_config.processor_class == HalProcessorClassType::COMPUTE ||
-         build_config.is_fw)) {
+        (build_config.is_fw ||
+         (build_config.core_type == HalProgrammableCoreType::TENSIX &&
+          build_config.processor_class == HalProcessorClassType::COMPUTE))) {
         this->use_llvm_ = true;
     }
     // Anything that is arch-specific should be added to HalJitBuildQueryInterface instead of here.

@@ -157,13 +157,16 @@ public:
 
     std::vector<std::string> srcs(const Params& params) const override {
         auto srcs = HalJitBuildQueryBase::srcs(params);
-        // For LLVM DM builds: compile noc.c as a JIT source (instead of linking
-        // pre-compiled noc.o) so the compiler can inline NOC functions and fit
-        // in the tight firmware code region.
+        // For LLVM builds: compile noc.c as a JIT source (instead of linking
+        // pre-compiled noc.o) so the compiler can inline NOC functions.
+        // Applies to brisc and idle_erisc (same cores that link noc.o).
         if (std::getenv("TT_METAL_USE_LLVM_SFPU") &&
-            params.core_type == HalProgrammableCoreType::TENSIX &&
-            params.processor_class == HalProcessorClassType::DM &&
-            params.processor_id == 0) {
+            ((params.core_type == HalProgrammableCoreType::TENSIX &&
+              params.processor_class == HalProcessorClassType::DM &&
+              params.processor_id == 0) ||
+             (params.core_type == HalProgrammableCoreType::IDLE_ETH &&
+              params.processor_class == HalProcessorClassType::DM &&
+              params.processor_id == 0))) {
             srcs.push_back("tt_metal/hw/firmware/src/tt-1xx/blackhole/noc.c");
         }
         if (params.core_type == HalProgrammableCoreType::ACTIVE_ETH) {
