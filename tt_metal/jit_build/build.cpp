@@ -408,10 +408,13 @@ JitBuildState::JitBuildState(const JitBuildEnv& env, const JitBuiltStateConfig& 
     default_compile_opt_level_("Os"),
     default_linker_opt_level_("Os") {
     // Use LLVM for COMPUTE (trisc) cores — both kernels and firmware.
-    // Use LLVM for all TENSIX cores. Clang doesn't have GCC 15's
-    // -Wtemplate-body checking that breaks dispatch kernel compilation.
+    // Use LLVM for all firmware and TENSIX COMPUTE kernels.
+    // DM kernels stay on GCC: LLVM-compiled dispatch kernels run past
+    // .text end (PC=0xBA20 vs text end=0x80C4), needs investigation.
     if (env.has_llvm_ &&
-        build_config.core_type == HalProgrammableCoreType::TENSIX) {
+        (build_config.is_fw ||
+         (build_config.core_type == HalProgrammableCoreType::TENSIX &&
+          build_config.processor_class == HalProcessorClassType::COMPUTE))) {
         this->use_llvm_ = true;
     }
     // Anything that is arch-specific should be added to HalJitBuildQueryInterface instead of here.
