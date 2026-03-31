@@ -93,8 +93,12 @@ public:
              params.processor_class == HalProcessorClassType::DM and params.processor_id == 0) or
             (params.core_type == HalProgrammableCoreType::IDLE_ETH and
              params.processor_class == HalProcessorClassType::DM and params.processor_id == 0)) {
-            // Brisc and Idle Erisc.
-            objs.push_back("runtime/hw/lib/blackhole/noc.o");
+            // Brisc and Idle Erisc: link noc.o (pre-compiled with GCC).
+            // For LLVM builds, noc.c is compiled as a JIT source (see srcs())
+            // so the compiler can inline NOC functions and fit code region.
+            if (!std::getenv("TT_METAL_USE_LLVM_SFPU")) {
+                objs.push_back("runtime/hw/lib/blackhole/noc.o");
+            }
         }
         objs.push_back("runtime/hw/lib/blackhole/substitutes.o");
         return objs;
@@ -153,6 +157,15 @@ public:
 
     std::vector<std::string> srcs(const Params& params) const override {
         auto srcs = HalJitBuildQueryBase::srcs(params);
+        // For LLVM DM builds: compile noc.c as a JIT source (instead of linking
+        // pre-compiled noc.o) so the compiler can inline NOC functions and fit
+        // in the tight firmware code region.
+        if (std::getenv("TT_METAL_USE_LLVM_SFPU") &&
+            params.core_type == HalProgrammableCoreType::TENSIX &&
+            params.processor_class == HalProcessorClassType::DM &&
+            params.processor_id == 0) {
+            srcs.push_back("tt_metal/hw/firmware/src/tt-1xx/blackhole/noc.c");
+        }
         if (params.core_type == HalProgrammableCoreType::ACTIVE_ETH) {
             switch (params.processor_id) {
                 case 0:
@@ -196,9 +209,11 @@ public:
             } else {
                 cflags = "-mcpu=tt-bh-tensix ";
             }
+        } else if (use_llvm && params.is_fw) {
+            // LLVM flags for DM firmware only (DM kernels stay on GCC)
+            cflags = "-march=rv32im_zba_zbb -mabi=ilp32 -DARCH_BLACKHOLE "
+                     "-Wno-unknown-attributes -Wno-deprecated ";
         } else {
-            // DM cores (brisc/ncrisc) — always GCC (LLVM code is too large
-            // for the tight firmware regions)
             cflags = "-mcpu=tt-bh ";
         }
         if (!(params.core_type == HalProgrammableCoreType::TENSIX &&

@@ -147,7 +147,7 @@ void JitBuildEnv::init(
                 this->llvm_gpp_ += "-Wno-macro-redefined ";
                 this->llvm_gpp_ += "-D__INT32_TYPE__=long ";
                 this->llvm_gpp_ += "-D'__UINT32_TYPE__=unsigned long' ";
-                this->llvm_gpp_ += "-ffunction-sections -g0 ";
+                this->llvm_gpp_ += "-ffunction-sections -fdata-sections -g0 ";
                 // Use GCC's ld for linking
                 auto gcc_ld = std::string("/opt/tenstorrent/sfpi/compiler/bin/riscv-tt-elf-ld");
                 if (std::filesystem::exists(gcc_ld))
@@ -404,21 +404,23 @@ JitBuildState::JitBuildState(const JitBuildEnv& env, const JitBuiltStateConfig& 
     default_compile_opt_level_("Os"),
     default_linker_opt_level_("Os") {
     // Use LLVM for COMPUTE (trisc) cores — both kernels and firmware.
-    // DM cores (brisc/ncrisc) stay on GCC: LLVM's code generation is ~2.4x
-    // larger, exceeding the tight firmware code regions (brisc: 8.5KB).
+    // Use LLVM for TENSIX COMPUTE cores (kernels + firmware) and
+    // TENSIX DM firmware. DM kernels stay on GCC (dispatch kernels
+    // need defines not available in the LLVM compilation path).
     if (env.has_llvm_ &&
         build_config.core_type == HalProgrammableCoreType::TENSIX &&
-        build_config.processor_class == HalProcessorClassType::COMPUTE) {
+        (build_config.processor_class == HalProcessorClassType::COMPUTE ||
+         build_config.is_fw)) {
         this->use_llvm_ = true;
     }
     // Anything that is arch-specific should be added to HalJitBuildQueryInterface instead of here.
     if (build_config.core_type == HalProgrammableCoreType::TENSIX &&
-        build_config.processor_class == HalProcessorClassType::COMPUTE) {
+        build_config.core_type == HalProgrammableCoreType::TENSIX) {
         this->default_compile_opt_level_ = "O3";
         this->default_linker_opt_level_ = "O3";
     }
     if (build_config.core_type == HalProgrammableCoreType::TENSIX &&
-        build_config.processor_class == HalProcessorClassType::COMPUTE) {
+        build_config.core_type == HalProgrammableCoreType::TENSIX) {
         this->includes_ += "-I" + (use_llvm_ ? env_.llvm_include_dir_ : env_.gpp_include_dir_) + " ";
         this->process_defines_at_compile_ = false;
     } else if (build_config.core_type == HalProgrammableCoreType::ACTIVE_ETH && build_config.is_cooperative) {
