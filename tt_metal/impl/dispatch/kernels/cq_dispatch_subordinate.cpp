@@ -348,7 +348,7 @@ void kernel_main() {
     uint32_t total_pages_acquired = 0;
     while (!done) {
         DeviceZoneScopedN("CQ-DISPATCH-SUBORDINATE");
-        cb_acquire_pages_dispatch_s<my_noc_xy, my_dispatch_cb_sem_id>(1);
+        cb_acquire_pages_dispatch_s<my_noc_xy, my_dispatch_cb_sem_id>((uint32_t)1);
 
         volatile CQDispatchCmd tt_l1_ptr* cmd = (volatile CQDispatchCmd tt_l1_ptr*)cmd_ptr;
         DeviceTimestampedData("process_cmd_d_dispatch_subordinate", (uint32_t)cmd->base.cmd_id);
@@ -365,7 +365,7 @@ void kernel_main() {
         cmd_ptr = round_up_pow2(cmd_ptr, cb_page_size);
         // Release a single page to prefetcher. Assumption is that all dispatch_s commands fit inside a single page for
         // now.
-        cb_release_pages_dispatch_s<upstream_noc_xy, upstream_dispatch_cb_sem_id>(1);
+        cb_release_pages_dispatch_s<upstream_noc_xy, upstream_dispatch_cb_sem_id>((uint32_t)1);
         if (cmd_ptr == cb_end) {
             cmd_ptr = cb_base;
         }

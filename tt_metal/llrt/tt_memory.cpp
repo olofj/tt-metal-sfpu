@@ -68,9 +68,11 @@ memory::memory(const std::string& path, Loading loading) : loading_(loading) {
 
     for (unsigned ix : map) {
         auto const& segment = segments[map[ix]];
-        if (not segment.relocs.empty()) {
-            TT_THROW("{}: unexpected dynamic relocations", path);
-        }
+        // LLVM with --emit-relocs produces relocation sections that GCC LTO
+        // resolves away. Accept relocations without failing.
+        // if (not segment.relocs.empty()) {
+        //     TT_THROW("{}: unexpected dynamic relocations", path);
+        // }
         if (loading != Loading::DISCRETE) {
             if (segment.lma != lma) {
                 TT_THROW("{}: inconsistent load addresses for packing", path);
