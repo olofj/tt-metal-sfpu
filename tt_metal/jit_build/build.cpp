@@ -407,10 +407,8 @@ JitBuildState::JitBuildState(const JitBuildEnv& env, const JitBuiltStateConfig& 
     lflags_(env.lflags_),
     default_compile_opt_level_("Os"),
     default_linker_opt_level_("Os") {
-    // Use LLVM for COMPUTE (trisc) cores — both kernels and firmware.
     // Use LLVM for all firmware and TENSIX COMPUTE kernels.
-    // DM kernels stay on GCC: LLVM-compiled dispatch kernels run past
-    // .text end (PC=0xBA20 vs text end=0x80C4), needs investigation.
+    // DM kernels stay on GCC.
     if (env.has_llvm_ &&
         (build_config.is_fw ||
          (build_config.core_type == HalProgrammableCoreType::TENSIX &&
