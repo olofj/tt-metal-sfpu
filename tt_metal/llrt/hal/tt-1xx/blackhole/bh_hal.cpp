@@ -212,9 +212,9 @@ public:
             } else {
                 cflags = "-mcpu=tt-bh-tensix ";
             }
-        } else if (use_llvm && params.is_fw) {
+        } else if (use_llvm) {
             // LLVM flags for DM firmware (DM kernels stay on GCC)
-            cflags = "-march=rv32im_zba_zbb -mabi=ilp32 -DARCH_BLACKHOLE "
+            cflags = "-march=rv32im_zba_zbb -mabi=ilp32 -DARCH_BLACKHOLE -DLLVM_BUILD "
                      "-Wno-unknown-attributes -Wno-deprecated -mno-relax ";
         } else {
             cflags = "-mcpu=tt-bh ";

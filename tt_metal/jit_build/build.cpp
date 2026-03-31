@@ -540,7 +540,7 @@ JitBuildState::JitBuildState(const JitBuildEnv& env, const JitBuiltStateConfig& 
     // objects are invalidated, preventing stale binaries from being reused.
     {
         tt::FNV1a hasher;
-        hasher.update(env_.gpp_);
+        hasher.update(use_llvm_ ? env_.llvm_gpp_ : env_.gpp_);
         hasher.update(cflags_);
         hasher.update(defines_);
         hasher.update(includes_);
