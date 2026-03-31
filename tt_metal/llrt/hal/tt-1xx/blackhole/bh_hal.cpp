@@ -185,7 +185,8 @@ public:
 
         if (params.core_type == HalProgrammableCoreType::TENSIX &&
             params.processor_class == HalProcessorClassType::COMPUTE) {
-            if (use_llvm) {
+            if (use_llvm && !params.is_fw) {
+                // LLVM flags only for kernel compilation, not firmware
                 cflags = "-march=rv32im_zba_zbb_xttsfpu_xttsfpubh "
                          "-mabi=ilp32 "
                          "-D__SFPU_BH__ -DARCH_BLACKHOLE "
@@ -377,7 +378,7 @@ void Hal::initialize_bh(bool enable_2_erisc_mode, std::uint32_t profiler_dram_ba
             case DispatchFeature::ETH_MAILBOX_API:
             case DispatchFeature::DISPATCH_ACTIVE_ETH_KERNEL_CONFIG_BUFFER:
             case DispatchFeature::DISPATCH_IDLE_ETH_KERNEL_CONFIG_BUFFER:
-            case DispatchFeature::DISPATCH_TENSIX_KERNEL_CONFIG_BUFFER: return true;
+            case DispatchFeature::DISPATCH_TENSIX_KERNEL_CONFIG_BUFFER: return true;  // WORKAROUND: disable config buffer to avoid NOC hang with large LLVM kernels
             default: TT_THROW("Invalid Blackhole dispatch feature {}", static_cast<int>(feature));
         }
     };

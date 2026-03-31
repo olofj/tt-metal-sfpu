@@ -176,7 +176,7 @@ void JitBuildEnv::init(
                 this->llvm_gpp_ += "-I" + this->root_ + "runtime/llvm-sfpu/clang_include ";
                 this->has_llvm_ = true;
                 // Link libs for LLVM builds
-                this->llvm_link_libs_ += "-nostartfiles -nodefaultlibs -Wl,--gc-sections ";
+                this->llvm_link_libs_ += "-nostartfiles -nodefaultlibs ";
                 this->llvm_link_libs_ +=
                     "-Wl,--defsym=_Z20l1_to_local_mem_copyPmS_l="
                     "_Z20l1_to_local_mem_copyPmU11rvtt_l1_ptrS_l ";
@@ -382,6 +382,7 @@ void JitBuildEnv::init(
     hasher.update(lflags_);
     hasher.update(defines_);
     hasher.update(sfpi_version_contents);
+    hasher.update(this->has_llvm_);
     build_key_ = hasher.digest();
 
     this->out_firmware_root_ = fmt::format("{}{}/firmware/", this->out_root_, build_key_);
@@ -400,8 +401,9 @@ JitBuildState::JitBuildState(const JitBuildEnv& env, const JitBuiltStateConfig& 
     lflags_(env.lflags_),
     default_compile_opt_level_("Os"),
     default_linker_opt_level_("Os") {
-    // Use LLVM for all COMPUTE (trisc) processors.
+    // Use LLVM for COMPUTE (trisc) kernel compilation only, not firmware.
     if (env.has_llvm_ &&
+        !build_config.is_fw &&
         build_config.core_type == HalProgrammableCoreType::TENSIX &&
         build_config.processor_class == HalProcessorClassType::COMPUTE) {
         this->use_llvm_ = true;
