@@ -109,7 +109,19 @@ int main(int argc, char* argv[]) {
     configure_csr();
     WAYPOINT("I");
 
-    do_crt1((uint32_t tt_l1_ptr*)PREPROCESSOR_EXPAND(MEM_TRISC, COMPILE_FOR_TRISC, _INIT_LOCAL_L1_BASE_SCRATCH));
+    {
+        // Compute .data LMA using PC-relative addressing.  The firmware
+        // binary may be loaded at an address different from the linker's
+        // text VMA, so an absolute LMA would be wrong.  The linker script
+        // places .data LMA (__fw_data_lma) right after .text, and auipc
+        // gives the correct runtime address regardless of load position.
+        uint32_t* data_lma;
+        asm volatile(
+            "1: auipc %0, %%pcrel_hi(__fw_data_lma)\n"
+            "   addi  %0, %0, %%pcrel_lo(1b)\n"
+            : "=r"(data_lma));
+        do_crt1((uint32_t tt_l1_ptr*)data_lma);
+    }
 
     // Initialize GPRs to all 0s
 #pragma GCC unroll 0

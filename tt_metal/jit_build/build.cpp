@@ -401,12 +401,8 @@ JitBuildState::JitBuildState(const JitBuildEnv& env, const JitBuiltStateConfig& 
     lflags_(env.lflags_),
     default_compile_opt_level_("Os"),
     default_linker_opt_level_("Os") {
-    // Use LLVM for COMPUTE (trisc) kernel compilation.
-    // Firmware stays on GCC: trisc.cc's MMIO pointer definitions conflict with
-    // ckernel.h's extern declarations when compiled with clang (const mismatch),
-    // and the XIP loader doesn't handle .data sections from non-const globals.
+    // Use LLVM for COMPUTE (trisc) — both kernels and firmware.
     if (env.has_llvm_ &&
-        !build_config.is_fw &&
         build_config.core_type == HalProgrammableCoreType::TENSIX &&
         build_config.processor_class == HalProcessorClassType::COMPUTE) {
         this->use_llvm_ = true;
