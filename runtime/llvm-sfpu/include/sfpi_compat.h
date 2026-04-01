@@ -20,18 +20,6 @@
 
 #ifdef __clang__
 
-/* ---- Architecture macro compatibility ---- */
-/* GCC's -mcpu=tt-bh-tensix defines __riscv_xtttensixbh.
- * LLVM's -march=...xttsfpubh defines __riscv_xttsfpubh instead.
- * sfpi_constants.h gates BH-specific values (BOB32 format, NOINC mode)
- * on __riscv_xtttensixbh, so we must define it here. */
-#if defined(__riscv_xttsfpubh) && !defined(__riscv_xtttensixbh)
-#define __riscv_xtttensixbh 1000000
-#endif
-#if defined(__riscv_xttsfpu) && !defined(__riscv_xtttensixwh) && !defined(__riscv_xttsfpubh)
-#define __riscv_xtttensixwh 1000000
-#endif
-
 /* ---- __xtt_vector type ---- */
 /* __xtt_vector is a clang builtin type (RISCVVTypes.def) with implicit
  * conversion rules to/from unsigned int (SemaOverload.cpp). Distinct for
@@ -101,36 +89,7 @@ namespace ckernel { static volatile unsigned int instrn_buffer[1] = {0}; }
 /* sfpi_builtins.h lines 14-16 define macros like:
  *   __builtin_rvtt_sfpxicmps(v,i,mod1) → __builtin_rvtt_sfpxicmps(buf,v,i,0,0,mod1)
  * The self-reference prevention causes the 6-arg form to survive as a function
- * call. We provide inline functions matching the 6-arg signature.
- * WITHOUT THESE, the 6-arg builtins are undefined and clang generates wrong code. */
-__attribute__((always_inline)) inline int __builtin_rvtt_sfpxfcmps(
-    volatile unsigned* buf, unsigned v, unsigned f, int x1, int x2, unsigned mod) {
-    return (__builtin_riscv_tt_sfpxfcmps(v, f, mod), 0);
-}
-__attribute__((always_inline)) inline int __builtin_rvtt_sfpxicmps(
-    volatile unsigned* buf, unsigned v, unsigned i, int x1, int x2, unsigned mod) {
-    return (__builtin_riscv_tt_sfpxfcmps(v, i, mod), 0);
-}
-__attribute__((always_inline)) inline unsigned __builtin_rvtt_sfpxloadi(
-    volatile unsigned* buf, unsigned imm, int x1, int x2, unsigned mod0) {
-    return __builtin_riscv_tt_sfploadi(mod0, imm);
-}
-__attribute__((always_inline)) inline unsigned __builtin_rvtt_sfpxiadd_i(
-    volatile unsigned* buf, unsigned src, unsigned imm, int x1, int x2, unsigned mod) {
-    return __builtin_riscv_tt_sfpiadd(src, imm, mod);
-}
-__attribute__((always_inline)) inline void __builtin_rvtt_sfpshft_i(
-    volatile unsigned* buf, unsigned src, unsigned imm, int x1, int x2, unsigned mod) {
-    __builtin_riscv_tt_sfpshft(src, imm, mod);
-}
-__attribute__((always_inline)) inline unsigned __builtin_rvtt_sfpload(
-    volatile unsigned* buf, unsigned addr, int x1, int x2, unsigned mod0, unsigned mode) {
-    return __builtin_riscv_tt_sfpload(mod0, mode, addr);
-}
-__attribute__((always_inline)) inline void __builtin_rvtt_sfpstore(
-    volatile unsigned* buf, unsigned src, unsigned addr, int x1, int x2, unsigned mod0, unsigned mode) {
-    __builtin_riscv_tt_sfpstore(src, mod0, mode, addr);
-}
+ * call. We provide inline functions matching the 6-arg signature. */
 #endif /* __cplusplus */
 
 /* ---- Known ckernel.h incompatibility ---- */
@@ -167,7 +126,11 @@ __attribute__((always_inline)) inline void __builtin_rvtt_sfpstore(
 
 /* Condition codes */
 #define __builtin_rvtt_sfpsetcc_i(imm, mod) __builtin_riscv_tt_sfpsetcc(0, imm, mod)
-#define __builtin_rvtt_sfpsetcc_v(src, mod) __builtin_riscv_tt_sfpsetcc(src, 0, mod)
+/* sfpsetcc_v: In GCC, comparison builtins (sfpxfcmps, sfpxfcmpv, sfpxicmps)
+ * return a condition code that sfpsetcc_v then applies to the CC stack.
+ * In LLVM, the comparison builtins already call sfpsetcc directly (setting
+ * the CC), so sfpsetcc_v is a no-op — the CC is already set. */
+#define __builtin_rvtt_sfpsetcc_v(src, mod) ((void)0)
 
 /* Register operations — _XTT() casts return to __xtt_vector for overload resolution */
 #define __builtin_rvtt_sfpmov(src, mod) _XTT(__builtin_riscv_tt_sfpmov(src, 0, mod))
@@ -229,19 +192,21 @@ __attribute__((always_inline)) inline void __builtin_rvtt_sfpstore(
 #define __builtin_rvtt_bh_sfpaddi(buf, src, imm16, x1, x2, mod) \
     _XTT(__builtin_riscv_tt_sfpaddi(src, imm16, mod))
 
-/* Unary with immediate BH */
+/* Unary with immediate BH — use _lv to tie output to input.
+ * SFPSETEXP modifies dest in-place; tying ensures the register allocator
+ * keeps the original value for non-predicated lanes in v_if blocks. */
 #define __builtin_rvtt_bh_sfpsetexp_i(buf, imm12, x1, x2, src) \
-    _XTT(__builtin_riscv_tt_sfpsetexp(src, imm12, 0))
+    _XTT(__builtin_riscv_tt_sfpsetexp_lv((unsigned int)(src), (unsigned int)(src), imm12, 0))
 #define __builtin_rvtt_bh_sfpsetexp_v(dst, src) \
-    _XTT(__builtin_riscv_tt_sfpsetexp(src, 0, 0))
+    _XTT(__builtin_riscv_tt_sfpsetexp_lv((unsigned int)(dst), (unsigned int)(src), 0, 0))
 #define __builtin_rvtt_bh_sfpsetman_i(buf, imm12, x1, x2, src, mod) \
     _XTT(__builtin_riscv_tt_sfpsetman(src, imm12, mod))
 #define __builtin_rvtt_bh_sfpsetman_v(dst, src) \
-    _XTT(__builtin_riscv_tt_sfpsetman(src, 0, 0))
+    _XTT(__builtin_riscv_tt_sfpsetman_lv((unsigned int)(dst), (unsigned int)(src), 0, 0))
 #define __builtin_rvtt_bh_sfpsetsgn_i(buf, imm12, x1, x2, src) \
     _XTT(__builtin_riscv_tt_sfpsetsgn(src, imm12, 0))
 #define __builtin_rvtt_bh_sfpsetsgn_v(dst, src) \
-    _XTT(__builtin_riscv_tt_sfpsetsgn(src, 0, 0))
+    _XTT(__builtin_riscv_tt_sfpsetsgn_lv((unsigned int)(dst), (unsigned int)(src), 0, 0))
 #define __builtin_rvtt_bh_sfpdivp2(buf, imm12, x1, x2, src, mod) \
     _XTT(__builtin_riscv_tt_sfpdivp2(src, imm12, mod))
 #define __builtin_rvtt_bh_sfpdivp2_lv(buf, live, imm12, x1, x2, src, mod) \
@@ -318,13 +283,13 @@ __attribute__((always_inline)) inline void __builtin_rvtt_sfpstore(
 #define __builtin_rvtt_wh_sfpadd(a, b, mod) _XTT(__builtin_riscv_tt_sfpadd(10, a, b, mod))
 
 #define __builtin_rvtt_wh_sfpsetexp_i(buf, imm12, x1, x2, src) \
-    _XTT(__builtin_riscv_tt_sfpsetexp(src, imm12, 0))
+    _XTT(__builtin_riscv_tt_sfpsetexp_lv((unsigned int)(src), (unsigned int)(src), imm12, 0))
 #define __builtin_rvtt_wh_sfpsetexp_v(dst, src) \
-    _XTT(__builtin_riscv_tt_sfpsetexp(src, 0, 0))
+    _XTT(__builtin_riscv_tt_sfpsetexp_lv((unsigned int)(dst), (unsigned int)(src), 0, 0))
 #define __builtin_rvtt_wh_sfpsetman_i(buf, imm12, x1, x2, src, mod) \
     _XTT(__builtin_riscv_tt_sfpsetman(src, imm12, mod))
 #define __builtin_rvtt_wh_sfpsetman_v(dst, src) \
-    _XTT(__builtin_riscv_tt_sfpsetman(src, 0, 0))
+    _XTT(__builtin_riscv_tt_sfpsetman_lv((unsigned int)(dst), (unsigned int)(src), 0, 0))
 #define __builtin_rvtt_wh_sfpdivp2(buf, imm12, x1, x2, src, mod) \
     _XTT(__builtin_riscv_tt_sfpdivp2(src, imm12, mod))
 #define __builtin_rvtt_wh_sfpxiadd_i(buf, src, imm12, x1, x2, mod) \
@@ -351,14 +316,12 @@ __attribute__((always_inline)) inline void __builtin_rvtt_sfpstore(
 /* sfpxvif: begin a v_if region. Returns a dependency token (int). */
 #define __builtin_rvtt_sfpxvif() 0
 
-/* sfpxcondb: conditional-branch from register and dependency token.
- * In GCC, this is an internal pseudo-builtin that the compiler lowers
- * together with sfpxvif to produce the correct SETCC+PUSHC sequence.
- * For LLVM, the condition code is ALREADY set by the preceding comparison
- * (sfpxfcmps/sfpxicmps → sfpsetcc). Emitting another sfpsetcc here with
- * mod=0 would OVERWRITE the correct CC, causing wrong predication.
- * So we make this a no-op — just return the dummy result. */
-#define __builtin_rvtt_sfpxcondb(src, dep) ((void)(src), 0)
+/* sfpxcondb: apply a condition result to the CC stack.
+ * In GCC, comparison builtins (sfpxfcmps etc.) return a condition code,
+ * and sfpxcondb applies it by calling SFPSETCC. In LLVM, the comparison
+ * builtins already call SFPSETCC directly (setting the CC), so sfpxcondb
+ * is a no-op — the CC is already set. */
+#define __builtin_rvtt_sfpxcondb(src, dep) ((void)0)
 
 /* sfpxcondi: conditional-branch from immediate condition.
  * Takes 1 arg (condition value) and returns as __xtt_vector.
@@ -385,7 +348,6 @@ __attribute__((always_inline)) inline void __builtin_rvtt_sfpstore(
     __builtin_riscv_tt_sfpwritelreg((unsigned int)(val), idx)
 
 /* synth_opcode: emit a raw Tensix opcode. Not an SFPU instruction.
- * Used for rare non-SFPU operations within SFPU kernels.
  * MUST use .ttinsn for ROL2 encoding (same reason as ttincrwc). */
 #define __builtin_rvtt_synth_opcode(opcode) \
     __asm__ volatile(".ttinsn %0" :: "i"(opcode) : "memory")
@@ -449,7 +411,7 @@ __builtin_rvtt_ttreplay(unsigned start, unsigned len,
 #define __builtin_rvtt_wh_sfpsetsgn_i(buf, imm12, x1, x2, src) \
     _XTT(__builtin_riscv_tt_sfpsetsgn(src, imm12, 0))
 #define __builtin_rvtt_wh_sfpsetsgn_v(dst, src) \
-    _XTT(__builtin_riscv_tt_sfpsetsgn(src, 0, 0))
+    _XTT(__builtin_riscv_tt_sfpsetsgn_lv((unsigned int)(dst), (unsigned int)(src), 0, 0))
 #define __builtin_rvtt_wh_sfpstochrnd_i(buf, mode, x1, x2, x3, src, mod) \
     _XTT(__builtin_riscv_tt_sfpstochrnd(mode, 0, src, 0, mod))
 #define __builtin_rvtt_wh_sfpstochrnd_v(mode, src_b, src_c, mod) \
