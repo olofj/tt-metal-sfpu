@@ -154,7 +154,11 @@ namespace ckernel { static volatile unsigned int instrn_buffer[1] = {0}; }
 #define __builtin_rvtt_sfpxor(dst, src) _XTT(__builtin_riscv_tt_sfpxor(src, 0, 0))
 
 /* Shift vector (variable amount) */
-#define __builtin_rvtt_sfpshft_v(dst, src, mod) _XTT(__builtin_riscv_tt_sfpshft(src, 0, mod))
+/* sfpshft_v(dst, src, mod): shift dst by amount in src. Use _lv so the RA
+ * ties the output to dst (the value being shifted). src goes to lreg_c
+ * (the shift amount). Without _lv, the dst value is lost. */
+#define __builtin_rvtt_sfpshft_v(dst, src, mod) \
+    _XTT(__builtin_riscv_tt_sfpshft_lv((unsigned int)(dst), (unsigned int)(src), 0, mod))
 
 /* Cast / rounding */
 #define __builtin_rvtt_sfpcast(src, mod) _XTT(__builtin_riscv_tt_sfpcast(src, 0, mod))
@@ -247,8 +251,13 @@ namespace ckernel { static volatile unsigned int instrn_buffer[1] = {0}; }
 
 /* LUT */
 #define __builtin_rvtt_sfplut(dst, l0, l1, l2, mod) _XTT(__builtin_riscv_tt_sfplut(0, 0))
-#define __builtin_rvtt_sfplutfp32_3r(dst, l0, l1, l2, mod) _XTT(__builtin_riscv_tt_sfplutfp32(dst, mod))
-#define __builtin_rvtt_sfplutfp32_6r(dst, l0, l1, l2, l4, l5, l6, mod) _XTT(__builtin_riscv_tt_sfplutfp32(dst, mod))
+/* sfplutfp32: GCC passes (l0, l1, l2, [l4, l5, l6,] input, mod).
+ * The l-register args are implicit hardware reads — dropped here.
+ * The LLVM intrinsic takes (input_value, mod). */
+#define __builtin_rvtt_sfplutfp32_3r(l0, l1, l2, input, mod) \
+    _XTT(__builtin_riscv_tt_sfplutfp32(input, mod))
+#define __builtin_rvtt_sfplutfp32_6r(l0, l1, l2, l4, l5, l6, input, mod) \
+    _XTT(__builtin_riscv_tt_sfplutfp32(input, mod))
 
 /* Stochastic rounding — intrinsic takes 5 args:
  * (rnd_mode, imm5, lreg_src_b, lreg_src_c, mod1) */
@@ -258,7 +267,9 @@ namespace ckernel { static volatile unsigned int instrn_buffer[1] = {0}; }
     _XTT(__builtin_riscv_tt_sfpstochrnd(mode, 0, src_b, src_c, mod))
 
 /* Swap / transpose */
-#define __builtin_rvtt_sfpswap(a, b, mod) _XTT(__builtin_riscv_tt_sfpswap(a, 0, mod))
+/* sfpswap: both a (dest) and b (src_c) are read-write swap operands.
+ * Pass both to the intrinsic so the ISel can place them correctly. */
+#define __builtin_rvtt_sfpswap(a, b, mod) _XTT(__builtin_riscv_tt_sfpswap((unsigned int)(a), (unsigned int)(b), mod))
 #define __builtin_rvtt_sfptransp(a, b, c, d) _XTT(__builtin_riscv_tt_sfptransp(a, 0, 0))
 
 /* SFPSHFT2 */
@@ -340,12 +351,22 @@ namespace ckernel { static volatile unsigned int instrn_buffer[1] = {0}; }
     (__builtin_riscv_tt_sfpsetcc(a, 0, mod), 0)
 
 /* sfpreadlreg/sfpwritelreg: L-register read/write by constant index.
- * GCC has per-register variants (sfpreadlreg0-7). Our LLVM intrinsics
- * take a constant index and emit SFPMOV from/to the physical L-register. */
+ * For L8-L15 (constant/config registers): use LLVM intrinsics.
+ * For L0,L1,L2,L4,L5,L6 (reserved for LUT): no-op under LLVM.
+ *   These registers are reserved in getReservedRegs — the RA never
+ *   clobbers them. Kernel init loads LUT coefficients via TTI_SFPLOADI
+ *   (inline asm). The GCC-style save/restore is unnecessary.
+ * For L3,L7 (allocatable): use LLVM intrinsics (normal RA path). */
+#define _SFPU_LUT_REG(idx) \
+    ((idx)==0||(idx)==1||(idx)==2||(idx)==4||(idx)==5||(idx)==6)
 #define __builtin_rvtt_sfpreadlreg(idx) \
-    _XTT(__builtin_riscv_tt_sfpreadlreg(idx))
+    (_SFPU_LUT_REG(idx) \
+        ? _XTT(0u) \
+        : _XTT(__builtin_riscv_tt_sfpreadlreg(idx)))
 #define __builtin_rvtt_sfpwritelreg(val, idx) \
-    __builtin_riscv_tt_sfpwritelreg((unsigned int)(val), idx)
+    (_SFPU_LUT_REG(idx) \
+        ? ((void)(val)) \
+        : __builtin_riscv_tt_sfpwritelreg((unsigned int)(val), idx))
 
 /* synth_opcode: emit a raw Tensix opcode. Not an SFPU instruction.
  * MUST use .ttinsn for ROL2 encoding (same reason as ttincrwc). */
